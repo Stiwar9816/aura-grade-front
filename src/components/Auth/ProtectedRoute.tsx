@@ -18,14 +18,25 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 				router.push(
 					`${redirectTo}?redirect=${encodeURIComponent(router.asPath)}`
 				);
-			} else if (requiredRole && user?.role !== requiredRole) {
-				// Rol incorrecto, redirigir al dashboard apropiado
-				if (user?.role === "student") {
-					router.push("/student");
-				} else if (user?.role === "teacher") {
-					router.push("/teacher");
-				} else {
-					router.push("/");
+			} else if (requiredRole && user) {
+				// Normalizar roles para comparación
+				const userRole = user.role.toLowerCase();
+				const normalizedRequired = requiredRole.toLowerCase();
+
+				// Administrador tiene acceso a rutas de teacher
+				const hasAccess =
+					userRole === normalizedRequired ||
+					(normalizedRequired === "teacher" && userRole === "administrador");
+
+				if (!hasAccess) {
+					// Rol incorrecto, redirigir al dashboard apropiado
+					if (userRole === "student") {
+						router.push("/student");
+					} else if (userRole === "teacher" || userRole === "administrador") {
+						router.push("/teacher");
+					} else {
+						router.push("/");
+					}
 				}
 			}
 		}
@@ -42,8 +53,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 		);
 	}
 
-	if (!isAuthenticated || (requiredRole && user?.role !== requiredRole)) {
+	if (!isAuthenticated) {
 		return null;
+	}
+
+	// Verificar acceso con roles normalizados
+	if (requiredRole && user) {
+		const userRole = user.role.toLowerCase();
+		const normalizedRequired = requiredRole.toLowerCase();
+		const hasAccess =
+			userRole === normalizedRequired ||
+			(normalizedRequired === "teacher" && userRole === "administrador");
+
+		if (!hasAccess) {
+			return null;
+		}
 	}
 
 	return <>{children}</>;

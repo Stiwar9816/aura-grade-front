@@ -127,7 +127,7 @@ const SubmissionTracker: React.FC = () => {
 	};
 
 	return (
-		<div className="card p-6">
+		<div className="card p-6 mt-4">
 			{/* Header */}
 			<div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
 				<div>

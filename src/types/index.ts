@@ -1,8 +1,10 @@
 export interface User {
 	id: string;
 	name: string;
+	last_name?: string;
 	email: string;
-	role: "student" | "teacher";
+	role: UserRole;
+	token?: string;
 	avatar?: string;
 }
 
@@ -288,7 +290,7 @@ export interface RegisterFormData {
 	email: string;
 	password: string;
 	confirmPassword: string;
-	userType: "student" | "teacher";
+	userType: UserRole;
 	acceptTerms: boolean;
 }
 
@@ -327,16 +329,20 @@ export interface LoginCredentials {
 }
 
 export interface RegisterData {
-	firstName: string;
-	lastName: string;
+	name: string;
+	last_name: string;
+	document_type?: string;
+	document_num?: number;
+	phone?: number;
 	email: string;
 	password: string;
-	userType: "student" | "teacher";
-	institution?: string;
+	role: UserRole;
 }
 
 export interface ProtectedRouteProps {
 	children: React.ReactNode;
-	requiredRole?: "student" | "teacher" | "admin";
+	requiredRole?: UserRole;
 	redirectTo?: string;
 }
+
+export type UserRole = "student" | "teacher" | "Administrador";

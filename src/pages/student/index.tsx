@@ -5,9 +5,10 @@ import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 import Banner from "@/components/Common/Banner";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
-import Badge from "@/components/Common/Badge";
+import useAuth from "@/hooks/useAuth";
 
 const StudentDashboard: React.FC = () => {
+	const {user} = useAuth();
 	const [assignments] = useState([
 		{
 			id: "1",
@@ -118,7 +119,7 @@ const StudentDashboard: React.FC = () => {
 				<div className="max-w-6xl mx-auto">
 					{/* Welcome Banner */}
 					<Banner
-						title={`¡Hola, Estudiante!`}
+						title={`¡Hola, Alumno${user?.name}!`}
 						description={`Tienes ${pendingCount} tarea${
 							pendingCount !== 1 ? "s" : ""
 						} pendiente${

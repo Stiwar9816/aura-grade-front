@@ -5,9 +5,10 @@ import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import Badge from "@/components/Common/Badge";
-import Banner from "@/components/Common/Banner";
+import useAuth from "@/hooks/useAuth";
 
 const TeacherDashboard: React.FC = () => {
+	const {user} = useAuth();
 	const [activeTab, setActiveTab] = useState<
 		"overview" | "submissions" | "analytics"
 	>("overview");
@@ -82,11 +83,11 @@ const TeacherDashboard: React.FC = () => {
 
 	return (
 		<ProtectedRoute requiredRole="teacher">
-			<Layout title="Panel del Docente">
+			<Layout>
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
 					<SectionHeader
-						title="Bienvenido, Profesor"
+						title={`Bienvenido(a), Profesor(a) ${user?.name}`}
 						description="Monitorea el progreso de tus estudiantes y gestiona tus evaluaciones"
 						actions={
 							<button className="btn-primary">
@@ -110,7 +111,6 @@ const TeacherDashboard: React.FC = () => {
 									icon: "📤",
 									badge: stats.pendingEvaluations,
 								},
-								{id: "analytics", label: "Analíticas", icon: "📈"},
 							].map((tab) => (
 								<button
 									key={tab.id}
@@ -143,7 +143,7 @@ const TeacherDashboard: React.FC = () => {
 					{activeTab === "overview" && (
 						<>
 							{/* Stats Grid */}
-							<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
+							<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8 mt-4">
 								<Card className="text-center group hoverable">
 									<div className="text-2xl font-bold text-gray-900 group-hover:scale-110 transition-transform">
 										{stats.totalStudents}
@@ -310,25 +310,6 @@ const TeacherDashboard: React.FC = () => {
 					)}
 
 					{activeTab === "submissions" && <SubmissionTracker />}
-
-					{activeTab === "analytics" && (
-						<Card>
-							<div className="text-center py-12">
-								<div className="text-4xl mb-4">📊</div>
-								<SectionHeader
-									title="Analíticas Detalladas"
-									description="Esta sección está disponible en la versión completa. Incluye gráficos avanzados, tendencias y análisis predictivo."
-									className="justify-center items-center text-center"
-								/>
-								<button className="btn-primary mt-6">
-									<span className="flex items-center gap-2">
-										<span>🚀</span>
-										<span>Acceder a Analíticas Completas</span>
-									</span>
-								</button>
-							</div>
-						</Card>
-					)}
 				</div>
 			</Layout>
 		</ProtectedRoute>

@@ -1,17 +1,16 @@
+"use client";
+
 import React, {useState} from "react";
 import Link from "next/link";
-import {useRouter} from "next/router";
-import {RegisterFormData} from "@/types";
-import useAuth from "@/hooks/useAuth";
+import {useRouter} from "next/navigation";
+import {RegisterFormData, UserRole} from "@/types";
 import AuthLayout from "@/components/Auth/AuthLayout";
+import useAuth from "@/hooks/useAuth";
 
 const RegisterPage: React.FC = () => {
 	const router = useRouter();
-	const {
-		register: registerUser,
-		isLoading: isRegistering,
-		error: authError,
-	} = useAuth();
+	const {register, isLoading, error: authError} = useAuth();
+	const [serverError, setServerError] = useState<string | null>(null);
 	const [step, setStep] = useState<number>(1);
 	const [formData, setFormData] = useState<RegisterFormData>({
 		firstName: "",
@@ -26,6 +25,8 @@ const RegisterPage: React.FC = () => {
 		Partial<Record<keyof RegisterFormData, string>>
 	>({});
 	const [showPassword, setShowPassword] = useState(false);
+
+	const displayError = serverError || authError;
 
 	const validateStep = (stepNumber: number): boolean => {
 		const newErrors: Partial<Record<keyof RegisterFormData, string>> = {};
@@ -87,16 +88,25 @@ const RegisterPage: React.FC = () => {
 	};
 
 	const handleSubmit = async () => {
-		const {success, error} = await registerUser({
-			firstName: formData.firstName,
-			lastName: formData.lastName,
+		setServerError(null);
+
+		const result = await register({
+			name: formData.firstName,
+			last_name: formData.lastName,
 			email: formData.email,
 			password: formData.password,
-			userType: formData.userType as "student" | "teacher",
+			role: formData.userType as UserRole,
 		});
 
-		if (!success && error) {
-			setErrors({email: error});
+		if (result.success && result.user) {
+			const role = result.user.role.toLowerCase();
+			const dest =
+				role === "administrador" || role === "teacher"
+					? "/teacher"
+					: "/student";
+			router.push(dest);
+		} else if (result.error) {
+			setServerError(result.error);
 		}
 	};
 
@@ -178,11 +188,11 @@ const RegisterPage: React.FC = () => {
 				</div>
 			</div>
 
-			{authError && (
+			{displayError && (
 				<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
 					<div className="flex items-center gap-3">
 						<span className="text-red-600">⚠️</span>
-						<span className="text-red-700">{authError}</span>
+						<span className="text-red-700">{displayError}</span>
 					</div>
 				</div>
 			)}
@@ -629,14 +639,14 @@ const RegisterPage: React.FC = () => {
 				<button
 					type="button"
 					onClick={handleNextStep}
-					disabled={isRegistering}
+					disabled={isLoading}
 					className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-						isRegistering
+						isLoading
 							? "bg-gray-400 text-white cursor-not-allowed"
 							: "bg-gradient-to-r from-electric-500 to-cyan-500 text-white hover:from-electric-600 hover:to-cyan-600 shadow-lg hover:shadow-xl"
 					}`}
 				>
-					{isRegistering ? (
+					{isLoading ? (
 						<span className="flex items-center gap-2">
 							<svg
 								className="animate-spin h-5 w-5 text-white"

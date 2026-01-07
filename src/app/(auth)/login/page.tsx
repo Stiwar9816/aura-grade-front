@@ -1,13 +1,14 @@
+"use client";
+
 import React, {useState} from "react";
 import Link from "next/link";
-import {useRouter} from "next/router";
-import Image from "next/image";
-import useAuth from "@/hooks/useAuth";
+import {useRouter} from "next/navigation";
 import AuthLayout from "@/components/Auth/AuthLayout";
+import useAuth from "@/hooks/useAuth";
 
 const LoginPage: React.FC = () => {
 	const router = useRouter();
-	const {login, isLoading, error: authError} = useAuth();
+	const {login, isLoading, error} = useAuth();
 	const [formData, setFormData] = useState({
 		email: "",
 		password: "",
@@ -17,12 +18,19 @@ const LoginPage: React.FC = () => {
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		await login(formData);
+		const result = await login(formData);
+		if (result.success && result.user) {
+			const role = result.user.role.toLowerCase();
+			const dest =
+				role === "administrador" || role === "teacher"
+					? "/teacher"
+					: "/student";
+			router.push(dest);
+		}
 	};
 
 	const handleSocialLogin = (provider: string) => {
 		console.log(`Login with ${provider}`);
-		// Aquí iría la integración con OAuth
 	};
 
 	const features = [
@@ -106,11 +114,11 @@ const LoginPage: React.FC = () => {
 
 			{/* Login Form */}
 			<form onSubmit={handleSubmit} className="space-y-6">
-				{authError && (
+				{error && (
 					<div className="p-4 bg-red-50 border border-red-200 rounded-xl">
 						<div className="flex items-center gap-3">
 							<span className="text-red-600">⚠️</span>
-							<span className="text-red-700">{authError}</span>
+							<span className="text-red-700">{error}</span>
 						</div>
 					</div>
 				)}
