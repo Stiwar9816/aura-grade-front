@@ -2,6 +2,7 @@ import React, {useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/router";
 import useAuth from "@/hooks/useAuth";
+import {UserRole} from "@/types";
 
 const UserMenu: React.FC = () => {
 	const {user, logout} = useAuth();
@@ -15,11 +16,11 @@ const UserMenu: React.FC = () => {
 
 	const getRoleColor = () => {
 		switch (user?.role) {
-			case "student":
+			case UserRole.STUDENT:
 				return "bg-green-100 text-green-800";
-			case "teacher":
+			case UserRole.TEACHER:
 				return "bg-blue-100 text-blue-800";
-			case "Administrador":
+			case UserRole.ADMIN:
 				return "bg-purple-100 text-purple-800";
 			default:
 				return "bg-gray-100 text-gray-800";
@@ -28,11 +29,11 @@ const UserMenu: React.FC = () => {
 
 	const getRoleLabel = () => {
 		switch (user?.role) {
-			case "student":
+			case UserRole.STUDENT:
 				return "Estudiante";
-			case "teacher":
+			case UserRole.TEACHER:
 				return "Docente";
-			case "Administrador":
+			case UserRole.ADMIN:
 				return "Administrador";
 			default:
 				return "Estudiante";
@@ -95,7 +96,9 @@ const UserMenu: React.FC = () => {
 									{getInitials()}
 								</div>
 								<div>
-									<div className="font-semibold text-gray-900">{user.name}</div>
+									<div className="font-semibold text-gray-900">
+										{user.name + " " + user.last_name}
+									</div>
 									<div className="text-sm text-gray-600">{user.email}</div>
 								</div>
 							</div>

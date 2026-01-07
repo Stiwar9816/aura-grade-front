@@ -1,7 +1,7 @@
 import React, {useEffect} from "react";
 import {useRouter} from "next/router";
 import useAuth from "@/hooks/useAuth";
-import {ProtectedRouteProps} from "@/types";
+import {ProtectedRouteProps, UserRole} from "@/types";
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 	children,
@@ -19,20 +19,24 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 					`${redirectTo}?redirect=${encodeURIComponent(router.asPath)}`
 				);
 			} else if (requiredRole && user) {
-				// Normalizar roles para comparación
-				const userRole = user.role.toLowerCase();
-				const normalizedRequired = requiredRole.toLowerCase();
+				// Comparar roles directamente sin normalizar
+				const userRole = user.role;
+				const normalizedRequired = requiredRole;
 
 				// Administrador tiene acceso a rutas de teacher
 				const hasAccess =
 					userRole === normalizedRequired ||
-					(normalizedRequired === "teacher" && userRole === "administrador");
+					(normalizedRequired === UserRole.TEACHER &&
+						userRole === UserRole.ADMIN);
 
 				if (!hasAccess) {
 					// Rol incorrecto, redirigir al dashboard apropiado
-					if (userRole === "student") {
+					if (userRole === UserRole.STUDENT) {
 						router.push("/student");
-					} else if (userRole === "teacher" || userRole === "administrador") {
+					} else if (
+						userRole === UserRole.TEACHER ||
+						userRole === UserRole.ADMIN
+					) {
 						router.push("/teacher");
 					} else {
 						router.push("/");
@@ -57,13 +61,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 		return null;
 	}
 
-	// Verificar acceso con roles normalizados
+	// Verificar acceso con roles exactos
 	if (requiredRole && user) {
-		const userRole = user.role.toLowerCase();
-		const normalizedRequired = requiredRole.toLowerCase();
+		const userRole = user.role;
+		const normalizedRequired = requiredRole;
 		const hasAccess =
 			userRole === normalizedRequired ||
-			(normalizedRequired === "teacher" && userRole === "administrador");
+			(normalizedRequired === "Docente" && userRole === "Administrador");
 
 		if (!hasAccess) {
 			return null;

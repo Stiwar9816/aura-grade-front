@@ -4,15 +4,15 @@ import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 import useAuth from "@/hooks/useAuth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
+import {UserRole} from "@/types";
 
 const ProfilePage: React.FC = () => {
 	const {user} = useAuth();
 	const [isEditing, setIsEditing] = useState(false);
 	const [formData, setFormData] = useState({
-		name: user?.name || "",
+		name: user?.name + " " + user?.last_name || "",
 		email: user?.email || "",
 		phone: "",
-		bio: "",
 	});
 
 	const handleSave = () => {
@@ -32,22 +32,22 @@ const ProfilePage: React.FC = () => {
 							</div>
 							<div className="flex-1">
 								<h2 className="text-2xl font-bold text-gray-900">
-									{user?.name}
+									{user?.name + " " + user?.last_name}
 								</h2>
 								<p className="text-gray-600">{user?.email}</p>
 								<div className="mt-2">
 									<span
 										className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${
-											user?.role === "student"
+											user?.role === UserRole.STUDENT
 												? "bg-green-100 text-green-800"
-												: user?.role === "Administrador"
+												: user?.role === UserRole.ADMIN
 												? "bg-purple-100 text-purple-800"
 												: "bg-blue-100 text-blue-800"
 										}`}
 									>
-										{user?.role === "student"
+										{user?.role === UserRole.STUDENT
 											? "Estudiante"
-											: user?.role === "Administrador"
+											: user?.role === UserRole.ADMIN
 											? "Administrador"
 											: "Docente"}
 									</span>
@@ -128,37 +128,13 @@ const ProfilePage: React.FC = () => {
 										Rol
 									</label>
 									<p className="text-gray-900 font-medium">
-										{user?.role === "student"
+										{user?.role === UserRole.STUDENT
 											? "Estudiante"
-											: user?.role === "Administrador"
+											: user?.role === UserRole.ADMIN
 											? "Administrador"
 											: "Docente"}
 									</p>
 								</div>
-							</div>
-
-							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-2">
-									Biografía
-								</label>
-								{isEditing ? (
-									<textarea
-										value={formData.bio}
-										onChange={(e) =>
-											setFormData({
-												...formData,
-												bio: e.target.value,
-											})
-										}
-										rows={4}
-										className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-electric-500 focus:border-electric-500"
-										placeholder="Cuéntanos un poco sobre ti..."
-									/>
-								) : (
-									<p className="text-gray-900">
-										{formData.bio || "No has agregado una biografía aún."}
-									</p>
-								)}
 							</div>
 
 							{isEditing && (

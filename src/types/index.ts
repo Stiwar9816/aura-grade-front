@@ -287,6 +287,9 @@ export interface TeacherEvaluation {
 export interface RegisterFormData {
 	firstName: string;
 	lastName: string;
+	documentType: DocumentType;
+	documentNum: string;
+	phone: string;
 	email: string;
 	password: string;
 	confirmPassword: string;
@@ -345,4 +348,17 @@ export interface ProtectedRouteProps {
 	redirectTo?: string;
 }
 
-export type UserRole = "student" | "teacher" | "Administrador";
+export enum UserRole {
+	STUDENT = "Estudiante",
+	TEACHER = "Docente",
+	ADMIN = "Administrador",
+}
+
+export enum DocumentType {
+	CITIZENSHIP_CARD = "Cedula de ciudadania",
+	PASSPORT = "Pasaporte",
+	CIVIL_REGISRTRY = "Registro civil",
+	FOREIGNER_CARD = "Cedula de extranjeria",
+	MILITARY_ID = "Libreta militar",
+	IDENTITY_CARD = "Tarjeta de identidad",
+}

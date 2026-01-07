@@ -2,6 +2,7 @@
 
 import {useEffect} from "react";
 import {useRouter} from "next/navigation";
+import {UserRole} from "@/types";
 
 export default function HomePage() {
 	const router = useRouter();
@@ -15,8 +16,8 @@ export default function HomePage() {
 
 		try {
 			const user = JSON.parse(storedUser);
-			const role = user.role.toLowerCase();
-			if (role === "administrador" || role === "teacher") {
+			const role = user.role;
+			if (role === UserRole.ADMIN || role === UserRole.TEACHER) {
 				router.push("/teacher");
 			} else {
 				router.push("/student");

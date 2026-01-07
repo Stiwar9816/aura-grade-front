@@ -3,7 +3,7 @@
 import React, {useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
-import {RegisterFormData, UserRole} from "@/types";
+import {DocumentType, RegisterFormData, UserRole} from "@/types";
 import AuthLayout from "@/components/Auth/AuthLayout";
 import useAuth from "@/hooks/useAuth";
 
@@ -15,10 +15,13 @@ const RegisterPage: React.FC = () => {
 	const [formData, setFormData] = useState<RegisterFormData>({
 		firstName: "",
 		lastName: "",
+		documentType: "" as DocumentType,
+		documentNum: "",
+		phone: "",
 		email: "",
 		password: "",
 		confirmPassword: "",
-		userType: "student",
+		userType: UserRole.STUDENT,
 		acceptTerms: false,
 	});
 	const [errors, setErrors] = useState<
@@ -36,6 +39,19 @@ const RegisterPage: React.FC = () => {
 				newErrors.firstName = "El nombre es requerido";
 			if (!formData.lastName.trim())
 				newErrors.lastName = "El apellido es requerido";
+			if (!formData.documentType) {
+				newErrors.documentType = "El tipo de documento es requerido";
+			}
+			if (!formData.documentNum.trim()) {
+				newErrors.documentNum = "El número de documento es requerido";
+			} else if (!/^\d+$/.test(formData.documentNum)) {
+				newErrors.documentNum = "Solo se permiten números";
+			}
+			if (!formData.phone.trim()) {
+				newErrors.phone = "El teléfono es requerido";
+			} else if (!/^\d+$/.test(formData.phone)) {
+				newErrors.phone = "Solo se permiten números";
+			}
 			if (!formData.email.trim()) {
 				newErrors.email = "El correo electrónico es requerido";
 			} else if (!/\S+@\S+\.\S+/.test(formData.email)) {
@@ -93,15 +109,18 @@ const RegisterPage: React.FC = () => {
 		const result = await register({
 			name: formData.firstName,
 			last_name: formData.lastName,
+			document_type: formData.documentType,
+			document_num: parseInt(formData.documentNum, 10),
+			phone: parseInt(formData.phone, 10),
 			email: formData.email,
 			password: formData.password,
-			role: formData.userType as UserRole,
+			role: formData.userType,
 		});
 
 		if (result.success && result.user) {
-			const role = result.user.role.toLowerCase();
+			const role = result.user.role;
 			const dest =
-				role === "administrador" || role === "teacher"
+				role === UserRole.ADMIN || role === UserRole.TEACHER
 					? "/teacher"
 					: "/student";
 			router.push(dest);
@@ -252,26 +271,119 @@ const RegisterPage: React.FC = () => {
 						</div>
 					</div>
 
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Correo electrónico *
-						</label>
-						<input
-							type="email"
-							value={formData.email}
-							onChange={(e) =>
-								setFormData({...formData, email: e.target.value})
-							}
-							className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
-								errors.email
-									? "border-red-500"
-									: "border-gray-300 focus:border-electric-500"
-							}`}
-							placeholder="tu@email.com"
-						/>
-						{errors.email && (
-							<p className="mt-1 text-sm text-red-600">{errors.email}</p>
-						)}
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Tipo de Documento *
+							</label>
+							<select
+								value={formData.documentType}
+								onChange={(e) =>
+									setFormData({
+										...formData,
+										documentType: e.target.value as DocumentType,
+									})
+								}
+								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all bg-white ${
+									errors.documentType
+										? "border-red-500"
+										: "border-gray-300 focus:border-electric-500"
+								}`}
+							>
+								<option value="">Seleccionar...</option>
+								<option value={DocumentType.CITIZENSHIP_CARD}>
+									Cédula de Ciudadanía
+								</option>
+								<option value={DocumentType.PASSPORT}>Pasaporte</option>
+								<option value={DocumentType.CIVIL_REGISRTRY}>
+									Registro Civil
+								</option>
+								<option value={DocumentType.IDENTITY_CARD}>
+									Tarjeta de Identidad
+								</option>
+								<option value={DocumentType.MILITARY_ID}>
+									Libreta Militar
+								</option>
+								<option value={DocumentType.FOREIGNER_CARD}>
+									Cédula de Extranjería
+								</option>
+							</select>
+							{errors.documentType && (
+								<p className="mt-1 text-sm text-red-600">
+									{errors.documentType}
+								</p>
+							)}
+						</div>
+
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Documento de Identidad *
+							</label>
+							<input
+								type="text"
+								value={formData.documentNum}
+								onChange={(e) => {
+									const val = e.target.value.replace(/\D/g, "");
+									setFormData({...formData, documentNum: val});
+								}}
+								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
+									errors.documentNum
+										? "border-red-500"
+										: "border-gray-300 focus:border-electric-500"
+								}`}
+								placeholder="Ej: 1234567890"
+							/>
+							{errors.documentNum && (
+								<p className="mt-1 text-sm text-red-600">
+									{errors.documentNum}
+								</p>
+							)}
+						</div>
+
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Teléfono *
+							</label>
+							<input
+								type="tel"
+								value={formData.phone}
+								onChange={(e) => {
+									const val = e.target.value.replace(/\D/g, "");
+									setFormData({...formData, phone: val});
+								}}
+								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
+									errors.phone
+										? "border-red-500"
+										: "border-gray-300 focus:border-electric-500"
+								}`}
+								placeholder="Ej: 3001234567"
+							/>
+							{errors.phone && (
+								<p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+							)}
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Correo electrónico *
+							</label>
+							<input
+								type="email"
+								value={formData.email}
+								onChange={(e) =>
+									setFormData({...formData, email: e.target.value})
+								}
+								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
+									errors.email
+										? "border-red-500"
+										: "border-gray-300 focus:border-electric-500"
+								}`}
+								placeholder="tu@email.com"
+								required
+							/>
+							{errors.email && (
+								<p className="mt-1 text-sm text-red-600">{errors.email}</p>
+							)}
+						</div>
 					</div>
 
 					<div>
@@ -281,9 +393,11 @@ const RegisterPage: React.FC = () => {
 						<div className="grid grid-cols-1 gap-4">
 							<button
 								type="button"
-								onClick={() => setFormData({...formData, userType: "student"})}
+								onClick={() =>
+									setFormData({...formData, userType: UserRole.STUDENT})
+								}
 								className={`p-4 border-2 rounded-xl text-left transition-all ${
-									formData.userType === "student"
+									formData.userType === UserRole.STUDENT
 										? "border-electric-500 bg-electric-50"
 										: "border-gray-300 hover:border-gray-400"
 								}`}
@@ -291,7 +405,7 @@ const RegisterPage: React.FC = () => {
 								<div className="flex items-center gap-3">
 									<div
 										className={`p-2 rounded-lg ${
-											formData.userType === "student"
+											formData.userType === UserRole.STUDENT
 												? "bg-electric-100"
 												: "bg-gray-100"
 										}`}
@@ -311,9 +425,11 @@ const RegisterPage: React.FC = () => {
 
 							<button
 								type="button"
-								onClick={() => setFormData({...formData, userType: "teacher"})}
+								onClick={() =>
+									setFormData({...formData, userType: UserRole.TEACHER})
+								}
 								className={`p-4 border-2 rounded-xl text-left transition-all ${
-									formData.userType === "teacher"
+									formData.userType === UserRole.TEACHER
 										? "border-electric-500 bg-electric-50"
 										: "border-gray-300 hover:border-gray-400"
 								}`}
@@ -321,7 +437,7 @@ const RegisterPage: React.FC = () => {
 								<div className="flex items-center gap-3">
 									<div
 										className={`p-2 rounded-lg ${
-											formData.userType === "teacher"
+											formData.userType === UserRole.TEACHER
 												? "bg-electric-100"
 												: "bg-gray-100"
 										}`}
@@ -563,7 +679,7 @@ const RegisterPage: React.FC = () => {
 								<div>
 									<div className="text-sm text-gray-600">Tipo de usuario</div>
 									<div className="font-medium text-gray-900">
-										{formData.userType === "student"
+										{formData.userType === UserRole.STUDENT
 											? "👨‍🎓 Estudiante"
 											: "👨‍🏫 Docente"}
 									</div>

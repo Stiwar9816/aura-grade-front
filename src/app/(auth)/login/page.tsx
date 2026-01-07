@@ -3,6 +3,7 @@
 import React, {useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/navigation";
+import {UserRole} from "@/types";
 import AuthLayout from "@/components/Auth/AuthLayout";
 import useAuth from "@/hooks/useAuth";
 
@@ -20,9 +21,9 @@ const LoginPage: React.FC = () => {
 		e.preventDefault();
 		const result = await login(formData);
 		if (result.success && result.user) {
-			const role = result.user.role.toLowerCase();
+			const role = result.user.role;
 			const dest =
-				role === "administrador" || role === "teacher"
+				role === UserRole.ADMIN || role === UserRole.TEACHER
 					? "/teacher"
 					: "/student";
 			router.push(dest);

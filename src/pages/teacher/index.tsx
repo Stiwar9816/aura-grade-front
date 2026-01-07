@@ -6,6 +6,7 @@ import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import Badge from "@/components/Common/Badge";
 import useAuth from "@/hooks/useAuth";
+import {UserRole} from "@/types";
 
 const TeacherDashboard: React.FC = () => {
 	const {user} = useAuth();
@@ -82,7 +83,7 @@ const TeacherDashboard: React.FC = () => {
 	];
 
 	return (
-		<ProtectedRoute requiredRole="teacher">
+		<ProtectedRoute requiredRole={UserRole.TEACHER}>
 			<Layout>
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
