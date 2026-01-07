@@ -1,26 +1,215 @@
-@import "tailwindcss";
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap");
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	body {
+		@apply bg-background-bone text-gray-800 font-sans antialiased;
+	}
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+@layer components {
+	/* Cards y contenedores */
+	.card {
+		@apply bg-white rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-all duration-300;
+	}
+
+	.bento-grid {
+		@apply grid grid-cols-1 md:grid-cols-3 gap-4;
+	}
+
+	.bento-item {
+		@apply card p-4 hover:scale-[1.01] transition-transform duration-300;
+	}
+
+	/* Botones */
+	.btn-primary {
+		@apply bg-electric-500 text-white px-5 py-2 rounded-xl font-semibold 
+           hover:bg-electric-600 active:scale-95 transition-all duration-200 
+           shadow-md hover:shadow-lg;
+	}
+
+	.btn-secondary {
+		@apply bg-deep-purple text-white px-5 py-2 rounded-xl font-semibold 
+           hover:bg-purple-800 active:scale-95 transition-all duration-200;
+	}
+
+	.btn-ghost {
+		@apply border-2 border-gray-300 text-gray-700 px-5 py-2 rounded-xl font-medium 
+           hover:border-electric-500 hover:text-electric-500 transition-colors duration-200;
+	}
+
+	/* Formularios */
+	.input-primary {
+		@apply w-full px-4 py-2 border-2 border-gray-300 rounded-xl 
+           focus:border-electric-500 focus:ring-2 focus:ring-electric-200 
+           outline-none transition-all duration-200 text-sm;
+	}
+
+	/* Dropzone */
+	.dropzone-active {
+		@apply border-electric-500 bg-electric-50 scale-[1.02];
+	}
+
+	.dropzone-reject {
+		@apply border-red-500 bg-red-50;
+	}
+
+	/* Skeleton */
+	.skeleton {
+		@apply animate-pulse bg-gray-200 rounded-xl;
+	}
+
+	/* Stepper */
+	.stepper-item {
+		@apply flex items-center justify-center w-10 h-10 rounded-full border-2 
+           font-semibold transition-all duration-300;
+	}
+
+	.stepper-item-active {
+		@apply bg-electric-500 border-electric-500 text-white scale-110;
+	}
+
+	.stepper-item-completed {
+		@apply bg-green-500 border-green-500 text-white;
+	}
+
+	.stepper-item-pending {
+		@apply border-gray-300 text-gray-400 bg-white;
+	}
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/* Animaciones personalizadas */
+@keyframes float {
+	0%,
+	100% {
+		transform: translateY(0);
+	}
+	50% {
+		transform: translateY(-10px);
+	}
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@keyframes progress {
+	0% {
+		left: -40%;
+	}
+	100% {
+		left: 100%;
+	}
+}
+
+@keyframes slideIn {
+	from {
+		transform: translateX(100%);
+		opacity: 0;
+	}
+	to {
+		transform: translateX(0);
+		opacity: 1;
+	}
+}
+
+.animate-float {
+	animation: float 3s ease-in-out infinite;
+}
+
+.animate-progress {
+	animation: progress 2s ease-in-out infinite;
+}
+
+.animate-slideIn {
+	animation: slideIn 0.3s ease-out;
+}
+
+/* Scrollbar personalizado */
+.scrollbar-hide {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+	display: none;
+}
+
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+
+::-webkit-scrollbar-track {
+	background: #f1f1f1;
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: #c1c1c1;
+	border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: #a1a1a1;
+}
+
+/* Agrega estas animaciones */
+
+@keyframes float {
+	0%,
+	100% {
+		transform: translateY(0) translateX(0);
+	}
+	33% {
+		transform: translateY(-20px) translateX(10px);
+	}
+	66% {
+		transform: translateY(10px) translateX(-10px);
+	}
+}
+
+@keyframes slideIn {
+	from {
+		opacity: 0;
+		transform: translateY(10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.animate-float {
+	animation: float 6s ease-in-out infinite;
+}
+
+.animate-slideIn {
+	animation: slideIn 0.3s ease-out;
+}
+
+/* Gradient text */
+.text-gradient {
+	background: linear-gradient(to right, #0066ff, #00d4ff);
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+}
+
+/* Custom scrollbar for auth pages */
+.auth-scrollbar::-webkit-scrollbar {
+	width: 8px;
+}
+
+.auth-scrollbar::-webkit-scrollbar-track {
+	background: #f1f1f1;
+	border-radius: 4px;
+}
+
+.auth-scrollbar::-webkit-scrollbar-thumb {
+	background: linear-gradient(to bottom, #0066ff, #00d4ff);
+	border-radius: 4px;
+}
+
+.auth-scrollbar::-webkit-scrollbar-thumb:hover {
+	background: linear-gradient(to bottom, #0052cc, #00aacc);
 }

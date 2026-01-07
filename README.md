@@ -1,40 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/pages/api-reference/create-next-app).
+# 🚀Aura Grade - (Clasificación asistida por IA)
 
-## Getting Started
+Una plataforma progresiva para la gestión educativa eficiente y escalable, potenciada por IA. Diseñada para agilizar el proceso de evaluación y proporcionar información profunda sobre el rendimiento de los estudiantes.
 
-First, run the development server:
+## 🌟 Propósito Principal
+
+Aura Grade tiene como objetivo cerrar la brecha entre la evaluación tradicional y la tecnología moderna. Aprovechando las capacidades de la IA, la plataforma ayuda a los educadores a proporcionar retroalimentación más rápida, objetiva y altamente detallada a los estudiantes, al mismo tiempo que ofrece una experiencia de gestión fluida.
+
+## ✨ Características Clave
+
+### 👨‍🏫 Para Profesores
+
+- **Calificación Potenciada por IA**: Analiza y sugiere puntajes automáticamente basados en rúbricas personalizadas.
+- **Constructor de Rúbricas**: Crea y gestiona criterios de evaluación complejos con facilidad.
+- **Análisis de Rendimiento**: Visualiza tendencias de la clase, distribución de calificaciones y el progreso individual de los estudiantes mediante mapas de calor y gráficos.
+- **Evaluación en Pantalla Dividida**: Revisa las entregas de manera eficiente junto con las herramientas de evaluación.
+
+### 🎓 Para Estudiantes
+
+- **Cargas Inteligentes**: Proceso de entrega por pasos con retroalimentación en tiempo real.
+- **Retroalimentación Perspicaz**: Accede a sugerencias detalladas generadas por IA y comentarios de los profesores.
+- **Seguimiento del Progreso**: Monitorea el crecimiento académico a través de tableros de control intuitivos.
+
+## 🛠️ Stack Tecnológico
+
+- **Framework**: [Next.js 15](https://nextjs.org/) (React 19)
+- **Estilos**: [Tailwind CSS](https://tailwindcss.com/)
+- **Lenguaje**: [TypeScript](https://www.typescriptlang.org/)
+- **Componentes de UI**: Componentes estéticos personalizados con accesibilidad tipo Radix.
+
+## 🚀 Cómo Empezar
+
+Primero, instala las dependencias:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+# o
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Luego, ejecuta el servidor de desarrollo:
 
-You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
+```bash
+pnpm dev
+# o
+npm run dev
+```
 
-[API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
+Abre [http://localhost:3000](http://localhost:3000) en tu navegador para ver el resultado.
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/pages/building-your-application/routing/api-routes) instead of React pages.
+## 👤 Autor
 
-This project uses [`next/font`](https://nextjs.org/docs/pages/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### **Stiwar Asprilla**
 
-## Learn More
+Redes Sociales:
 
-To learn more about Next.js, take a look at the following resources:
+- GitHub: [@Stiwar9816](https://github.com/Stiwar9816)
+- Docker Hub: [stiwar1098](https://hub.docker.com/u/stiwar1098)
+- LinkedIn: [Stiwar Asprilla](https://www.linkedin.com/in/stiwar-asprilla/)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn-pages-router) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/pages/building-your-application/deploying) for more details.
+<p align="center">Hecho con ❤️ y ☕ para AuraGrade</p>
