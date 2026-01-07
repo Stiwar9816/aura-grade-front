@@ -11,7 +11,7 @@ const UserMenu: React.FC = () => {
 
 	const getInitials = () => {
 		if (!user) return "U";
-		return `${user.name.charAt(0)}`.toUpperCase();
+		return `${user?.name.charAt(0)}`.toUpperCase();
 	};
 
 	const getRoleColor = () => {
@@ -69,8 +69,12 @@ const UserMenu: React.FC = () => {
 				className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 transition-colors"
 			>
 				<div className="text-right hidden md:block">
-					<div className="font-medium text-gray-900">{user.name}</div>
-					<div className={`text-xs px-2 py-0.5 rounded-full ${getRoleColor()}`}>
+					<div className="font-medium text-gray-900">
+						{user?.name + " " + user?.last_name}
+					</div>
+					<div
+						className={`text-xs px-2 py-0.5 rounded-full text-center ${getRoleColor()}`}
+					>
 						{getRoleLabel()}
 					</div>
 				</div>
