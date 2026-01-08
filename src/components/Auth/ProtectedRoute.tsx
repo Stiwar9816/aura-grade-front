@@ -1,7 +1,7 @@
 import React, {useEffect} from "react";
 import {useRouter} from "next/router";
 import useAuth from "@/hooks/useAuth";
-import {ProtectedRouteProps} from "@/types";
+import {ProtectedRouteProps, UserRole} from "@/types";
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 	children,
@@ -18,14 +18,29 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 				router.push(
 					`${redirectTo}?redirect=${encodeURIComponent(router.asPath)}`
 				);
-			} else if (requiredRole && user?.role !== requiredRole) {
-				// Rol incorrecto, redirigir al dashboard apropiado
-				if (user?.role === "student") {
-					router.push("/student");
-				} else if (user?.role === "teacher") {
-					router.push("/teacher");
-				} else {
-					router.push("/");
+			} else if (requiredRole && user) {
+				// Comparar roles directamente sin normalizar
+				const userRole = user.role;
+				const normalizedRequired = requiredRole;
+
+				// Administrador tiene acceso a rutas de teacher
+				const hasAccess =
+					userRole === normalizedRequired ||
+					(normalizedRequired === UserRole.TEACHER &&
+						userRole === UserRole.ADMIN);
+
+				if (!hasAccess) {
+					// Rol incorrecto, redirigir al dashboard apropiado
+					if (userRole === UserRole.STUDENT) {
+						router.push("/student");
+					} else if (
+						userRole === UserRole.TEACHER ||
+						userRole === UserRole.ADMIN
+					) {
+						router.push("/teacher");
+					} else {
+						router.push("/");
+					}
 				}
 			}
 		}
@@ -42,8 +57,21 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 		);
 	}
 
-	if (!isAuthenticated || (requiredRole && user?.role !== requiredRole)) {
+	if (!isAuthenticated) {
 		return null;
+	}
+
+	// Verificar acceso con roles exactos
+	if (requiredRole && user) {
+		const userRole = user.role;
+		const normalizedRequired = requiredRole;
+		const hasAccess =
+			userRole === normalizedRequired ||
+			(normalizedRequired === "Docente" && userRole === "Administrador");
+
+		if (!hasAccess) {
+			return null;
+		}
 	}
 
 	return <>{children}</>;

@@ -5,6 +5,7 @@ import GradeDistribution from "@/components/Analytics/GradeDistribution";
 import StudentPerformance from "@/components/Analytics/StudentPerformance";
 import ActivityTrends from "@/components/Analytics/ActivityTrends";
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import {UserRole} from "@/types";
 
 const AnalyticsPage: React.FC = () => {
 	const [timeRange, setTimeRange] = useState<"week" | "month" | "semester">(
@@ -21,7 +22,7 @@ const AnalyticsPage: React.FC = () => {
 	];
 
 	return (
-		<ProtectedRoute requiredRole="teacher">
+		<ProtectedRoute requiredRole={UserRole.TEACHER}>
 			<Layout title="Panel de Analíticas">
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}

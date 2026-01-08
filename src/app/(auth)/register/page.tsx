@@ -1,126 +1,25 @@
-import React, {useState} from "react";
+"use client";
+
 import Link from "next/link";
-import {useRouter} from "next/router";
-import {RegisterFormData} from "@/types";
-import useAuth from "@/hooks/useAuth";
+import {DocumentType, UserRole} from "@/types";
 import AuthLayout from "@/components/Auth/AuthLayout";
+import useRegister from "@/hooks/useRegister";
 
 const RegisterPage: React.FC = () => {
-	const router = useRouter();
 	const {
-		register: registerUser,
-		isLoading: isRegistering,
-		error: authError,
-	} = useAuth();
-	const [step, setStep] = useState<number>(1);
-	const [formData, setFormData] = useState<RegisterFormData>({
-		firstName: "",
-		lastName: "",
-		email: "",
-		password: "",
-		confirmPassword: "",
-		userType: "student",
-		acceptTerms: false,
-	});
-	const [errors, setErrors] = useState<
-		Partial<Record<keyof RegisterFormData, string>>
-	>({});
-	const [showPassword, setShowPassword] = useState(false);
-
-	const validateStep = (stepNumber: number): boolean => {
-		const newErrors: Partial<Record<keyof RegisterFormData, string>> = {};
-
-		if (stepNumber === 1) {
-			if (!formData.firstName.trim())
-				newErrors.firstName = "El nombre es requerido";
-			if (!formData.lastName.trim())
-				newErrors.lastName = "El apellido es requerido";
-			if (!formData.email.trim()) {
-				newErrors.email = "El correo electrónico es requerido";
-			} else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-				newErrors.email = "El correo electrónico no es válido";
-			}
-			if (!formData.userType)
-				newErrors.userType = "Debes seleccionar un tipo de usuario";
-		}
-
-		if (stepNumber === 2) {
-			if (!formData.password) {
-				newErrors.password = "La contraseña es requerida";
-			} else if (formData.password.length < 8) {
-				newErrors.password = "La contraseña debe tener al menos 8 caracteres";
-			} else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-				newErrors.password = "Debe incluir mayúsculas, minúsculas y números";
-			}
-
-			if (!formData.confirmPassword) {
-				newErrors.confirmPassword = "Confirma tu contraseña";
-			} else if (formData.password !== formData.confirmPassword) {
-				newErrors.confirmPassword = "Las contraseñas no coinciden";
-			}
-		}
-
-		if (stepNumber === 3) {
-			if (!formData.acceptTerms) {
-				newErrors.acceptTerms = "Debes aceptar los términos y condiciones";
-			}
-		}
-
-		setErrors(newErrors);
-		return Object.keys(newErrors).length === 0;
-	};
-
-	const handleNextStep = () => {
-		if (validateStep(step)) {
-			if (step < 3) {
-				setStep(step + 1);
-			} else {
-				handleSubmit();
-			}
-		}
-	};
-
-	const handlePreviousStep = () => {
-		if (step > 1) {
-			setStep(step - 1);
-		}
-	};
-
-	const handleSubmit = async () => {
-		const {success, error} = await registerUser({
-			firstName: formData.firstName,
-			lastName: formData.lastName,
-			email: formData.email,
-			password: formData.password,
-			userType: formData.userType as "student" | "teacher",
-		});
-
-		if (!success && error) {
-			setErrors({email: error});
-		}
-	};
-
-	const getPasswordStrength = (password: string) => {
-		if (!password) return {score: 0, label: "", color: "bg-gray-200"};
-
-		let score = 0;
-		if (password.length >= 8) score++;
-		if (/[a-z]/.test(password)) score++;
-		if (/[A-Z]/.test(password)) score++;
-		if (/\d/.test(password)) score++;
-		if (/[^A-Za-z0-9]/.test(password)) score++;
-
-		const strengths = [
-			{score: 0, label: "Muy débil", color: "bg-red-500"},
-			{score: 1, label: "Débil", color: "bg-orange-500"},
-			{score: 2, label: "Regular", color: "bg-yellow-500"},
-			{score: 3, label: "Buena", color: "bg-blue-500"},
-			{score: 4, label: "Fuerte", color: "bg-green-500"},
-			{score: 5, label: "Muy fuerte", color: "bg-emerald-500"},
-		];
-
-		return strengths[score] || strengths[0];
-	};
+		formData,
+		step,
+		errors,
+		showPassword,
+		setShowPassword,
+		isLoading,
+		displayError,
+		handleNextStep,
+		handlePreviousStep,
+		handleChange,
+		handleTypeChange,
+		getPasswordStrength,
+	} = useRegister();
 
 	const passwordStrength = getPasswordStrength(formData.password);
 
@@ -178,11 +77,11 @@ const RegisterPage: React.FC = () => {
 				</div>
 			</div>
 
-			{authError && (
+			{displayError && (
 				<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
 					<div className="flex items-center gap-3">
 						<span className="text-red-600">⚠️</span>
-						<span className="text-red-700">{authError}</span>
+						<span className="text-red-700">{displayError}</span>
 					</div>
 				</div>
 			)}
@@ -203,19 +102,18 @@ const RegisterPage: React.FC = () => {
 							</label>
 							<input
 								type="text"
-								value={formData.firstName}
-								onChange={(e) =>
-									setFormData({...formData, firstName: e.target.value})
-								}
+								name="name"
+								value={formData.name}
+								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
-									errors.firstName
+									errors.name
 										? "border-red-500"
 										: "border-gray-300 focus:border-electric-500"
 								}`}
 								placeholder="Ej: María"
 							/>
-							{errors.firstName && (
-								<p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+							{errors.name && (
+								<p className="mt-1 text-sm text-red-600">{errors.name}</p>
 							)}
 						</div>
 
@@ -225,43 +123,126 @@ const RegisterPage: React.FC = () => {
 							</label>
 							<input
 								type="text"
-								value={formData.lastName}
-								onChange={(e) =>
-									setFormData({...formData, lastName: e.target.value})
-								}
+								name="last_name"
+								value={formData.last_name}
+								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
-									errors.lastName
+									errors.last_name
 										? "border-red-500"
 										: "border-gray-300 focus:border-electric-500"
 								}`}
 								placeholder="Ej: González"
 							/>
-							{errors.lastName && (
-								<p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+							{errors.last_name && (
+								<p className="mt-1 text-sm text-red-600">{errors.last_name}</p>
 							)}
 						</div>
 					</div>
 
-					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
-							Correo electrónico *
-						</label>
-						<input
-							type="email"
-							value={formData.email}
-							onChange={(e) =>
-								setFormData({...formData, email: e.target.value})
-							}
-							className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
-								errors.email
-									? "border-red-500"
-									: "border-gray-300 focus:border-electric-500"
-							}`}
-							placeholder="tu@email.com"
-						/>
-						{errors.email && (
-							<p className="mt-1 text-sm text-red-600">{errors.email}</p>
-						)}
+					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Tipo de Documento *
+							</label>
+							<select
+								name="documentType"
+								value={formData.documentType}
+								onChange={handleChange}
+								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all bg-white ${
+									errors.documentType
+										? "border-red-500"
+										: "border-gray-300 focus:border-electric-500"
+								}`}
+							>
+								<option value="">Seleccionar...</option>
+								<option value={DocumentType.CITIZENSHIP_CARD}>
+									Cédula de Ciudadanía
+								</option>
+								<option value={DocumentType.PASSPORT}>Pasaporte</option>
+								<option value={DocumentType.CIVIL_REGISRTRY}>
+									Registro Civil
+								</option>
+								<option value={DocumentType.IDENTITY_CARD}>
+									Tarjeta de Identidad
+								</option>
+								<option value={DocumentType.MILITARY_ID}>
+									Libreta Militar
+								</option>
+								<option value={DocumentType.FOREIGNER_CARD}>
+									Cédula de Extranjería
+								</option>
+							</select>
+							{errors.documentType && (
+								<p className="mt-1 text-sm text-red-600">
+									{errors.documentType}
+								</p>
+							)}
+						</div>
+
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Documento de Identidad *
+							</label>
+							<input
+								type="text"
+								name="documentNum"
+								value={formData.documentNum}
+								onChange={handleChange}
+								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
+									errors.documentNum
+										? "border-red-500"
+										: "border-gray-300 focus:border-electric-500"
+								}`}
+								placeholder="Ej: 1234567890"
+							/>
+							{errors.documentNum && (
+								<p className="mt-1 text-sm text-red-600">
+									{errors.documentNum}
+								</p>
+							)}
+						</div>
+
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Teléfono *
+							</label>
+							<input
+								type="tel"
+								name="phone"
+								value={formData.phone}
+								onChange={handleChange}
+								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
+									errors.phone
+										? "border-red-500"
+										: "border-gray-300 focus:border-electric-500"
+								}`}
+								placeholder="Ej: 3001234567"
+							/>
+							{errors.phone && (
+								<p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+							)}
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Correo electrónico *
+							</label>
+							<input
+								type="email"
+								name="email"
+								value={formData.email}
+								onChange={handleChange}
+								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
+									errors.email
+										? "border-red-500"
+										: "border-gray-300 focus:border-electric-500"
+								}`}
+								placeholder="tu@email.com"
+								required
+							/>
+							{errors.email && (
+								<p className="mt-1 text-sm text-red-600">{errors.email}</p>
+							)}
+						</div>
 					</div>
 
 					<div>
@@ -271,9 +252,9 @@ const RegisterPage: React.FC = () => {
 						<div className="grid grid-cols-1 gap-4">
 							<button
 								type="button"
-								onClick={() => setFormData({...formData, userType: "student"})}
+								onClick={() => handleTypeChange("userType", UserRole.STUDENT)}
 								className={`p-4 border-2 rounded-xl text-left transition-all ${
-									formData.userType === "student"
+									formData.userType === UserRole.STUDENT
 										? "border-electric-500 bg-electric-50"
 										: "border-gray-300 hover:border-gray-400"
 								}`}
@@ -281,7 +262,7 @@ const RegisterPage: React.FC = () => {
 								<div className="flex items-center gap-3">
 									<div
 										className={`p-2 rounded-lg ${
-											formData.userType === "student"
+											formData.userType === UserRole.STUDENT
 												? "bg-electric-100"
 												: "bg-gray-100"
 										}`}
@@ -301,9 +282,9 @@ const RegisterPage: React.FC = () => {
 
 							<button
 								type="button"
-								onClick={() => setFormData({...formData, userType: "teacher"})}
+								onClick={() => handleTypeChange("userType", UserRole.TEACHER)}
 								className={`p-4 border-2 rounded-xl text-left transition-all ${
-									formData.userType === "teacher"
+									formData.userType === UserRole.TEACHER
 										? "border-electric-500 bg-electric-50"
 										: "border-gray-300 hover:border-gray-400"
 								}`}
@@ -311,7 +292,7 @@ const RegisterPage: React.FC = () => {
 								<div className="flex items-center gap-3">
 									<div
 										className={`p-2 rounded-lg ${
-											formData.userType === "teacher"
+											formData.userType === UserRole.TEACHER
 												? "bg-electric-100"
 												: "bg-gray-100"
 										}`}
@@ -355,10 +336,9 @@ const RegisterPage: React.FC = () => {
 						<div className="relative">
 							<input
 								type={showPassword ? "text" : "password"}
+								name="password"
 								value={formData.password}
-								onChange={(e) =>
-									setFormData({...formData, password: e.target.value})
-								}
+								onChange={handleChange}
 								className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
 									errors.password
 										? "border-red-500"
@@ -504,13 +484,9 @@ const RegisterPage: React.FC = () => {
 						</label>
 						<input
 							type="password"
+							name="confirmPassword"
 							value={formData.confirmPassword}
-							onChange={(e) =>
-								setFormData({
-									...formData,
-									confirmPassword: e.target.value,
-								})
-							}
+							onChange={handleChange}
 							className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
 								errors.confirmPassword
 									? "border-red-500"
@@ -547,13 +523,13 @@ const RegisterPage: React.FC = () => {
 								<div>
 									<div className="text-sm text-gray-600">Nombre completo</div>
 									<div className="font-medium text-gray-900">
-										{formData.firstName} {formData.lastName}
+										{formData.name} {formData.last_name}
 									</div>
 								</div>
 								<div>
 									<div className="text-sm text-gray-600">Tipo de usuario</div>
 									<div className="font-medium text-gray-900">
-										{formData.userType === "student"
+										{formData.userType === UserRole.STUDENT
 											? "👨‍🎓 Estudiante"
 											: "👨‍🏫 Docente"}
 									</div>
@@ -573,13 +549,9 @@ const RegisterPage: React.FC = () => {
 						<label className="flex items-start gap-3">
 							<input
 								type="checkbox"
+								name="acceptTerms"
 								checked={formData.acceptTerms}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										acceptTerms: e.target.checked,
-									})
-								}
+								onChange={handleChange}
 								className="mt-1 h-4 w-4 text-electric-500 rounded border-gray-300 focus:ring-electric-200"
 							/>
 							<div>
@@ -629,14 +601,14 @@ const RegisterPage: React.FC = () => {
 				<button
 					type="button"
 					onClick={handleNextStep}
-					disabled={isRegistering}
+					disabled={isLoading}
 					className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-						isRegistering
+						isLoading
 							? "bg-gray-400 text-white cursor-not-allowed"
 							: "bg-gradient-to-r from-electric-500 to-cyan-500 text-white hover:from-electric-600 hover:to-cyan-600 shadow-lg hover:shadow-xl"
 					}`}
 				>
-					{isRegistering ? (
+					{isLoading ? (
 						<span className="flex items-center gap-2">
 							<svg
 								className="animate-spin h-5 w-5 text-white"

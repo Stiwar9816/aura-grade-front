@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import {useRouter} from "next/router";
 import useAuth from "@/hooks/useAuth";
+import {UserRole} from "@/types";
 
 const Sidebar: React.FC = () => {
 	const router = useRouter();
@@ -9,7 +10,7 @@ const Sidebar: React.FC = () => {
 
 	const commonItems = [
 		{
-			path: user?.role === "student" ? "/student" : "/teacher",
+			path: user?.role === UserRole.STUDENT ? "/student" : "/teacher",
 			icon: "🏠",
 			label: "Dashboard",
 			badge: null,
@@ -28,7 +29,7 @@ const Sidebar: React.FC = () => {
 
 	const menuItems = [
 		...commonItems,
-		...(user?.role === "student" ? studentItems : teacherItems),
+		...(user?.role === UserRole.STUDENT ? studentItems : teacherItems),
 	];
 
 	return (

@@ -4,6 +4,7 @@ import UploadZone from "@/components/Upload/UploadZone";
 import UploadStepper from "@/components/Upload/UploadStepper";
 import Toast from "@/components/Common/Toast";
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import {UserRole} from "@/types";
 
 const UploadPage: React.FC = () => {
 	const [currentStep, setCurrentStep] = useState<number>(0);
@@ -110,7 +111,7 @@ const UploadPage: React.FC = () => {
 	};
 
 	return (
-		<ProtectedRoute requiredRole="student">
+		<ProtectedRoute requiredRole={UserRole.STUDENT}>
 			<Layout title="Centro de Entregas">
 				<div className="max-w-6xl mx-auto">
 					{/* Toast Notifications */}

@@ -3,7 +3,7 @@ import Layout from "@/components/Layout";
 import RubricBuilder from "@/components/Rubrics/RubricBuilder";
 import RubricLibrary from "@/components/Rubrics/RubricLibrary";
 import RubricPreview from "@/components/Rubrics/RubricPreview";
-import {Rubric, RubricCriteria} from "@/types";
+import {Rubric, RubricCriteria, UserRole} from "@/types";
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 
 const RubricsPage: React.FC = () => {
@@ -130,7 +130,7 @@ const RubricsPage: React.FC = () => {
 	};
 
 	return (
-		<ProtectedRoute requiredRole="teacher">
+		<ProtectedRoute requiredRole={UserRole.TEACHER}>
 			<Layout title="Gestor de Rúbricas">
 				<div className="max-w-7xl mx-auto">
 					{/* Header con Tabs */}

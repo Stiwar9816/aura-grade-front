@@ -2,12 +2,14 @@ import React, {useState} from "react";
 import Layout from "@/components/Layout";
 import AssignmentCard from "@/components/Student/AssignmentCard";
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import {UserRole} from "@/types";
 import Banner from "@/components/Common/Banner";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
-import Badge from "@/components/Common/Badge";
+import useAuth from "@/hooks/useAuth";
 
 const StudentDashboard: React.FC = () => {
+	const {user} = useAuth();
 	const [assignments] = useState([
 		{
 			id: "1",
@@ -113,12 +115,12 @@ const StudentDashboard: React.FC = () => {
 	const gradedCount = assignments.filter((a) => a.status === "graded").length;
 
 	return (
-		<ProtectedRoute requiredRole="student">
+		<ProtectedRoute requiredRole={UserRole.STUDENT}>
 			<Layout title="Panel principal">
 				<div className="max-w-6xl mx-auto">
 					{/* Welcome Banner */}
 					<Banner
-						title={`¡Hola, Estudiante!`}
+						title={`¡Hola, Alumno(a) ${user?.name}!`}
 						description={`Tienes ${pendingCount} tarea${
 							pendingCount !== 1 ? "s" : ""
 						} pendiente${
