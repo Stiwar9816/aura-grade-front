@@ -11,19 +11,21 @@ const UserMenu: React.FC = () => {
 
 	const getInitials = () => {
 		if (!user) return "U";
-		return `${user?.name.charAt(0)}`.toUpperCase();
+		return `${user.name?.charAt(0) || ""}${
+			user.last_name?.charAt(0) || ""
+		}`.toUpperCase();
 	};
 
 	const getRoleColor = () => {
 		switch (user?.role) {
 			case UserRole.STUDENT:
-				return "bg-green-100 text-green-800";
+				return "bg-green-100 text-green-900";
 			case UserRole.TEACHER:
-				return "bg-blue-100 text-blue-800";
+				return "bg-blue-100 text-blue-900";
 			case UserRole.ADMIN:
-				return "bg-purple-100 text-purple-800";
+				return "bg-purple-100 text-purple-900";
 			default:
-				return "bg-gray-100 text-gray-800";
+				return "bg-gray-100 text-gray-900";
 		}
 	};
 
@@ -73,7 +75,7 @@ const UserMenu: React.FC = () => {
 						{user?.name + " " + user?.last_name}
 					</div>
 					<div
-						className={`text-xs px-2 py-0.5 rounded-full text-center ${getRoleColor()}`}
+						className={`text-xs px-2 py-0.5 rounded-lg text-center ${getRoleColor()}`}
 					>
 						{getRoleLabel()}
 					</div>
@@ -101,9 +103,9 @@ const UserMenu: React.FC = () => {
 								</div>
 								<div>
 									<div className="font-semibold text-gray-900">
-										{user.name + " " + user.last_name}
+										{user?.name} {user?.last_name}
 									</div>
-									<div className="text-sm text-gray-600">{user.email}</div>
+									<div className="text-sm text-gray-600">{user?.email}</div>
 								</div>
 							</div>
 						</div>

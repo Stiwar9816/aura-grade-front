@@ -22,7 +22,16 @@ export async function loginAction(
 			return {error: errorData.message || "Credenciales incorrectas"};
 		}
 
-		const user: User = await response.json();
+		const data: any = await response.json();
+
+		// Normalizar respuesta si viene anidada { user, token }
+		let user: User;
+		if (data.user && data.token) {
+			user = {...data.user, token: data.token};
+		} else {
+			user = data;
+		}
+
 		return {success: true, user};
 	} catch (error) {
 		return {error: "Error de conexión con el servidor"};
@@ -51,7 +60,16 @@ export async function registerAction(data: RegisterData) {
 			return {error: errorData.message || "Error en el registro"};
 		}
 
-		const user: User = await response.json();
+		const responseData: any = await response.json();
+
+		// Normalizar respuesta si viene anidada { user, token }
+		let user: User;
+		if (responseData.user && responseData.token) {
+			user = {...responseData.user, token: responseData.token};
+		} else {
+			user = responseData;
+		}
+
 		return {success: true, user};
 	} catch (error) {
 		return {error: "Error de conexión con el servidor"};

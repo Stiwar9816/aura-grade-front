@@ -1,5 +1,5 @@
 import {useState, useEffect} from "react";
-import {AuthState, LoginCredentials, RegisterData, User} from "@/types";
+import {AuthState, LoginCredentials, RegisterData} from "@/types";
 import {loginAction, registerAction} from "@/actions/auth";
 
 const useAuth = () => {
@@ -23,7 +23,6 @@ const useAuth = () => {
 					error: null,
 				});
 			} catch (error) {
-				console.error("Failed to parse stored user:", error);
 				localStorage.removeItem("auraGrade_user");
 				setAuthState({
 					user: null,

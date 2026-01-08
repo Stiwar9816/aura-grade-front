@@ -1,11 +1,11 @@
 export interface User {
 	id: string;
 	name: string;
-	last_name?: string;
+	last_name: string;
 	email: string;
 	role: UserRole;
 	token?: string;
-	avatar?: string;
+	phone: number;
 }
 
 export interface Task {
@@ -285,8 +285,8 @@ export interface TeacherEvaluation {
 }
 
 export interface RegisterFormData {
-	firstName: string;
-	lastName: string;
+	name: string;
+	last_name: string;
 	documentType: DocumentType;
 	documentNum: string;
 	phone: string;

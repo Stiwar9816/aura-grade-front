@@ -1,155 +1,25 @@
 "use client";
 
-import React, {useState} from "react";
 import Link from "next/link";
-import {useRouter} from "next/navigation";
-import {DocumentType, RegisterFormData, UserRole} from "@/types";
+import {DocumentType, UserRole} from "@/types";
 import AuthLayout from "@/components/Auth/AuthLayout";
-import useAuth from "@/hooks/useAuth";
+import useRegister from "@/hooks/useRegister";
 
 const RegisterPage: React.FC = () => {
-	const router = useRouter();
-	const {register, isLoading, error: authError} = useAuth();
-	const [serverError, setServerError] = useState<string | null>(null);
-	const [step, setStep] = useState<number>(1);
-	const [formData, setFormData] = useState<RegisterFormData>({
-		firstName: "",
-		lastName: "",
-		documentType: "" as DocumentType,
-		documentNum: "",
-		phone: "",
-		email: "",
-		password: "",
-		confirmPassword: "",
-		userType: UserRole.STUDENT,
-		acceptTerms: false,
-	});
-	const [errors, setErrors] = useState<
-		Partial<Record<keyof RegisterFormData, string>>
-	>({});
-	const [showPassword, setShowPassword] = useState(false);
-
-	const displayError = serverError || authError;
-
-	const validateStep = (stepNumber: number): boolean => {
-		const newErrors: Partial<Record<keyof RegisterFormData, string>> = {};
-
-		if (stepNumber === 1) {
-			if (!formData.firstName.trim())
-				newErrors.firstName = "El nombre es requerido";
-			if (!formData.lastName.trim())
-				newErrors.lastName = "El apellido es requerido";
-			if (!formData.documentType) {
-				newErrors.documentType = "El tipo de documento es requerido";
-			}
-			if (!formData.documentNum.trim()) {
-				newErrors.documentNum = "El número de documento es requerido";
-			} else if (!/^\d+$/.test(formData.documentNum)) {
-				newErrors.documentNum = "Solo se permiten números";
-			}
-			if (!formData.phone.trim()) {
-				newErrors.phone = "El teléfono es requerido";
-			} else if (!/^\d+$/.test(formData.phone)) {
-				newErrors.phone = "Solo se permiten números";
-			}
-			if (!formData.email.trim()) {
-				newErrors.email = "El correo electrónico es requerido";
-			} else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-				newErrors.email = "El correo electrónico no es válido";
-			}
-			if (!formData.userType)
-				newErrors.userType = "Debes seleccionar un tipo de usuario";
-		}
-
-		if (stepNumber === 2) {
-			if (!formData.password) {
-				newErrors.password = "La contraseña es requerida";
-			} else if (formData.password.length < 8) {
-				newErrors.password = "La contraseña debe tener al menos 8 caracteres";
-			} else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-				newErrors.password = "Debe incluir mayúsculas, minúsculas y números";
-			}
-
-			if (!formData.confirmPassword) {
-				newErrors.confirmPassword = "Confirma tu contraseña";
-			} else if (formData.password !== formData.confirmPassword) {
-				newErrors.confirmPassword = "Las contraseñas no coinciden";
-			}
-		}
-
-		if (stepNumber === 3) {
-			if (!formData.acceptTerms) {
-				newErrors.acceptTerms = "Debes aceptar los términos y condiciones";
-			}
-		}
-
-		setErrors(newErrors);
-		return Object.keys(newErrors).length === 0;
-	};
-
-	const handleNextStep = () => {
-		if (validateStep(step)) {
-			if (step < 3) {
-				setStep(step + 1);
-			} else {
-				handleSubmit();
-			}
-		}
-	};
-
-	const handlePreviousStep = () => {
-		if (step > 1) {
-			setStep(step - 1);
-		}
-	};
-
-	const handleSubmit = async () => {
-		setServerError(null);
-
-		const result = await register({
-			name: formData.firstName,
-			last_name: formData.lastName,
-			document_type: formData.documentType,
-			document_num: parseInt(formData.documentNum, 10),
-			phone: parseInt(formData.phone, 10),
-			email: formData.email,
-			password: formData.password,
-			role: formData.userType,
-		});
-
-		if (result.success && result.user) {
-			const role = result.user.role;
-			const dest =
-				role === UserRole.ADMIN || role === UserRole.TEACHER
-					? "/teacher"
-					: "/student";
-			router.push(dest);
-		} else if (result.error) {
-			setServerError(result.error);
-		}
-	};
-
-	const getPasswordStrength = (password: string) => {
-		if (!password) return {score: 0, label: "", color: "bg-gray-200"};
-
-		let score = 0;
-		if (password.length >= 8) score++;
-		if (/[a-z]/.test(password)) score++;
-		if (/[A-Z]/.test(password)) score++;
-		if (/\d/.test(password)) score++;
-		if (/[^A-Za-z0-9]/.test(password)) score++;
-
-		const strengths = [
-			{score: 0, label: "Muy débil", color: "bg-red-500"},
-			{score: 1, label: "Débil", color: "bg-orange-500"},
-			{score: 2, label: "Regular", color: "bg-yellow-500"},
-			{score: 3, label: "Buena", color: "bg-blue-500"},
-			{score: 4, label: "Fuerte", color: "bg-green-500"},
-			{score: 5, label: "Muy fuerte", color: "bg-emerald-500"},
-		];
-
-		return strengths[score] || strengths[0];
-	};
+	const {
+		formData,
+		step,
+		errors,
+		showPassword,
+		setShowPassword,
+		isLoading,
+		displayError,
+		handleNextStep,
+		handlePreviousStep,
+		handleChange,
+		handleTypeChange,
+		getPasswordStrength,
+	} = useRegister();
 
 	const passwordStrength = getPasswordStrength(formData.password);
 
@@ -232,19 +102,18 @@ const RegisterPage: React.FC = () => {
 							</label>
 							<input
 								type="text"
-								value={formData.firstName}
-								onChange={(e) =>
-									setFormData({...formData, firstName: e.target.value})
-								}
+								name="name"
+								value={formData.name}
+								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
-									errors.firstName
+									errors.name
 										? "border-red-500"
 										: "border-gray-300 focus:border-electric-500"
 								}`}
 								placeholder="Ej: María"
 							/>
-							{errors.firstName && (
-								<p className="mt-1 text-sm text-red-600">{errors.firstName}</p>
+							{errors.name && (
+								<p className="mt-1 text-sm text-red-600">{errors.name}</p>
 							)}
 						</div>
 
@@ -254,19 +123,18 @@ const RegisterPage: React.FC = () => {
 							</label>
 							<input
 								type="text"
-								value={formData.lastName}
-								onChange={(e) =>
-									setFormData({...formData, lastName: e.target.value})
-								}
+								name="last_name"
+								value={formData.last_name}
+								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
-									errors.lastName
+									errors.last_name
 										? "border-red-500"
 										: "border-gray-300 focus:border-electric-500"
 								}`}
 								placeholder="Ej: González"
 							/>
-							{errors.lastName && (
-								<p className="mt-1 text-sm text-red-600">{errors.lastName}</p>
+							{errors.last_name && (
+								<p className="mt-1 text-sm text-red-600">{errors.last_name}</p>
 							)}
 						</div>
 					</div>
@@ -277,13 +145,9 @@ const RegisterPage: React.FC = () => {
 								Tipo de Documento *
 							</label>
 							<select
+								name="documentType"
 								value={formData.documentType}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										documentType: e.target.value as DocumentType,
-									})
-								}
+								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all bg-white ${
 									errors.documentType
 										? "border-red-500"
@@ -321,11 +185,9 @@ const RegisterPage: React.FC = () => {
 							</label>
 							<input
 								type="text"
+								name="documentNum"
 								value={formData.documentNum}
-								onChange={(e) => {
-									const val = e.target.value.replace(/\D/g, "");
-									setFormData({...formData, documentNum: val});
-								}}
+								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
 									errors.documentNum
 										? "border-red-500"
@@ -346,11 +208,9 @@ const RegisterPage: React.FC = () => {
 							</label>
 							<input
 								type="tel"
+								name="phone"
 								value={formData.phone}
-								onChange={(e) => {
-									const val = e.target.value.replace(/\D/g, "");
-									setFormData({...formData, phone: val});
-								}}
+								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
 									errors.phone
 										? "border-red-500"
@@ -368,10 +228,9 @@ const RegisterPage: React.FC = () => {
 							</label>
 							<input
 								type="email"
+								name="email"
 								value={formData.email}
-								onChange={(e) =>
-									setFormData({...formData, email: e.target.value})
-								}
+								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
 									errors.email
 										? "border-red-500"
@@ -393,9 +252,7 @@ const RegisterPage: React.FC = () => {
 						<div className="grid grid-cols-1 gap-4">
 							<button
 								type="button"
-								onClick={() =>
-									setFormData({...formData, userType: UserRole.STUDENT})
-								}
+								onClick={() => handleTypeChange("userType", UserRole.STUDENT)}
 								className={`p-4 border-2 rounded-xl text-left transition-all ${
 									formData.userType === UserRole.STUDENT
 										? "border-electric-500 bg-electric-50"
@@ -425,9 +282,7 @@ const RegisterPage: React.FC = () => {
 
 							<button
 								type="button"
-								onClick={() =>
-									setFormData({...formData, userType: UserRole.TEACHER})
-								}
+								onClick={() => handleTypeChange("userType", UserRole.TEACHER)}
 								className={`p-4 border-2 rounded-xl text-left transition-all ${
 									formData.userType === UserRole.TEACHER
 										? "border-electric-500 bg-electric-50"
@@ -481,10 +336,9 @@ const RegisterPage: React.FC = () => {
 						<div className="relative">
 							<input
 								type={showPassword ? "text" : "password"}
+								name="password"
 								value={formData.password}
-								onChange={(e) =>
-									setFormData({...formData, password: e.target.value})
-								}
+								onChange={handleChange}
 								className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
 									errors.password
 										? "border-red-500"
@@ -630,13 +484,9 @@ const RegisterPage: React.FC = () => {
 						</label>
 						<input
 							type="password"
+							name="confirmPassword"
 							value={formData.confirmPassword}
-							onChange={(e) =>
-								setFormData({
-									...formData,
-									confirmPassword: e.target.value,
-								})
-							}
+							onChange={handleChange}
 							className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
 								errors.confirmPassword
 									? "border-red-500"
@@ -673,7 +523,7 @@ const RegisterPage: React.FC = () => {
 								<div>
 									<div className="text-sm text-gray-600">Nombre completo</div>
 									<div className="font-medium text-gray-900">
-										{formData.firstName} {formData.lastName}
+										{formData.name} {formData.last_name}
 									</div>
 								</div>
 								<div>
@@ -699,13 +549,9 @@ const RegisterPage: React.FC = () => {
 						<label className="flex items-start gap-3">
 							<input
 								type="checkbox"
+								name="acceptTerms"
 								checked={formData.acceptTerms}
-								onChange={(e) =>
-									setFormData({
-										...formData,
-										acceptTerms: e.target.checked,
-									})
-								}
+								onChange={handleChange}
 								className="mt-1 h-4 w-4 text-electric-500 rounded border-gray-300 focus:ring-electric-200"
 							/>
 							<div>

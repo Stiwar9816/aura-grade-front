@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import Layout from "@/components/Layout";
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
 import useAuth from "@/hooks/useAuth";
@@ -10,10 +10,20 @@ const ProfilePage: React.FC = () => {
 	const {user} = useAuth();
 	const [isEditing, setIsEditing] = useState(false);
 	const [formData, setFormData] = useState({
-		name: user?.name + " " + user?.last_name || "",
-		email: user?.email || "",
+		name: "",
+		email: "",
 		phone: "",
 	});
+
+	useEffect(() => {
+		if (user) {
+			setFormData({
+				name: `${user.name} ${user.last_name}`,
+				email: user.email,
+				phone: user.phone?.toString() || "",
+			});
+		}
+	}, [user]);
 
 	const handleSave = () => {
 		// TODO: Implementar guardado de perfil
@@ -28,11 +38,12 @@ const ProfilePage: React.FC = () => {
 					<Card className="mb-6">
 						<div className="flex items-center gap-6">
 							<div className="w-24 h-24 bg-gradient-to-r from-electric-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
-								{user?.name.charAt(0).toUpperCase()}
+								{user?.name?.charAt(0).toUpperCase()}
+								{user?.last_name?.charAt(0).toUpperCase()}
 							</div>
 							<div className="flex-1">
 								<h2 className="text-2xl font-bold text-gray-900">
-									{user?.name + " " + user?.last_name}
+									{user?.name} {user?.last_name}
 								</h2>
 								<p className="text-gray-600">{user?.email}</p>
 								<div className="mt-2">
@@ -85,7 +96,9 @@ const ProfilePage: React.FC = () => {
 											className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-electric-500 focus:border-electric-500"
 										/>
 									) : (
-										<p className="text-gray-900 font-medium">{user?.name}</p>
+										<p className="text-gray-900 font-medium">
+											{user?.name + " " + user?.last_name}
+										</p>
 									)}
 								</div>
 
@@ -118,7 +131,7 @@ const ProfilePage: React.FC = () => {
 										/>
 									) : (
 										<p className="text-gray-900 font-medium">
-											{formData.phone || "No especificado"}
+											{user?.phone || "No especificado"}
 										</p>
 									)}
 								</div>

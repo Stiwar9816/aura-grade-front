@@ -1,38 +1,20 @@
 "use client";
 
-import React, {useState} from "react";
 import Link from "next/link";
-import {useRouter} from "next/navigation";
-import {UserRole} from "@/types";
 import AuthLayout from "@/components/Auth/AuthLayout";
-import useAuth from "@/hooks/useAuth";
+import useLogin from "@/hooks/useLogin";
 
 const LoginPage: React.FC = () => {
-	const router = useRouter();
-	const {login, isLoading, error} = useAuth();
-	const [formData, setFormData] = useState({
-		email: "",
-		password: "",
-		rememberMe: false,
-	});
-	const [showPassword, setShowPassword] = useState(false);
-
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		const result = await login(formData);
-		if (result.success && result.user) {
-			const role = result.user.role;
-			const dest =
-				role === UserRole.ADMIN || role === UserRole.TEACHER
-					? "/teacher"
-					: "/student";
-			router.push(dest);
-		}
-	};
-
-	const handleSocialLogin = (provider: string) => {
-		console.log(`Login with ${provider}`);
-	};
+	const {
+		formData,
+		showPassword,
+		isLoading,
+		error,
+		handleChange,
+		handleTogglePassword,
+		handleSubmit,
+		handleSocialLogin,
+	} = useLogin();
 
 	const features = [
 		{
@@ -146,10 +128,9 @@ const LoginPage: React.FC = () => {
 						</div>
 						<input
 							type="email"
+							name="email"
 							value={formData.email}
-							onChange={(e) =>
-								setFormData({...formData, email: e.target.value})
-							}
+							onChange={handleChange}
 							className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-electric-500 focus:ring-2 focus:ring-electric-200 outline-none transition-all"
 							placeholder="tu@email.com"
 							required
@@ -179,17 +160,16 @@ const LoginPage: React.FC = () => {
 						</div>
 						<input
 							type={showPassword ? "text" : "password"}
+							name="password"
 							value={formData.password}
-							onChange={(e) =>
-								setFormData({...formData, password: e.target.value})
-							}
+							onChange={handleChange}
 							className="w-full pl-10 pr-12 py-3 border-2 border-gray-300 rounded-xl focus:border-electric-500 focus:ring-2 focus:ring-electric-200 outline-none transition-all"
 							placeholder="••••••••"
 							required
 						/>
 						<button
 							type="button"
-							onClick={() => setShowPassword(!showPassword)}
+							onClick={handleTogglePassword}
 							className="absolute inset-y-0 right-0 pr-3 flex items-center"
 						>
 							{showPassword ? (
@@ -235,10 +215,9 @@ const LoginPage: React.FC = () => {
 					<label className="flex items-center">
 						<input
 							type="checkbox"
+							name="rememberMe"
 							checked={formData.rememberMe}
-							onChange={(e) =>
-								setFormData({...formData, rememberMe: e.target.checked})
-							}
+							onChange={handleChange}
 							className="h-4 w-4 text-electric-500 rounded border-gray-300 focus:ring-electric-200"
 						/>
 						<span className="ml-2 text-sm text-gray-700">Recordarme</span>

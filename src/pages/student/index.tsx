@@ -120,7 +120,7 @@ const StudentDashboard: React.FC = () => {
 				<div className="max-w-6xl mx-auto">
 					{/* Welcome Banner */}
 					<Banner
-						title={`¡Hola, Alumno ${user?.name}!`}
+						title={`¡Hola, Alumno(a) ${user?.name}!`}
 						description={`Tienes ${pendingCount} tarea${
 							pendingCount !== 1 ? "s" : ""
 						} pendiente${
