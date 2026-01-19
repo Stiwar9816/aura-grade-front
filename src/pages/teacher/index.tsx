@@ -7,6 +7,8 @@ import SectionHeader from "@/components/Common/SectionHeader";
 import Badge from "@/components/Common/Badge";
 import useAuth from "@/hooks/useAuth";
 import {UserRole} from "@/types";
+import client from "@/lib/apolloClient";
+import {gql} from "@apollo/client";
 
 const TeacherDashboard: React.FC = () => {
 	const {user} = useAuth();
@@ -205,7 +207,7 @@ const TeacherDashboard: React.FC = () => {
 															<div className="text-xs font-medium text-gray-500">
 																Vence:{" "}
 																{new Date(
-																	assignment.dueDate
+																	assignment.dueDate,
 																).toLocaleDateString("es-ES", {
 																	day: "numeric",
 																	month: "short",
