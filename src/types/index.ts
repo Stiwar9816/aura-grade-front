@@ -18,15 +18,8 @@ export interface Task {
 	maxScore: number;
 	studentCount?: number;
 }
-
-export interface RubricCriteria {
-	id: string;
-	name: string;
-	description: string;
-	weight: number;
-	maxScore: number;
-}
-
+// CRITERIA REMOVED (Duplicate)
+// EVALUATION
 export interface Evaluation {
 	id: string;
 	taskId: string;
@@ -43,7 +36,7 @@ export interface CriteriaFeedback {
 	feedback: string;
 	suggestion: string;
 }
-
+// ACTIVITY
 export interface Activity {
 	id: string;
 	type: "upload" | "graded" | "ai_processing" | "rubric_updated" | "alert";
@@ -91,12 +84,24 @@ export interface ValidationResult {
 	warnings?: string[];
 }
 
+// RUBRIC
 export interface RubricCriteria {
 	id: string;
-	name: string;
-	description: string;
-	weight: number; // porcentaje
-	maxScore: number;
+	title: string;
+	description?: string; // Optional as API puts it in levels
+	weight?: number; // Optional as API allows calculating it or implicit
+	maxPoints: number;
+	levels?: {
+		description: string;
+		score: number;
+	}[];
+}
+
+export interface RubricBuilderProps {
+	rubric: Rubric;
+	onAddCriteria: (criteria: RubricCriteria) => void;
+	onUpdateCriteria: (id: string, updated: Partial<RubricCriteria>) => void;
+	onDeleteCriteria: (id: string) => void;
 }
 
 export interface Rubric {
@@ -112,12 +117,67 @@ export interface Rubric {
 
 export interface RubricTemplate {
 	id: string;
-	name: string;
+	title: string;
 	description: string;
-	criteriaCount: number;
-	usedCount: number;
+	maxTotalScore: number;
+	criteria?: RubricCriteria[];
 }
 
+export interface RubricLibraryProps {
+	templates: RubricTemplate[];
+	loading?: boolean;
+	error?: any;
+	onSelectTemplate: (template: RubricTemplate) => void;
+	onCreateNew: () => void;
+}
+
+export interface RubricsData {
+	rubrics: RubricTemplate[];
+}
+
+export interface RubricData {
+	rubric: RubricTemplate;
+}
+
+export interface RubricsCreateProps {
+	onStart: (data: {title: string; description: string}) => void;
+}
+
+export interface CreateRubricInput {
+	title: string;
+	description: string;
+	maxTotalScore: number;
+}
+
+export interface UpdateRubricInput {
+	id: string;
+	title?: string;
+	description?: string;
+	maxTotalScore?: number;
+}
+
+// CRITERION
+export interface CreateCriterionInput {
+	rubric: string;
+	title: string;
+	maxPoints: number;
+	levels?: {
+		description: string;
+		score: number;
+	}[];
+}
+
+export interface UpdateCriterionInput {
+	id: string;
+	title?: string;
+	maxPoints?: number;
+	levels?: {
+		description: string;
+		score: number;
+	}[];
+}
+
+// ANALYTICS
 export interface AnalyticsData {
 	period: string;
 	averageGrade: number;

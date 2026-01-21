@@ -22,8 +22,8 @@ const authLink = new SetContextLink((_, context: any) => {
 			try {
 				const user = JSON.parse(storedUser);
 				token = user.token || "";
-			} catch (e) {
-				console.error("Error parsing user from local storage", e);
+			} catch (e: any) {
+				console.error("Error parsing user from local storage", e.message);
 			}
 		}
 	}
@@ -32,7 +32,7 @@ const authLink = new SetContextLink((_, context: any) => {
 	return {
 		headers: {
 			...headers,
-			authorization: token ? `bearer ${token}` : "",
+			authorization: token ? `Bearer ${token}` : "",
 		},
 	};
 });

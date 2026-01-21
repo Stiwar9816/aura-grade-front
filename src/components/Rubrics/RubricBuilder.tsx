@@ -1,14 +1,7 @@
 import React, {useState} from "react";
-import {Rubric, RubricCriteria} from "@/types";
+import {RubricBuilderProps, RubricCriteria} from "@/types";
 
-interface RubricBuilderProps {
-	rubric: Rubric;
-	onAddCriteria: (criteria: RubricCriteria) => void;
-	onUpdateCriteria: (id: string, updated: Partial<RubricCriteria>) => void;
-	onDeleteCriteria: (id: string) => void;
-}
-
-const RubricBuilder: React.FC<RubricBuilderProps> = ({
+export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 	rubric,
 	onAddCriteria,
 	onUpdateCriteria,
@@ -16,31 +9,34 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 }) => {
 	const [showAddForm, setShowAddForm] = useState(false);
 	const [newCriteria, setNewCriteria] = useState<Partial<RubricCriteria>>({
-		name: "",
+		id: "",
+		title: "",
 		description: "",
 		weight: 10,
-		maxScore: 10,
+		maxPoints: 10,
+		levels: [],
 	});
 
 	const [editingId, setEditingId] = useState<string | null>(null);
 
 	const handleAdd = () => {
-		if (!newCriteria.name || !newCriteria.description) return;
+		if (!newCriteria.title || !newCriteria.description) return;
 
 		const criteria: RubricCriteria = {
-			id: Date.now().toString(),
-			name: newCriteria.name,
+			id: newCriteria.id!,
+			title: newCriteria.title!,
 			description: newCriteria.description,
 			weight: newCriteria.weight || 10,
-			maxScore: newCriteria.maxScore || 10,
+			maxPoints: newCriteria.maxPoints || 10,
 		};
 
 		onAddCriteria(criteria);
 		setNewCriteria({
-			name: "",
+			id: "",
+			title: "",
 			description: "",
 			weight: 10,
-			maxScore: 10,
+			maxPoints: 10,
 		});
 		setShowAddForm(false);
 	};
@@ -92,7 +88,7 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 									width: `${c.weight}%`,
 									backgroundColor: `hsl(${(idx * 137.5) % 360}, 70%, 60%)`,
 								}}
-								title={`${c.name}: ${c.weight}%`}
+								title={`${c.title}: ${c.weight}%`}
 							/>
 						))}
 						{rubric.totalWeight < 100 && (
@@ -114,7 +110,7 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 										backgroundColor: `hsl(${(idx * 137.5) % 360}, 70%, 60%)`,
 									}}
 								/>
-								<span>{c.name}</span>
+								<span>{c.title}</span>
 							</div>
 						))}
 					</div>
@@ -147,9 +143,9 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 								</label>
 								<input
 									type="text"
-									value={newCriteria.name}
+									value={newCriteria.title}
 									onChange={(e) =>
-										setNewCriteria({...newCriteria, name: e.target.value})
+										setNewCriteria({...newCriteria, title: e.target.value})
 									}
 									className="input-primary"
 									placeholder="Ej: Ortografía y Gramática"
@@ -202,11 +198,11 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 									Puntuación Máxima
 								</label>
 								<select
-									value={newCriteria.maxScore}
+									value={newCriteria.maxPoints}
 									onChange={(e) =>
 										setNewCriteria({
 											...newCriteria,
-											maxScore: parseInt(e.target.value),
+											maxPoints: parseInt(e.target.value),
 										})
 									}
 									className="input-primary"
@@ -221,9 +217,9 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 							<div className="flex items-end">
 								<button
 									onClick={handleAdd}
-									disabled={!newCriteria.name || !newCriteria.description}
+									disabled={!newCriteria.title || !newCriteria.description}
 									className={`w-full py-3 rounded-xl font-semibold transition-all ${
-										!newCriteria.name || !newCriteria.description
+										!newCriteria.title || !newCriteria.description
 											? "bg-gray-300 text-gray-500 cursor-not-allowed"
 											: "btn-primary shadow-lg shadow-electric-200"
 									}`}
@@ -254,7 +250,7 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 										<span className="text-xl">📋</span>
 										<div>
 											<div className="font-semibold text-gray-900">
-												{criteria.name}
+												{criteria.title}
 											</div>
 											<div className="text-sm text-gray-600">
 												{criteria.description}
@@ -292,10 +288,10 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 												Puntuación máxima
 											</label>
 											<select
-												value={criteria.maxScore}
+												value={criteria.maxPoints}
 												onChange={(e) =>
 													onUpdateCriteria(criteria.id, {
-														maxScore: parseInt(e.target.value),
+														maxPoints: parseInt(e.target.value),
 													})
 												}
 												className="input-primary text-sm"
@@ -313,7 +309,7 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 												Puntos asignables
 											</label>
 											<div className="text-lg font-bold text-gray-900">
-												{criteria.maxScore} puntos
+												{criteria.maxPoints} puntos
 											</div>
 										</div>
 									</div>
@@ -330,7 +326,7 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 									<button
 										onClick={() =>
 											setEditingId(
-												editingId === criteria.id ? null : criteria.id
+												editingId === criteria.id ? null : criteria.id,
 											)
 										}
 										className="p-2 text-gray-400 hover:text-electric-500"
@@ -350,9 +346,9 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 											</label>
 											<input
 												type="text"
-												value={criteria.name}
+												value={criteria.title}
 												onChange={(e) =>
-													onUpdateCriteria(criteria.id, {name: e.target.value})
+													onUpdateCriteria(criteria.id, {title: e.target.value})
 												}
 												className="input-primary"
 											/>
@@ -436,5 +432,3 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 		</div>
 	);
 };
-
-export default RubricBuilder;
