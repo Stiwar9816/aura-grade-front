@@ -44,7 +44,18 @@ const errorLink = new ErrorLink((error: any) => {
 			console.log(
 				`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
 			);
-			if (extensions?.code === "UNAUTHENTICATED" || message.includes("401")) {
+			const errCode = extensions?.code;
+			const errMessage = message.toLowerCase();
+
+			if (
+				errCode === "UNAUTHENTICATED" ||
+				errCode === "FORBIDDEN" ||
+				errMessage.includes("401") ||
+				errMessage.includes("unauthorized") ||
+				errMessage.includes("jwt expired") ||
+				errMessage.includes("token expired")
+			) {
+				console.warn("Authentication error detected:", message);
 				if (typeof window !== "undefined") {
 					localStorage.removeItem("auraGrade_user");
 					window.location.href = "/login";
@@ -56,7 +67,8 @@ const errorLink = new ErrorLink((error: any) => {
 		console.log(`[Network error]: ${networkError}`);
 		if (
 			"statusCode" in networkError &&
-			(networkError as any).statusCode === 401
+			// @ts-ignore
+			(networkError.statusCode === 401 || networkError.statusCode === 403)
 		) {
 			if (typeof window !== "undefined") {
 				localStorage.removeItem("auraGrade_user");
