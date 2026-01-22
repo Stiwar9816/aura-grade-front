@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import {DocumentType, UserRole} from "@/types";
-import AuthLayout from "@/components/Auth/AuthLayout";
-import useRegister from "@/hooks/useRegister";
+import {AuthLayout} from "@/components/Auth";
+import {useRegister} from "@/hooks";
 
 const RegisterPage: React.FC = () => {
 	const {
@@ -65,8 +65,8 @@ const RegisterPage: React.FC = () => {
 						{step === 1
 							? "Información"
 							: step === 2
-							? "Seguridad"
-							: "Finalizar"}
+								? "Seguridad"
+								: "Finalizar"}
 					</span>
 				</div>
 				<div className="h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
@@ -405,12 +405,12 @@ const RegisterPage: React.FC = () => {
 											passwordStrength.color === "bg-emerald-500"
 												? "text-green-600"
 												: passwordStrength.color === "bg-blue-500"
-												? "text-blue-600"
-												: passwordStrength.color === "bg-yellow-500"
-												? "text-yellow-600"
-												: passwordStrength.color === "bg-orange-500"
-												? "text-orange-600"
-												: "text-red-600"
+													? "text-blue-600"
+													: passwordStrength.color === "bg-yellow-500"
+														? "text-yellow-600"
+														: passwordStrength.color === "bg-orange-500"
+															? "text-orange-600"
+															: "text-red-600"
 										}`}
 									>
 										{passwordStrength.label}

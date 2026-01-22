@@ -1,9 +1,9 @@
 import React, {useEffect} from "react";
 import {useRouter} from "next/router";
-import useAuth from "@/hooks/useAuth";
+import {useAuth} from "@/hooks";
 import {ProtectedRouteProps, UserRole} from "@/types";
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 	children,
 	requiredRole,
 	redirectTo = "/login",
@@ -16,7 +16,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 			if (!isAuthenticated) {
 				// No autenticado, redirigir a login
 				router.push(
-					`${redirectTo}?redirect=${encodeURIComponent(router.asPath)}`
+					`${redirectTo}?redirect=${encodeURIComponent(router.asPath)}`,
 				);
 			} else if (requiredRole && user) {
 				// Comparar roles directamente sin normalizar
@@ -76,5 +76,3 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
 	return <>{children}</>;
 };
-
-export default ProtectedRoute;

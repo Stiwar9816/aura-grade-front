@@ -1,8 +1,7 @@
-import React from "react";
 import Image from "next/image";
 import {AuthLayoutProps} from "@/types";
 
-const AuthLayout: React.FC<AuthLayoutProps> = ({
+export const AuthLayout: React.FC<AuthLayoutProps> = ({
 	children,
 	title,
 	subtitle,
@@ -97,5 +96,3 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({
 		</div>
 	);
 };
-
-export default AuthLayout;

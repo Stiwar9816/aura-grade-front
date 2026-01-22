@@ -3,7 +3,7 @@
 import {useState} from "react";
 import {useRouter} from "next/navigation";
 import {DocumentType, RegisterFormData, UserRole} from "@/types";
-import useAuth from "./useAuth";
+import {useAuth} from "./";
 
 export const useRegister = () => {
 	const router = useRouter();
@@ -149,7 +149,7 @@ export const useRegister = () => {
 	};
 
 	const handleChange = (
-		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+		e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
 	) => {
 		const {name, value, type} = e.target;
 		const checked = (e.target as HTMLInputElement).checked;
@@ -184,5 +184,3 @@ export const useRegister = () => {
 		getPasswordStrength,
 	};
 };
-
-export default useRegister;

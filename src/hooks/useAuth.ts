@@ -3,7 +3,7 @@ import {AuthState, LoginCredentials, RegisterData} from "@/types";
 import {loginAction, registerAction} from "@/actions/auth";
 import {isTokenExpired} from "@/utils/authUtils";
 
-const useAuth = () => {
+export const useAuth = () => {
 	const [authState, setAuthState] = useState<AuthState>({
 		user: null,
 		isAuthenticated: false,
@@ -172,5 +172,3 @@ const useAuth = () => {
 		logout,
 	};
 };
-
-export default useAuth;

@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from "react";
 import Layout from "@/components/Layout";
-import ProtectedRoute from "@/components/Auth/ProtectedRoute";
-import useAuth from "@/hooks/useAuth";
+import {ProtectedRoute} from "@/components/Auth";
+import {useAuth} from "@/hooks";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import {UserRole} from "@/types";
@@ -52,15 +52,15 @@ const ProfilePage: React.FC = () => {
 											user?.role === UserRole.STUDENT
 												? "bg-green-100 text-green-800"
 												: user?.role === UserRole.ADMIN
-												? "bg-purple-100 text-purple-800"
-												: "bg-blue-100 text-blue-800"
+													? "bg-purple-100 text-purple-800"
+													: "bg-blue-100 text-blue-800"
 										}`}
 									>
 										{user?.role === UserRole.STUDENT
 											? "Estudiante"
 											: user?.role === UserRole.ADMIN
-											? "Administrador"
-											: "Docente"}
+												? "Administrador"
+												: "Docente"}
 									</span>
 								</div>
 							</div>
@@ -144,8 +144,8 @@ const ProfilePage: React.FC = () => {
 										{user?.role === UserRole.STUDENT
 											? "Estudiante"
 											: user?.role === UserRole.ADMIN
-											? "Administrador"
-											: "Docente"}
+												? "Administrador"
+												: "Docente"}
 									</p>
 								</div>
 							</div>

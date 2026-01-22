@@ -56,6 +56,7 @@ export const UPDATE_RUBRIC: DocumentNode = gql`
 export const DELETE_RUBRIC: DocumentNode = gql`
 	mutation RemoveRubric($removeRubricId: String!) {
 		removeRubric(id: $removeRubricId) {
+			id
 			title
 		}
 	}

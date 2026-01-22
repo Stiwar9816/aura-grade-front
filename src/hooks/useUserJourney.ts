@@ -20,7 +20,7 @@ interface UseUserJourneyProps {
 	onError?: (error: string) => void;
 }
 
-const useUserJourney = ({
+export const useUserJourney = ({
 	role,
 	journeyType,
 	onComplete,
@@ -158,10 +158,10 @@ const useUserJourney = ({
 
 	const updateStepStatus = (
 		stepIndex: number,
-		status: UserJourneyStep["status"]
+		status: UserJourneyStep["status"],
 	) => {
 		setSteps((prev) =>
-			prev.map((step, idx) => (idx === stepIndex ? {...step, status} : step))
+			prev.map((step, idx) => (idx === stepIndex ? {...step, status} : step)),
 		);
 	};
 
@@ -265,5 +265,3 @@ const useUserJourney = ({
 		getMicroCopyForStep,
 	};
 };
-
-export default useUserJourney;

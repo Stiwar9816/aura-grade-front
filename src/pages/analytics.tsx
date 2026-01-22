@@ -3,13 +3,13 @@ import Layout from "@/components/Layout";
 import PerformanceHeatmap from "@/components/Analytics/PerformanceHeatmap";
 import GradeDistribution from "@/components/Analytics/GradeDistribution";
 import StudentPerformance from "@/components/Analytics/StudentPerformance";
-import ActivityTrends from "@/components/Analytics/ActivityTrends";
-import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+// import ActivityTrends from "@/components/Analytics/ActivityTrends";
+import {ProtectedRoute} from "@/components/Auth";
 import {UserRole} from "@/types";
 
 const AnalyticsPage: React.FC = () => {
 	const [timeRange, setTimeRange] = useState<"week" | "month" | "semester">(
-		"month"
+		"month",
 	);
 	const [selectedCourse, setSelectedCourse] = useState<string>("all");
 
@@ -63,8 +63,8 @@ const AnalyticsPage: React.FC = () => {
 											{range === "week"
 												? "Semana"
 												: range === "month"
-												? "Mes"
-												: "Semestre"}
+													? "Mes"
+													: "Semestre"}
 										</button>
 									))}
 								</div>

@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import {useRouter} from "next/router";
-import useAuth from "@/hooks/useAuth";
+import {useAuth} from "@/hooks";
 import {UserRole} from "@/types";
 
 const Sidebar: React.FC = () => {

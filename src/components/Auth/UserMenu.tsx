@@ -1,10 +1,10 @@
-import React, {useState} from "react";
+import {useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/router";
-import useAuth from "@/hooks/useAuth";
+import {useAuth} from "@/hooks";
 import {UserRole} from "@/types";
 
-const UserMenu: React.FC = () => {
+export const UserMenu = () => {
 	const {user, logout} = useAuth();
 	const router = useRouter();
 	const [isOpen, setIsOpen] = useState(false);
@@ -152,5 +152,3 @@ const UserMenu: React.FC = () => {
 		</div>
 	);
 };
-
-export default UserMenu;

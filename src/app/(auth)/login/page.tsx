@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import AuthLayout from "@/components/Auth/AuthLayout";
-import useLogin from "@/hooks/useLogin";
+import {AuthLayout} from "@/components/Auth";
+import {useLogin} from "@/hooks";
 
 const LoginPage: React.FC = () => {
 	const {

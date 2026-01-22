@@ -1,12 +1,12 @@
 import React, {useState} from "react";
 import Layout from "@/components/Layout";
 import AssignmentCard from "@/components/Student/AssignmentCard";
-import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import {ProtectedRoute} from "@/components/Auth";
 import {UserRole} from "@/types";
 import Banner from "@/components/Common/Banner";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
-import useAuth from "@/hooks/useAuth";
+import {useAuth} from "@/hooks";
 
 const StudentDashboard: React.FC = () => {
 	const {user} = useAuth();

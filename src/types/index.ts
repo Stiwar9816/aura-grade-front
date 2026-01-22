@@ -110,8 +110,6 @@ export interface Rubric {
 	description: string;
 	criteria: RubricCriteria[];
 	totalWeight: number;
-	createdAt: string;
-	updatedAt: string;
 	isActive: boolean;
 }
 
@@ -128,6 +126,7 @@ export interface RubricLibraryProps {
 	loading?: boolean;
 	error?: any;
 	onSelectTemplate: (template: RubricTemplate) => void;
+	onDeleteTemplate: (id: string) => void;
 	onCreateNew: () => void;
 }
 
@@ -140,13 +139,14 @@ export interface RubricData {
 }
 
 export interface RubricsCreateProps {
-	onStart: (data: {title: string; description: string}) => void;
+	onStart: (data: {title: string; description: string}) => Promise<void> | void;
 }
 
 export interface CreateRubricInput {
 	title: string;
 	description: string;
 	maxTotalScore: number;
+	userId: string;
 }
 
 export interface UpdateRubricInput {

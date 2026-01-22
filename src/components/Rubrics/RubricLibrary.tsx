@@ -6,6 +6,7 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
 	loading = false,
 	error,
 	onSelectTemplate,
+	onDeleteTemplate,
 	onCreateNew,
 }) => {
 	const [search, setSearch] = useState("");
@@ -14,6 +15,17 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
 	const filteredTemplates = templates.filter((template) =>
 		template.title.toLowerCase().includes(search.toLowerCase()),
 	);
+
+	const handleDelete = (e: React.MouseEvent, id: string, title: string) => {
+		e.stopPropagation();
+		if (
+			window.confirm(
+				`¿Estás seguro de que deseas eliminar la rúbrica "${title}"? Esta acción no se puede deshacer.`,
+			)
+		) {
+			onDeleteTemplate(id);
+		}
+	};
 
 	return (
 		<div className="space-y-6">
@@ -94,12 +106,20 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
 								{template.description}
 							</p>
 
-							<div className="flex items-center justify-end mt-6 pt-6 border-t border-gray-100">
+							<div className="flex items-center justify-between my-2 border-t border-gray-100 gap-3">
+								<button
+									onClick={(e) => handleDelete(e, template.id, template.title)}
+									className="flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm font-semibold transition-all shadow-sm hover:shadow-md"
+									title="Eliminar rúbrica"
+								>
+									Eliminar
+								</button>
 								<button
 									onClick={() => onSelectTemplate(template)}
-									className="px-4 py-2 bg-electric-500 text-white rounded-lg hover:bg-electric-600 text-sm font-medium"
+									className="flex-1 px-4 py-2.5 bg-electric-500 text-white rounded-lg hover:bg-electric-600 text-sm font-semibold transition-all shadow-sm hover:shadow-md"
+									title="Usar plantilla"
 								>
-									Usar Plantilla
+									Usar
 								</button>
 							</div>
 						</div>

@@ -7,9 +7,16 @@ export const RubricsCreate: React.FC<RubricsCreateProps> = ({onStart}) => {
 		description: "",
 	});
 
-	const handleStart = () => {
-		if (data.title) {
-			onStart(data);
+	const [loading, setLoading] = useState(false);
+
+	const handleStart = async () => {
+		if (data.title && !loading) {
+			setLoading(true);
+			try {
+				await onStart(data);
+			} finally {
+				setLoading(false);
+			}
 		}
 	};
 
@@ -54,14 +61,14 @@ export const RubricsCreate: React.FC<RubricsCreateProps> = ({onStart}) => {
 				<div className="pt-2">
 					<button
 						onClick={handleStart}
-						disabled={!data.title}
+						disabled={!data.title || loading}
 						className={`w-full py-3 rounded-xl font-bold text-lg shadow-lg transition-all ${
-							data.title
+							data.title && !loading
 								? "bg-electric-500 text-white hover:bg-electric-600 shadow-electric-200"
 								: "bg-gray-200 text-gray-400 cursor-not-allowed"
 						}`}
 					>
-						Comenzar a Añadir Criterios →
+						{loading ? "Iniciando..." : "Comenzar a Añadir Criterios →"}
 					</button>
 				</div>
 			</div>

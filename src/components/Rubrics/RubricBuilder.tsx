@@ -1,5 +1,6 @@
-import React, {useState} from "react";
-import {RubricBuilderProps, RubricCriteria} from "@/types";
+import React from "react";
+import {RubricBuilderProps} from "@/types";
+import useRubricBuilder from "@/hooks/useRubricBuilder";
 
 export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 	rubric,
@@ -7,44 +8,16 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 	onUpdateCriteria,
 	onDeleteCriteria,
 }) => {
-	const [showAddForm, setShowAddForm] = useState(false);
-	const [newCriteria, setNewCriteria] = useState<Partial<RubricCriteria>>({
-		id: "",
-		title: "",
-		description: "",
-		weight: 10,
-		maxPoints: 10,
-		levels: [],
-	});
-
-	const [editingId, setEditingId] = useState<string | null>(null);
-
-	const handleAdd = () => {
-		if (!newCriteria.title || !newCriteria.description) return;
-
-		const criteria: RubricCriteria = {
-			id: newCriteria.id!,
-			title: newCriteria.title!,
-			description: newCriteria.description,
-			weight: newCriteria.weight || 10,
-			maxPoints: newCriteria.maxPoints || 10,
-		};
-
-		onAddCriteria(criteria);
-		setNewCriteria({
-			id: "",
-			title: "",
-			description: "",
-			weight: 10,
-			maxPoints: 10,
-		});
-		setShowAddForm(false);
-	};
-
-	const handleSave = (id: string) => {
-		setEditingId(null);
-		// Los cambios ya se aplican en tiempo real
-	};
+	const {
+		editingId,
+		handleAdd,
+		handleSave,
+		newCriteria,
+		setEditingId,
+		setNewCriteria,
+		setShowAddForm,
+		showAddForm,
+	} = useRubricBuilder({onAddCriteria});
 
 	return (
 		<div className="space-y-6">

@@ -3,7 +3,7 @@ import Layout from "@/components/Layout";
 import EvaluationSummary from "@/components/Evaluation/EvaluationSummary";
 import CriteriaTable from "@/components/Evaluation/CriteriaTable";
 import ComparisonView from "@/components/Evaluation/ComparisonView";
-import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import {ProtectedRoute} from "@/components/Auth";
 
 const EvaluationPage: React.FC = () => {
 	const [showComparison, setShowComparison] = useState<boolean>(false);

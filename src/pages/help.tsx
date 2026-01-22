@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 import Layout from "@/components/Layout";
-import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 
@@ -107,7 +107,7 @@ const HelpPage: React.FC = () => {
 	const filteredFaqs = faqs[activeCategory as keyof typeof faqs].filter(
 		(faq) =>
 			faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			faq.answer.toLowerCase().includes(searchQuery.toLowerCase())
+			faq.answer.toLowerCase().includes(searchQuery.toLowerCase()),
 	);
 
 	return (

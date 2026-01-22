@@ -1,14 +1,12 @@
 import React, {useState} from "react";
 import Layout from "@/components/Layout";
 import SubmissionTracker from "@/components/Teacher/SubmissionTracker";
-import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import Badge from "@/components/Common/Badge";
-import useAuth from "@/hooks/useAuth";
+import {useAuth} from "@/hooks";
 import {UserRole} from "@/types";
-import client from "@/lib/apolloClient";
-import {gql} from "@apollo/client";
 
 const TeacherDashboard: React.FC = () => {
 	const {user} = useAuth();

@@ -3,7 +3,7 @@ import Layout from "@/components/Layout";
 import UploadZone from "@/components/Upload/UploadZone";
 import UploadStepper from "@/components/Upload/UploadStepper";
 import Toast from "@/components/Common/Toast";
-import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import {ProtectedRoute} from "@/components/Auth";
 import {UserRole} from "@/types";
 
 const UploadPage: React.FC = () => {
@@ -47,7 +47,7 @@ const UploadPage: React.FC = () => {
 
 	const addToast = (
 		message: string,
-		type: "success" | "error" | "info" | "warning"
+		type: "success" | "error" | "info" | "warning",
 	) => {
 		const id = Date.now();
 		setToasts((prev) => [...prev, {id, message, type}]);
@@ -147,10 +147,10 @@ const UploadPage: React.FC = () => {
 													currentStep === 1
 														? "bg-gradient-to-r from-electric-500 to-cyan-500"
 														: currentStep === 2
-														? "bg-gradient-to-r from-cyan-500 to-purple-500"
-														: currentStep === 3
-														? "bg-gradient-to-r from-purple-500 to-pink-500"
-														: "bg-gradient-to-r from-green-500 to-emerald-500"
+															? "bg-gradient-to-r from-cyan-500 to-purple-500"
+															: currentStep === 3
+																? "bg-gradient-to-r from-purple-500 to-pink-500"
+																: "bg-gradient-to-r from-green-500 to-emerald-500"
 												}`}
 											>
 												<span className="text-white text-4xl">
