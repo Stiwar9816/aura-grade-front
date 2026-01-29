@@ -8,6 +8,51 @@ export interface User {
 	phone: number;
 }
 
+export interface DashboardStats {
+	totalStudents: number;
+	activeAssignments: number;
+	pendingEvaluations: number;
+	averageGrade: number;
+	completionRate: number;
+}
+
+export interface UsersStats {
+	users: {
+		id: string;
+		name: string;
+		last_name: string;
+		role: string;
+		isActive: boolean;
+		submissions: {
+			id: string;
+			status: string;
+			evaluation: {
+				id: string;
+				status: string;
+				totalScore: number;
+			};
+		}[];
+		assignments: {
+			id: string;
+			title: string;
+			isActive: boolean;
+		}[];
+		courses: {
+			id: string;
+			course_name: string;
+		}[];
+	}[];
+}
+
+export interface CoursesData {
+	courses: {
+		id: string;
+		course_name: string;
+		code_course: string;
+		users?: {id: string}[];
+	}[];
+}
+
 export interface Task {
 	id: string;
 	title: string;

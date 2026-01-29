@@ -24,6 +24,12 @@ const Sidebar: React.FC = () => {
 
 	const teacherItems = [
 		{path: "/rubrics", icon: "⚙️", label: "Gestor de Rúbricas", badge: null},
+		{
+			path: "/teacher/courses",
+			icon: "🎓",
+			label: "Gestión de Cursos",
+			badge: null,
+		},
 		{path: "/analytics", icon: "📊", label: "Analíticas", badge: null},
 	];
 

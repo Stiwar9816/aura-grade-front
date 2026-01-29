@@ -5,7 +5,7 @@ import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import Badge from "@/components/Common/Badge";
-import {useAuth} from "@/hooks";
+import {useAuth, useUserStats} from "@/hooks";
 import {UserRole} from "@/types";
 
 const TeacherDashboard: React.FC = () => {
@@ -14,14 +14,7 @@ const TeacherDashboard: React.FC = () => {
 		"overview" | "submissions" | "analytics"
 	>("overview");
 
-	const stats = {
-		totalStudents: 45,
-		activeAssignments: 3,
-		pendingEvaluations: 12,
-		averageGrade: 8.4,
-		completionRate: 87,
-		aiAccuracy: 94,
-	};
+	const {stats, loading} = useUserStats();
 
 	const recentActivity = [
 		{
@@ -144,42 +137,56 @@ const TeacherDashboard: React.FC = () => {
 					{activeTab === "overview" && (
 						<>
 							{/* Stats Grid */}
-							<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8 mt-4">
+							<div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8 mt-4">
 								<Card className="text-center group hoverable">
-									<div className="text-2xl font-bold text-gray-900 group-hover:scale-110 transition-transform">
-										{stats.totalStudents}
-									</div>
+									{loading ? (
+										<div className="h-8 w-12 bg-gray-200 rounded animate-pulse mx-auto mb-2"></div>
+									) : (
+										<div className="text-2xl font-bold text-gray-900 group-hover:scale-110 transition-transform">
+											{stats.totalStudents}
+										</div>
+									)}
 									<div className="text-sm text-gray-600">Estudiantes</div>
 								</Card>
 								<Card className="text-center group hoverable">
-									<div className="text-2xl font-bold text-electric-500 group-hover:scale-110 transition-transform">
-										{stats.activeAssignments}
-									</div>
+									{loading ? (
+										<div className="h-8 w-12 bg-gray-200 rounded animate-pulse mx-auto mb-2"></div>
+									) : (
+										<div className="text-2xl font-bold text-electric-500 group-hover:scale-110 transition-transform">
+											{stats.activeAssignments}
+										</div>
+									)}
 									<div className="text-sm text-gray-600">Tareas activas</div>
 								</Card>
 								<Card className="text-center group hoverable">
-									<div className="text-2xl font-bold text-yellow-500 group-hover:scale-110 transition-transform">
-										{stats.pendingEvaluations}
-									</div>
+									{loading ? (
+										<div className="h-8 w-12 bg-gray-200 rounded animate-pulse mx-auto mb-2"></div>
+									) : (
+										<div className="text-2xl font-bold text-yellow-500 group-hover:scale-110 transition-transform">
+											{stats.pendingEvaluations}
+										</div>
+									)}
 									<div className="text-sm text-gray-600">Pendientes</div>
 								</Card>
 								<Card className="text-center group hoverable">
-									<div className="text-2xl font-bold text-green-500 group-hover:scale-110 transition-transform">
-										{stats.averageGrade}
-									</div>
+									{loading ? (
+										<div className="h-8 w-12 bg-gray-200 rounded animate-pulse mx-auto mb-2"></div>
+									) : (
+										<div className="text-2xl font-bold text-green-500 group-hover:scale-110 transition-transform">
+											{stats.averageGrade}
+										</div>
+									)}
 									<div className="text-sm text-gray-600">Promedio</div>
 								</Card>
 								<Card className="text-center group hoverable">
-									<div className="text-2xl font-bold text-blue-500 group-hover:scale-110 transition-transform">
-										{stats.completionRate}%
-									</div>
+									{loading ? (
+										<div className="h-8 w-12 bg-gray-200 rounded animate-pulse mx-auto mb-2"></div>
+									) : (
+										<div className="text-2xl font-bold text-blue-500 group-hover:scale-110 transition-transform">
+											{stats.completionRate}%
+										</div>
+									)}
 									<div className="text-sm text-gray-600">Completadas</div>
-								</Card>
-								<Card className="text-center group hoverable">
-									<div className="text-2xl font-bold text-cyan-500 group-hover:scale-110 transition-transform">
-										{stats.aiAccuracy}%
-									</div>
-									<div className="text-sm text-gray-600">Precisión IA</div>
 								</Card>
 							</div>
 
