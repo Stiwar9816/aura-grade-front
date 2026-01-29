@@ -10,9 +10,9 @@ import {UserRole} from "@/types";
 
 const TeacherDashboard: React.FC = () => {
 	const {user} = useAuth();
-	const [activeTab, setActiveTab] = useState<
-		"overview" | "submissions" | "analytics"
-	>("overview");
+	const [activeTab, setActiveTab] = useState<"overview" | "submissions">(
+		"overview",
+	);
 
 	const {stats, loading} = useUserStats();
 
@@ -103,7 +103,7 @@ const TeacherDashboard: React.FC = () => {
 									id: "submissions",
 									label: "Entregas",
 									icon: "📤",
-									badge: stats.pendingEvaluations,
+									badge: stats.activeAssignments,
 								},
 							].map((tab) => (
 								<button

@@ -6,8 +6,10 @@ import {
 	DELETE_COURSE,
 } from "@/gql/Course";
 import {CoursesData} from "@/types";
+import {useAuth} from "./useAuth";
 
 export const useCourse = () => {
+	const {user} = useAuth();
 	const {data, loading, error, refetch} =
 		useQuery<CoursesData>(GET_ALL_COURSES);
 	const [createCourseMutation] = useMutation(CREATE_COURSE);
@@ -15,12 +17,16 @@ export const useCourse = () => {
 	const [deleteCourseMutation] = useMutation(DELETE_COURSE);
 
 	const createCourse = async (course_name: string, code_course: string) => {
+		if (!user?.id) {
+			throw new Error("User ID is required to create a course");
+		}
 		try {
 			await createCourseMutation({
 				variables: {
 					createCourseInput: {
 						course_name,
 						code_course,
+						userId: user.id,
 					},
 				},
 			});
@@ -104,6 +110,22 @@ export const useCourse = () => {
 		}
 	};
 
+	const saveCourse = async (name: string, code: string, courseId?: string) => {
+		try {
+			if (courseId) {
+				await updateCourse(courseId, {
+					course_name: name,
+					code_course: code,
+				});
+			} else {
+				await createCourse(name, code);
+			}
+		} catch (error) {
+			console.error("Error saving course:", error);
+			throw error;
+		}
+	};
+
 	return {
 		courses: data?.courses || [],
 		loading,
@@ -111,6 +133,7 @@ export const useCourse = () => {
 		createCourse,
 		updateCourse,
 		deleteCourse,
+		saveCourse,
 		addStudentToCourse,
 		removeStudentFromCourse,
 		refetch,

@@ -30,11 +30,11 @@ export const useUserStats = () => {
 		const students = users.filter((u) => {
 			const isStudent = u.role === UserRole.STUDENT;
 			const isActive = u.isActive === true;
+			const isAdmin = currentUser?.role === UserRole.ADMIN;
 			const sharesCourse = u.courses?.some((c) =>
 				teacherCourseIds.includes(c.id),
 			);
-
-			return isStudent && isActive && sharesCourse;
+			return isStudent && isActive && (isAdmin || sharesCourse);
 		});
 
 		const totalStudents = students.length;

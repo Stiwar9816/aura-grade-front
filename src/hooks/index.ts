@@ -5,3 +5,5 @@ export {useRegister} from "./useRegister";
 export {useUserJourney} from "./useUserJourney";
 export {useLogin} from "./useLogin";
 export {useUserStats} from "./useUserStats";
+export {useSubmission} from "./useSubmission";
+export {useCourse} from "./useCourse";

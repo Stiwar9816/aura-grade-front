@@ -1,70 +1,14 @@
 import React, {useState} from "react";
 import {Submission} from "@/types";
+import {useSubmission} from "@/hooks";
 
 const SubmissionTracker: React.FC = () => {
+	const {submissions: dataSubmissions, loading} = useSubmission();
 	const [filter, setFilter] = useState<string>("all");
 	const [search, setSearch] = useState<string>("");
-	const [selectedSubmission, setSelectedSubmission] = useState<string | null>(
-		null
-	);
 
-	const submissions: Submission[] = [
-		{
-			id: "1",
-			studentName: "María González",
-			studentEmail: "maria.gonzalez@email.com",
-			assignmentTitle: "Ensayo sobre IA en Educación",
-			submittedAt: "2024-01-15T14:30:00",
-			status: "graded",
-			grade: 8.7,
-			aiConfidence: 92,
-			needsAttention: false,
-		},
-		{
-			id: "2",
-			studentName: "Carlos Ruiz",
-			studentEmail: "carlos.ruiz@email.com",
-			assignmentTitle: "Análisis de Caso Estudio",
-			submittedAt: "2024-01-15T16:45:00",
-			status: "pending",
-			grade: undefined,
-			aiConfidence: undefined,
-			needsAttention: true,
-		},
-		{
-			id: "3",
-			studentName: "Ana Martínez",
-			studentEmail: "ana.martinez@email.com",
-			assignmentTitle: "Proyecto Final de Investigación",
-			submittedAt: "2024-01-14T10:15:00",
-			status: "graded",
-			grade: 9.2,
-			aiConfidence: 95,
-			needsAttention: false,
-		},
-		{
-			id: "4",
-			studentName: "Luis Fernández",
-			studentEmail: "luis.fernandez@email.com",
-			assignmentTitle: "Reflexión Semanal",
-			submittedAt: "2024-01-16T09:20:00",
-			status: "in_review",
-			grade: undefined,
-			aiConfidence: 88,
-			needsAttention: false,
-		},
-		{
-			id: "5",
-			studentName: "Sofía Ramírez",
-			studentEmail: "sofia.ramirez@email.com",
-			assignmentTitle: "Ensayo sobre IA en Educación",
-			submittedAt: "2024-01-17T11:45:00",
-			status: "overdue",
-			grade: undefined,
-			aiConfidence: undefined,
-			needsAttention: true,
-		},
-	];
+	// Fallback to empty array if loading or error
+	const submissions: Submission[] = dataSubmissions || [];
 
 	const filteredSubmissions = submissions.filter((submission) => {
 		if (filter !== "all" && submission.status !== filter) return false;
@@ -78,34 +22,34 @@ const SubmissionTracker: React.FC = () => {
 
 	const getStatusConfig = (status: Submission["status"]) => {
 		switch (status) {
-			case "graded":
+			case "PUBLISHED":
 				return {
 					color: "bg-green-100 text-green-800",
-					icon: "✅",
 					label: "Calificado",
 				};
-			case "pending":
+			case "PENDING":
 				return {
 					color: "bg-yellow-100 text-yellow-800",
-					icon: "⏳",
 					label: "Pendiente",
 				};
-			case "in_review":
+			case "REVIEW_PENDING":
 				return {
 					color: "bg-blue-100 text-blue-800",
-					icon: "🔍",
 					label: "En revisión",
 				};
-			case "overdue":
+			case "IN_PROGRESS":
+				return {
+					color: "bg-yellow-100 text-yellow-800",
+					label: "En progreso",
+				};
+			case "FAILED":
 				return {
 					color: "bg-red-100 text-red-800",
-					icon: "⚠️",
-					label: "Atrasado",
+					label: "Fallido",
 				};
 			default:
 				return {
 					color: "bg-gray-100 text-gray-800",
-					icon: "📄",
 					label: "Enviado",
 				};
 		}
@@ -146,9 +90,8 @@ const SubmissionTracker: React.FC = () => {
 							value={search}
 							onChange={(e) => setSearch(e.target.value)}
 							placeholder="Buscar estudiante..."
-							className="input-primary pl-10"
+							className="input-primary"
 						/>
-						<span className="absolute left-3 top-3 text-gray-400">🔍</span>
 					</div>
 
 					<select
@@ -157,10 +100,10 @@ const SubmissionTracker: React.FC = () => {
 						className="input-primary"
 					>
 						<option value="all">Todas las entregas</option>
-						<option value="pending">Pendientes de calificar</option>
-						<option value="graded">Calificadas</option>
-						<option value="in_review">En revisión</option>
-						<option value="overdue">Atrasadas</option>
+						<option value="PENDING">Pendientes de calificar</option>
+						<option value="PUBLISHED">Calificadas</option>
+						<option value="REVIEW_PENDING">En revisión</option>
+						<option value="FAILED">Fallidas</option>
 					</select>
 				</div>
 			</div>
@@ -173,22 +116,22 @@ const SubmissionTracker: React.FC = () => {
 						{submissions.length}
 					</div>
 				</div>
+				<div className="bg-blue-50 p-4 rounded-xl">
+					<div className="text-sm text-gray-600">Revisión</div>
+					<div className="text-2xl font-bold text-blue-600">
+						{submissions.filter((s) => s.status === "REVIEW_PENDING").length}
+					</div>
+				</div>
 				<div className="bg-yellow-50 p-4 rounded-xl">
 					<div className="text-sm text-gray-600">Pendientes</div>
 					<div className="text-2xl font-bold text-yellow-600">
-						{submissions.filter((s) => s.status === "pending").length}
+						{submissions.filter((s) => s.status === "PENDING").length}
 					</div>
 				</div>
 				<div className="bg-green-50 p-4 rounded-xl">
 					<div className="text-sm text-gray-600">Calificadas</div>
 					<div className="text-2xl font-bold text-green-600">
-						{submissions.filter((s) => s.status === "graded").length}
-					</div>
-				</div>
-				<div className="bg-red-50 p-4 rounded-xl">
-					<div className="text-sm text-gray-600">Atención</div>
-					<div className="text-2xl font-bold text-red-600">
-						{submissions.filter((s) => s.needsAttention).length}
+						{submissions.filter((s) => s.status === "PUBLISHED").length}
 					</div>
 				</div>
 			</div>
@@ -202,6 +145,9 @@ const SubmissionTracker: React.FC = () => {
 								Estudiante
 							</th>
 							<th className="text-left py-3 px-4 font-semibold text-gray-700">
+								Curso
+							</th>
+							<th className="text-left py-3 px-4 font-semibold text-gray-700">
 								Tarea
 							</th>
 							<th className="text-left py-3 px-4 font-semibold text-gray-700">
@@ -210,9 +156,7 @@ const SubmissionTracker: React.FC = () => {
 							<th className="text-left py-3 px-4 font-semibold text-gray-700">
 								Calificación
 							</th>
-							<th className="text-left py-3 px-4 font-semibold text-gray-700">
-								Confianza IA
-							</th>
+
 							<th className="text-left py-3 px-4 font-semibold text-gray-700">
 								Acciones
 							</th>
@@ -239,21 +183,25 @@ const SubmissionTracker: React.FC = () => {
 											<div className="text-sm text-gray-600">
 												{submission.studentEmail}
 											</div>
-											<div className="text-xs text-gray-500 mt-1">
+											<div className="text-xs text-gray-400 mt-1">
 												{getTimeSince(submission.submittedAt)}
 											</div>
 										</div>
 									</td>
 									<td className="py-4 px-4">
-										<div className="font-medium text-gray-900">
+										<div className="font-normal text-gray-600">
+											{submission.courseName}
+										</div>
+									</td>
+									<td className="py-4 px-4">
+										<div className="font-normal text-gray-600">
 											{submission.assignmentTitle}
 										</div>
 									</td>
 									<td className="py-4 px-4">
 										<span
-											className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${statusConfig.color}`}
+											className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-sm ${statusConfig.color} font-medium`}
 										>
-											<span>{statusConfig.icon}</span>
 											<span>{statusConfig.label}</span>
 										</span>
 									</td>
@@ -265,38 +213,15 @@ const SubmissionTracker: React.FC = () => {
 														submission.grade >= 9
 															? "text-green-600"
 															: submission.grade >= 7
-															? "text-blue-600"
-															: submission.grade >= 6
-															? "text-yellow-600"
-															: "text-red-600"
+																? "text-blue-600"
+																: submission.grade >= 6
+																	? "text-yellow-600"
+																	: "text-red-600"
 													}`}
 												>
 													{submission.grade.toFixed(1)}
 												</div>
 												<div className="text-sm text-gray-600">/10</div>
-											</div>
-										) : (
-											<div className="text-gray-400">—</div>
-										)}
-									</td>
-									<td className="py-4 px-4">
-										{submission.aiConfidence ? (
-											<div className="flex items-center gap-2">
-												<div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
-													<div
-														className={`h-full ${
-															submission.aiConfidence >= 90
-																? "bg-green-500"
-																: submission.aiConfidence >= 80
-																? "bg-yellow-500"
-																: "bg-red-500"
-														}`}
-														style={{width: `${submission.aiConfidence}%`}}
-													/>
-												</div>
-												<span className="text-sm font-medium text-gray-900">
-													{submission.aiConfidence}%
-												</span>
 											</div>
 										) : (
 											<div className="text-gray-400">—</div>
@@ -310,7 +235,7 @@ const SubmissionTracker: React.FC = () => {
 												}
 												className="px-3 py-1.5 bg-electric-500 text-white text-sm rounded-lg hover:bg-electric-600"
 											>
-												{submission.status === "graded" ? "Ver" : "Evaluar"}
+												{submission.status === "PUBLISHED" ? "Ver" : "Evaluar"}
 											</button>
 
 											{submission.needsAttention && (
@@ -351,8 +276,8 @@ const SubmissionTracker: React.FC = () => {
 			)}
 
 			{/* Bulk Actions */}
-			<div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-				<div className="flex items-center gap-3">
+			<div className="flex items-center justify-end mt-6 pt-6 border-t border-gray-200">
+				{/* <div className="flex items-center gap-3">
 					<select className="input-primary text-sm">
 						<option>Acciones en lote</option>
 						<option>Marcar como calificadas</option>
@@ -362,7 +287,7 @@ const SubmissionTracker: React.FC = () => {
 					<button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
 						Aplicar
 					</button>
-				</div>
+				</div> */}
 
 				<div className="text-sm text-gray-600">
 					Mostrando {filteredSubmissions.length} de {submissions.length}{" "}

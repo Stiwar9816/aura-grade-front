@@ -1,19 +1,18 @@
 import React, {useState} from "react";
+import {useQuery} from "@apollo/client/react";
 import Layout from "@/components/Layout";
-import {ProtectedRoute} from "@/components/Auth";
-import {UserRole, UsersStats} from "@/types";
 import Card from "@/components/Common/Card";
 import Badge from "@/components/Common/Badge";
-import {useCourse} from "@/hooks/useCourse";
-import {useQuery} from "@apollo/client/react";
+import {ProtectedRoute} from "@/components/Auth";
 import {USER_ROLE_STUDENTS} from "@/gql/User";
+import {useCourse} from "@/hooks";
+import {UserRole, UsersStats} from "@/types";
 
 const CourseManagement: React.FC = () => {
 	const {
 		courses,
 		loading: coursesLoading,
-		createCourse,
-		updateCourse,
+		saveCourse,
 		deleteCourse,
 		addStudentToCourse,
 		removeStudentFromCourse,
@@ -59,14 +58,11 @@ const CourseManagement: React.FC = () => {
 		const code = formData.get("code") as string;
 
 		try {
-			if (isEditing && selectedCourse) {
-				await updateCourse(selectedCourse.id, {
-					course_name: name,
-					code_course: code,
-				});
-			} else {
-				await createCourse(name, code);
-			}
+			await saveCourse(
+				name,
+				code,
+				isEditing && selectedCourse ? selectedCourse.id : undefined,
+			);
 			setShowModal(false);
 		} catch (error) {
 			console.error(error);
