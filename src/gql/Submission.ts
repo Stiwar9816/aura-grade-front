@@ -37,7 +37,7 @@ const SUBMISSION_FIELDS = gql`
 `;
 
 export const GET_ALL_SUBMISSIONS: DocumentNode = gql`
-	query Submissions {
+	query GetAllSubmissions {
 		submissions {
 			...SubmissionFields
 		}
@@ -56,7 +56,7 @@ export const GET_SUBMISSION_BY_ID: DocumentNode = gql`
 
 // Query para obtener las entregas (el backend ahora filtra por usuario/rol)
 export const GET_TEACHER_SUBMISSIONS: DocumentNode = gql`
-	query Submissions {
+	query GetTeacherSubmissions {
 		submissions {
 			...SubmissionFields
 		}

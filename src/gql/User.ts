@@ -12,7 +12,6 @@ export const USER_ROLE_STUDENTS: DocumentNode = gql`
 				id
 				status
 				evaluation {
-					id
 					status
 					totalScore
 				}
@@ -21,10 +20,10 @@ export const USER_ROLE_STUDENTS: DocumentNode = gql`
 				id
 				title
 				isActive
+				dueDate
 			}
 			courses {
 				id
-				course_name
 			}
 		}
 	}

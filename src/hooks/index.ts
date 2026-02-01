@@ -7,3 +7,5 @@ export {useLogin} from "./useLogin";
 export {useUserStats} from "./useUserStats";
 export {useSubmission} from "./useSubmission";
 export {useCourse} from "./useCourse";
+export {useAssignments} from "./useAssignments";
+export {useRecentActivity} from "./useActivity";

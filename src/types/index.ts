@@ -6,6 +6,8 @@ export interface User {
 	role: UserRole;
 	token?: string;
 	phone: number;
+	courses?: {id: string}[];
+	assignments?: {id: string}[];
 }
 
 export interface DashboardStats {
