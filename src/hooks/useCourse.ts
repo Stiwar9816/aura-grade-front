@@ -5,7 +5,7 @@ import {
 	UPDATE_COURSE,
 	DELETE_COURSE,
 } from "@/gql/Course";
-import {CoursesData} from "@/types";
+import {CoursesData} from "@/interface";
 import {useAuth} from "./useAuth";
 
 export const useCourse = () => {

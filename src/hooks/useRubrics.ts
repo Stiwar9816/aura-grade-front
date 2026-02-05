@@ -18,7 +18,7 @@ import type {
 	RubricTemplate,
 	UpdateRubricInput,
 	RubricCriteria,
-} from "@/types";
+} from "@/interface";
 import {useAuth, useCriteria} from "@/hooks";
 
 export const useRubrics = () => {

@@ -1,4 +1,4 @@
-import {Rubric, RubricTemplate} from "@/types";
+import {Rubric, RubricTemplate} from "@/interface";
 
 /**
  * Convert RubricTemplate from API to Rubric format for UI
@@ -24,6 +24,9 @@ export const convertRubricToInput = (rubric: Rubric) => {
 		id: rubric.id,
 		title: rubric.name,
 		description: rubric.description,
-		maxTotalScore: rubric.criteria.reduce((acc, c) => acc + c.maxScore, 0),
+		maxTotalScore: rubric.criteria.reduce(
+			(acc: any, c: any) => acc + c.maxScore,
+			0,
+		),
 	};
 };

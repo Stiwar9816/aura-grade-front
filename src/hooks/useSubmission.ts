@@ -1,6 +1,6 @@
 import {useQuery} from "@apollo/client/react";
 import {GET_TEACHER_SUBMISSIONS} from "@/gql/Submission";
-import {Submission, SubmissionsData} from "@/types";
+import {Submission, SubmissionsData} from "@/interface";
 
 export const useSubmission = () => {
 	const {data, loading, error, refetch} = useQuery<SubmissionsData>(

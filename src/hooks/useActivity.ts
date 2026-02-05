@@ -1,18 +1,9 @@
 import {useQuery} from "@apollo/client/react";
 import {GET_RECENT_ACTIVITY} from "@/gql/Activity";
+import {ActivityItem, ActivityType} from "@/interface";
 import {useAuth} from "@/hooks";
 import {formatDistanceToNow} from "date-fns";
 import {es} from "date-fns/locale";
-
-interface ActivityItem {
-	id: string;
-	student: string;
-	action: string;
-	assignment: string;
-	time: string;
-	grade?: number;
-	type: "submission" | "evaluation" | "system";
-}
 
 export const useRecentActivity = (limit: number = 8) => {
 	const {user} = useAuth();
@@ -45,7 +36,7 @@ export const useRecentActivity = (limit: number = 8) => {
 				// Determinar la acción y tipo
 				let action = "";
 				let grade = undefined;
-				let type: ActivityItem["type"] = "submission";
+				let type: ActivityType = ActivityType.SUBMISSION;
 
 				const isGraded =
 					submission.evaluation?.status === "PUBLISHED" ||
@@ -54,10 +45,10 @@ export const useRecentActivity = (limit: number = 8) => {
 				if (isGraded) {
 					action = "fue calificado";
 					grade = submission.evaluation.totalScore;
-					type = "evaluation";
+					type = ActivityType.EVALUATION;
 				} else if (submission.status === "IN_PROGRESS") {
 					action = "está siendo evaluado con IA";
-					type = "system";
+					type = ActivityType.SYSTEM;
 				} else if (submission.status === "SUBMITTED") {
 					action = "entregó";
 				} else {
@@ -72,7 +63,10 @@ export const useRecentActivity = (limit: number = 8) => {
 
 				return {
 					id: submission.id,
-					student: type === "system" && !isGraded ? "Sistema IA" : studentName,
+					student:
+						type === ActivityType.SYSTEM && !isGraded
+							? "Sistema IA"
+							: studentName,
 					action,
 					assignment: assignmentTitle,
 					time,

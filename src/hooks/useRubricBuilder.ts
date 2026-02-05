@@ -1,5 +1,5 @@
 import {useState} from "react";
-import type {RubricCriteria} from "@/types";
+import type {RubricCriteria} from "@/interface";
 
 const useRubricBuilder = ({
 	onAddCriteria,

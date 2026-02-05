@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {useRouter} from "next/navigation";
-import {DocumentType, RegisterFormData, UserRole} from "@/types";
+import {DocumentType, RegisterFormData, UserRole} from "@/interface";
 import {useAuth} from "./";
 
 export const useRegister = () => {

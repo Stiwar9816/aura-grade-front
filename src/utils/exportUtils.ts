@@ -1,4 +1,5 @@
-import {Rubric} from "@/types";
+import {RubricCriteria} from "@/interface";
+import {Rubric} from "@/interface";
 
 /**
  * Export rubric to PDF format
@@ -29,13 +30,13 @@ export const exportToPDF = async (rubric: Rubric): Promise<void> => {
 		doc.text(`Total de criterios: ${rubric.criteria.length}`, 20, yPos + 10);
 		doc.text(`Ponderación total: ${rubric.totalWeight}%`, 20, yPos + 16);
 		doc.text(
-			`Puntos totales: ${rubric.criteria.reduce((acc, c) => acc + c.maxPoints, 0)}`,
+			`Puntos totales: ${rubric.criteria.reduce((acc: any, c: any) => acc + c.maxPoints, 0)}`,
 			20,
 			yPos + 22,
 		);
 
 		// Table
-		const tableData = rubric.criteria.map((criteria) => [
+		const tableData = rubric.criteria.map((criteria: RubricCriteria) => [
 			criteria.title,
 			criteria.description || "",
 			`${criteria.weight || 0}%`,
@@ -95,7 +96,7 @@ export const exportToCSV = (rubric: Rubric): void => {
 		const headers = ["Criterio", "Descripción", "Peso (%)", "Puntos Máximos"];
 
 		// CSV Rows
-		const rows = rubric.criteria.map((criteria) => [
+		const rows = rubric.criteria.map((criteria: RubricCriteria) => [
 			criteria.title,
 			criteria.description || "",
 			(criteria.weight || 0).toString(),
@@ -105,8 +106,8 @@ export const exportToCSV = (rubric: Rubric): void => {
 		// Combine headers and rows
 		const csvContent = [
 			headers.join(","),
-			...rows.map((row) =>
-				row.map((cell) => `"${cell.replace(/"/g, '""')}"`).join(","),
+			...rows.map((row: any) =>
+				row.map((cell: any) => `"${cell.replace(/"/g, '""')}"`).join(","),
 			),
 		].join("\n");
 

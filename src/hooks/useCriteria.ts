@@ -11,7 +11,7 @@ import type {
 	CreateCriterionInput,
 	UpdateCriterionInput,
 	RubricCriteria,
-} from "@/types";
+} from "@/interface";
 
 export const useCriteria = () => {
 	const [deletedCriteriaIds, setDeletedCriteriaIds] = useState<string[]>([]);

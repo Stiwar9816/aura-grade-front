@@ -2,7 +2,7 @@
 
 import {useState} from "react";
 import {useRouter} from "next/navigation";
-import {UserRole} from "@/types";
+import {UserRole} from "@/interface";
 import {useAuth} from "./";
 
 export const useLogin = () => {

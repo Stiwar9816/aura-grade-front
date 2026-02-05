@@ -1,7 +1,7 @@
 import {GET_TASK_TEACHER, CREATE_ASSIGNMENT} from "@/gql/Assignment";
 import {useMutation, useQuery} from "@apollo/client/react";
 import {useAuth} from "@/hooks";
-import {UserRole} from "@/types";
+import {UserRole} from "@/interface";
 
 export const useAssignments = () => {
 	const {user} = useAuth();

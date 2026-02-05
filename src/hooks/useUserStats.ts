@@ -1,7 +1,8 @@
 import {useQuery} from "@apollo/client/react";
 import {USER_ROLE_STUDENTS} from "@/gql/User";
 import {useAuth} from "@/hooks";
-import {DashboardStats, UserRole, UsersStats} from "@/types";
+import {UserRole, UsersStats} from "@/interface";
+import {DashboardStats} from "@/types";
 
 export const useUserStats = () => {
 	const {user: currentUser} = useAuth();

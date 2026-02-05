@@ -1,5 +1,5 @@
 import {useState, useEffect} from "react";
-import {AuthState, LoginCredentials, RegisterData} from "@/types";
+import {AuthState, LoginCredentials, RegisterData} from "@/interface";
 import {loginAction, registerAction} from "@/actions/auth";
 import {isTokenExpired} from "@/utils/authUtils";
 
