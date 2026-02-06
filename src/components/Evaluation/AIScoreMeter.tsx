@@ -7,7 +7,7 @@ interface AIScoreMeterProps {
 	description?: string;
 }
 
-const AIScoreMeter: React.FC<AIScoreMeterProps> = ({
+export const AIScoreMeter: React.FC<AIScoreMeterProps> = ({
 	score,
 	maxScore,
 	label,
@@ -63,24 +63,22 @@ const AIScoreMeter: React.FC<AIScoreMeterProps> = ({
 						percentage >= 80
 							? "bg-green-100 text-green-800"
 							: percentage >= 60
-							? "bg-yellow-100 text-yellow-800"
-							: percentage >= 40
-							? "bg-orange-100 text-orange-800"
-							: "bg-red-100 text-red-800"
+								? "bg-yellow-100 text-yellow-800"
+								: percentage >= 40
+									? "bg-orange-100 text-orange-800"
+									: "bg-red-100 text-red-800"
 					}`}
 				>
 					{percentage >= 80
 						? "Excelente"
 						: percentage >= 60
-						? "Bueno"
-						: percentage >= 40
-						? "Regular"
-						: "Necesita mejorar"}
+							? "Bueno"
+							: percentage >= 40
+								? "Regular"
+								: "Necesita mejorar"}
 				</div>
 				<div className="text-sm text-gray-600">{percentage.toFixed(0)}%</div>
 			</div>
 		</div>
 	);
 };
-
-export default AIScoreMeter;

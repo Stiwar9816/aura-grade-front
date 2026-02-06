@@ -9,3 +9,4 @@ export {useSubmission} from "./useSubmission";
 export {useCourse} from "./useCourse";
 export {useAssignments} from "./useAssignments";
 export {useRecentActivity} from "./useActivity";
+export {useEvaluationDetail} from "./useEvaluationDetail";

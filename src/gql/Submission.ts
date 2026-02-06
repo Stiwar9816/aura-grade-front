@@ -4,6 +4,7 @@ const SUBMISSION_FIELDS = gql`
 	fragment SubmissionFields on Submission {
 		id
 		fileUrl
+		extractedText
 		status
 		createdAt
 		updatedAt
@@ -16,8 +17,11 @@ const SUBMISSION_FIELDS = gql`
 		}
 		evaluation {
 			id
+			generalFeedback
+			detailedFeedback
 			status
 			totalScore
+			createdAt
 		}
 		assignment {
 			id
@@ -31,6 +35,15 @@ const SUBMISSION_FIELDS = gql`
 				title
 				description
 				maxTotalScore
+				criteria {
+					id
+					title
+					maxPoints
+					levels {
+						description
+						score
+					}
+				}
 			}
 		}
 	}

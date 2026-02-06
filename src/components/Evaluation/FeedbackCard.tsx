@@ -8,7 +8,7 @@ interface FeedbackCardProps {
 	icon?: string;
 }
 
-const FeedbackCard: React.FC<FeedbackCardProps> = ({
+export const FeedbackCard: React.FC<FeedbackCardProps> = ({
 	type,
 	title,
 	content,
@@ -78,5 +78,3 @@ const FeedbackCard: React.FC<FeedbackCardProps> = ({
 		</div>
 	);
 };
-
-export default FeedbackCard;

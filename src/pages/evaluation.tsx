@@ -1,87 +1,62 @@
 import React, {useState} from "react";
+import {useRouter} from "next/router";
+import {useEvaluationDetail} from "@/hooks";
 import Layout from "@/components/Layout";
-import EvaluationSummary from "@/components/Evaluation/EvaluationSummary";
-import CriteriaTable from "@/components/Evaluation/CriteriaTable";
-import ComparisonView from "@/components/Evaluation/ComparisonView";
+import {
+	EvaluationSummary,
+	CriteriaTable,
+	ComparisonView,
+} from "@/components/Evaluation";
 import {ProtectedRoute} from "@/components/Auth";
 
 const EvaluationPage: React.FC = () => {
+	const router = useRouter();
+	const {submission} = router.query;
+	const submissionId = typeof submission === "string" ? submission : null;
+	const {loading, error, evaluationData, studentText, aiComments, studentName} =
+		useEvaluationDetail(submissionId);
 	const [showComparison, setShowComparison] = useState<boolean>(false);
 
-	const evaluationData = {
-		overallScore: 8.7,
-		maxScore: 10,
-		generalFeedback:
-			"Excelente trabajo. El estudiante demuestra un entendimiento profundo del tema con argumentos sólidos y bien estructurados. La investigación es exhaustiva y las referencias son apropiadas. Se sugiere mejorar la conclusión para reforzar los puntos principales.",
-		criteria: [
-			{
-				id: "1",
-				name: "Ortografía y Gramática",
-				score: 9,
-				maxScore: 10,
-				feedback:
-					"Muy buen manejo del lenguaje, solo dos errores menores detectados.",
-				suggestion: "Revisar uso de comas en oraciones compuestas.",
-			},
-			{
-				id: "2",
-				name: "Argumentación",
-				score: 9.5,
-				maxScore: 10,
-				feedback:
-					"Argumentos sólidos y bien sustentados con evidencia relevante.",
-				suggestion: "Podría incluir un contraargumento para mayor profundidad.",
-			},
-			{
-				id: "3",
-				name: "Estructura",
-				score: 8,
-				maxScore: 10,
-				feedback:
-					"Buena organización general, pero la transición entre secciones podría mejorar.",
-				suggestion: "Usar frases de transición más claras.",
-			},
-			{
-				id: "4",
-				name: "Originalidad",
-				score: 8.5,
-				maxScore: 10,
-				feedback: "Perspectiva única con aportes personales valiosos.",
-				suggestion:
-					"Explorar más fuentes alternativas para enriquecer el análisis.",
-			},
-			{
-				id: "5",
-				name: "Formato",
-				score: 9,
-				maxScore: 10,
-				feedback: "Cumple con todos los requisitos de formato solicitados.",
-				suggestion: "Considerar el uso de subtítulos descriptivos.",
-			},
-		],
-	};
+	if (loading) {
+		return (
+			<ProtectedRoute>
+				<Layout title="Evaluación de IA">
+					<div className="flex justify-center items-center h-64">
+						<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-electric-500"></div>
+					</div>
+				</Layout>
+			</ProtectedRoute>
+		);
+	}
 
-	const studentText = `La inteligencia artificial está transformando radicalmente el panorama educativo. A través de sistemas adaptativos, los estudiantes pueden recibir retroalimentación personalizada en tiempo real, lo que permite un aprendizaje más efectivo y centrado en sus necesidades específicas.
-
-Sin embargo, es crucial considerar los aspectos éticos de esta transformación. La privacidad de datos y la equidad en el acceso deben ser prioridades fundamentales al implementar estas tecnologías en entornos educativos.`;
-
-	const aiComments = `Excelente introducción al tema. El estudiante identifica correctamente los beneficios principales de la IA en educación.
-
-🔍 Punto fuerte: Menciona específicamente "sistemas adaptativos" y "retroalimentación personalizada", lo que demuestra investigación.
-
-💡 Sugerencia: Podría desarrollar más el ejemplo de cómo funcionan estos sistemas adaptativos en la práctica.
-
-⚠️ Aspecto a mejorar: La sección sobre aspectos éticos es breve. Se beneficiaría de ejemplos concretos de problemas de privacidad en educación.`;
+	if (error || !evaluationData) {
+		return (
+			<ProtectedRoute>
+				<Layout title="Error en Evaluación">
+					<div className="max-w-6xl mx-auto text-center py-12">
+						<h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
+						<p className="text-gray-600">
+							{error || "No se encontraron datos de la evaluación."}
+						</p>
+						<button onClick={() => router.back()} className="mt-4 btn-primary">
+							Volver
+						</button>
+					</div>
+				</Layout>
+			</ProtectedRoute>
+		);
+	}
 
 	return (
 		<ProtectedRoute>
 			<Layout title="Evaluación de IA">
 				<div className="max-w-6xl mx-auto">
-					{/* Resumen ejecutivo */}
+					{/* Resumen de evaluación */}
 					<EvaluationSummary
 						score={evaluationData.overallScore}
 						maxScore={evaluationData.maxScore}
 						feedback={evaluationData.generalFeedback}
+						evaluationDate={evaluationData.evaluationDate}
 					/>
 
 					{/* Controles de vista */}
@@ -118,6 +93,8 @@ Sin embargo, es crucial considerar los aspectos éticos de esta transformación.
 								<ComparisonView
 									studentText={studentText}
 									aiComments={aiComments}
+									criteria={evaluationData.criteria}
+									studentName={studentName}
 								/>
 							</div>
 						)}
@@ -125,14 +102,8 @@ Sin embargo, es crucial considerar los aspectos éticos de esta transformación.
 
 					{/* Acciones adicionales */}
 					<div className="mt-8 flex justify-end space-x-4">
-						<button className="btn-ghost">
-							<span className="mr-2">📥</span>
-							Descargar Reporte
-						</button>
-						<button className="btn-primary">
-							<span className="mr-2">🔄</span>
-							Solicitar Re-evaluación
-						</button>
+						<button className="btn-ghost">Enviar Reporte</button>
+						<button className="btn-primary">Solicitar Re-evaluación</button>
 					</div>
 				</div>
 			</Layout>

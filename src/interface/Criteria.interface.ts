@@ -17,3 +17,16 @@ export interface UpdateCriterionInput {
 		score: number;
 	}[];
 }
+
+export interface Criteria {
+	id: string;
+	name: string;
+	score: number;
+	maxScore: number;
+	feedback: string;
+	suggestion: string;
+}
+
+export interface CriteriaTableProps {
+	criteria: Criteria[];
+}
