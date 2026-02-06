@@ -3,6 +3,13 @@ import Link from "next/link";
 import {useRouter} from "next/router";
 import {useAuth} from "@/hooks";
 import {UserRole} from "@/interface";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {
+	faGear,
+	faQuestionCircle,
+	faSignOut,
+	faUser,
+} from "@fortawesome/free-solid-svg-icons";
 
 export const UserMenu = () => {
 	const {user, logout} = useAuth();
@@ -116,7 +123,9 @@ export const UserMenu = () => {
 								className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 text-gray-700"
 								onClick={() => setIsOpen(false)}
 							>
-								<span className="text-xl">👤</span>
+								<span className="text-xl">
+									<FontAwesomeIcon icon={faUser} />
+								</span>
 								<span>Mi Perfil</span>
 							</Link>
 							<Link
@@ -124,7 +133,9 @@ export const UserMenu = () => {
 								className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 text-gray-700"
 								onClick={() => setIsOpen(false)}
 							>
-								<span className="text-xl">⚙️</span>
+								<span className="text-xl">
+									<FontAwesomeIcon icon={faGear} />
+								</span>
 								<span>Configuración</span>
 							</Link>
 							<Link
@@ -132,7 +143,9 @@ export const UserMenu = () => {
 								className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 text-gray-700"
 								onClick={() => setIsOpen(false)}
 							>
-								<span className="text-xl">❓</span>
+								<span className="text-xl">
+									<FontAwesomeIcon icon={faQuestionCircle} />
+								</span>
 								<span>Ayuda y Soporte</span>
 							</Link>
 
@@ -140,9 +153,11 @@ export const UserMenu = () => {
 
 							<button
 								onClick={handleLogout}
-								className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 text-red-600 w-full text-left"
+								className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 text-red-500 w-full text-left"
 							>
-								<span className="text-xl">🚪</span>
+								<span className="text-xl">
+									<FontAwesomeIcon icon={faSignOut} />
+								</span>
 								<span>Cerrar sesión</span>
 							</button>
 						</div>

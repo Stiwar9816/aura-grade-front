@@ -2,7 +2,6 @@ import React, {useState} from "react";
 import {useRouter} from "next/router";
 import Layout from "@/components/Layout";
 import SubmissionTracker from "@/components/Teacher/SubmissionTracker";
-import AssignmentCreator from "@/components/Teacher/AssignmentCreator";
 import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
@@ -14,6 +13,15 @@ import {
 	useRecentActivity,
 } from "@/hooks";
 import {UserRole} from "@/interface";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {
+	faBell,
+	faCloudArrowUp,
+	faFilePen,
+	faHouse,
+	faPencil,
+	faRing,
+} from "@fortawesome/free-solid-svg-icons";
 
 const TeacherDashboard: React.FC = () => {
 	const {user} = useAuth();
@@ -114,11 +122,15 @@ const TeacherDashboard: React.FC = () => {
 					<div className="border-b border-gray-200">
 						<nav className="flex space-x-8">
 							{[
-								{id: "overview", label: "Vista General", icon: "🏠"},
+								{
+									id: "overview",
+									label: "Vista General",
+									icon: <FontAwesomeIcon icon={faHouse} />,
+								},
 								{
 									id: "submissions",
 									label: "Entregas",
-									icon: "📤",
+									icon: <FontAwesomeIcon icon={faCloudArrowUp} />,
 									badge: stats.pendingEvaluations,
 								},
 							].map((tab) => (
@@ -248,7 +260,9 @@ const TeacherDashboard: React.FC = () => {
 											) : activeAssignmentsList.length === 0 ? (
 												// Estado vacío para tareas activas
 												<Card className="p-8 text-center bg-white/60 border border-gray-100">
-													<div className="text-4xl mb-3">📝</div>
+													<div className="text-4xl mb-3">
+														<FontAwesomeIcon icon={faFilePen} />
+													</div>
 													<h3 className="font-bold text-gray-900 mb-2">
 														No hay tareas vigentes
 													</h3>
@@ -441,7 +455,9 @@ const TeacherDashboard: React.FC = () => {
 											) : activities.length === 0 ? (
 												// Estado vacío
 												<div className="text-center py-8">
-													<div className="text-4xl mb-3">🔔</div>
+													<div className="text-4xl mb-3">
+														<FontAwesomeIcon icon={faBell} />
+													</div>
 													<p className="text-sm text-gray-600">
 														No hay actividad reciente
 													</p>

@@ -1,7 +1,8 @@
 import React, {useState, useEffect} from "react";
 import {useAuth, useAssignments, useCourse, useRubrics} from "@/hooks";
 import Card from "@/components/Common/Card";
-import Badge from "@/components/Common/Badge";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faPlus, faTriangleExclamation} from "@fortawesome/free-solid-svg-icons";
 
 const AssignmentCreator: React.FC = () => {
 	const {user} = useAuth();
@@ -81,7 +82,7 @@ const AssignmentCreator: React.FC = () => {
 				<form onSubmit={handleSubmit} className="space-y-6">
 					{error && (
 						<div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-xl text-sm italic">
-							⚠️ {error}
+							<FontAwesomeIcon icon={faTriangleExclamation} /> {error}
 						</div>
 					)}
 

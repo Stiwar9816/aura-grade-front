@@ -3,6 +3,16 @@ import Link from "next/link";
 import {useRouter} from "next/router";
 import {useAuth} from "@/hooks";
 import {UserRole} from "@/interface";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {
+	faHouse,
+	faPencil,
+	faBookOpen,
+	faPeopleRoof,
+	faChartLine,
+	faCloudArrowUp,
+	faFileLines,
+} from "@fortawesome/free-solid-svg-icons";
 
 const Sidebar: React.FC = () => {
 	const router = useRouter();
@@ -11,32 +21,52 @@ const Sidebar: React.FC = () => {
 	const commonItems = [
 		{
 			path: user?.role === UserRole.STUDENT ? "/student" : "/teacher",
-			icon: "🏠",
-			label: "Dashboard",
+			icon: <FontAwesomeIcon icon={faHouse} />,
+			label: "Panel de Inicio",
 			badge: null,
 		},
 	];
 
 	const studentItems = [
-		{path: "/upload", icon: "📤", label: "Subir Tarea", badge: "3"},
-		{path: "/evaluation", icon: "📝", label: "Mis Resultados", badge: null},
+		{
+			path: "/upload",
+			icon: <FontAwesomeIcon icon={faCloudArrowUp} />,
+			label: "Subir Tarea",
+			badge: "3",
+		},
+		{
+			path: "/evaluation",
+			icon: <FontAwesomeIcon icon={faFileLines} />,
+			label: "Mis Resultados",
+			badge: null,
+		},
 	];
 
 	const teacherItems = [
 		{
 			path: "/teacher/assignments",
-			icon: "📝",
+			icon: <FontAwesomeIcon icon={faPencil} />,
 			label: "Crear Tarea",
 			badge: null,
 		},
-		{path: "/rubrics", icon: "⚙️", label: "Gestor de Rúbricas", badge: null},
+		{
+			path: "/rubrics",
+			icon: <FontAwesomeIcon icon={faBookOpen} />,
+			label: "Gestor de Rúbricas",
+			badge: null,
+		},
 		{
 			path: "/teacher/courses",
-			icon: "🎓",
+			icon: <FontAwesomeIcon icon={faPeopleRoof} />,
 			label: "Gestión de Cursos",
 			badge: null,
 		},
-		{path: "/analytics", icon: "📊", label: "Analíticas", badge: null},
+		{
+			path: "/analytics",
+			icon: <FontAwesomeIcon icon={faChartLine} />,
+			label: "Analíticas",
+			badge: null,
+		},
 	];
 
 	const menuItems = [
@@ -57,11 +87,11 @@ const Sidebar: React.FC = () => {
 							className={`flex items-center justify-between px-4 py-2 rounded-xl transition-all duration-200 ${
 								isActive
 									? "bg-electric-50 text-electric-500 font-semibold"
-									: "text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+									: "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
 							}`}
 						>
 							<div className="flex items-center space-x-3">
-								<span className="text-xl">{item.icon}</span>
+								<span className="text-md ">{item.icon}</span>
 								<span>{item.label}</span>
 							</div>
 							{item.badge && (

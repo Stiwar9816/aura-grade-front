@@ -9,6 +9,18 @@ import {ProtectedRoute} from "@/components/Auth";
 import {useRubrics} from "@/hooks";
 import {exportToPDF, exportToCSV} from "@/utils";
 import {UserRole} from "@/interface";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {
+	faBook,
+	faChartBar,
+	faChartLine,
+	faFileCsv,
+	faFilePdf,
+	faFileText,
+	faGears,
+	faPercent,
+	faStar,
+} from "@fortawesome/free-solid-svg-icons";
 
 export const RubricsPage = () => {
 	const {
@@ -48,17 +60,17 @@ export const RubricsPage = () => {
 									<>
 										<button
 											onClick={() => exportToCSV(currentRubric)}
-											className="btn-ghost text-sm"
+											className="p-2 text-xl text-gray-500 hover:text-blue-600 hover:bg-electric-50 rounded-lg transition-all"
 											title="Exportar CSV"
 										>
-											CSV
+											<FontAwesomeIcon icon={faFileCsv} />
 										</button>
 										<button
 											onClick={() => exportToPDF(currentRubric)}
-											className="btn-ghost text-sm"
+											className="p-2 text-xl text-gray-500 hover:text-blue-600 hover:bg-electric-50 rounded-lg transition-all"
 											title="Exportar PDF"
 										>
-											PDF
+											<FontAwesomeIcon icon={faFilePdf} />
 										</button>
 
 										<button
@@ -75,9 +87,21 @@ export const RubricsPage = () => {
 						<div className="border-b border-gray-200">
 							<nav className="flex space-x-8">
 								{[
-									{id: "create", label: "Crear Rúbrica", icon: "✨"},
-									{id: "library", label: "Biblioteca", icon: "📚"},
-									{id: "builder", label: "Constructor", icon: "⚙️"},
+									{
+										id: "create",
+										label: "Crear Rúbrica",
+										icon: <FontAwesomeIcon icon={faFileText} />,
+									},
+									{
+										id: "library",
+										label: "Biblioteca",
+										icon: <FontAwesomeIcon icon={faBook} />,
+									},
+									{
+										id: "builder",
+										label: "Constructor",
+										icon: <FontAwesomeIcon icon={faGears} />,
+									},
 								]
 									.filter(
 										(tab) =>
@@ -107,7 +131,9 @@ export const RubricsPage = () => {
 							<div className="card p-6">
 								<div className="flex items-center gap-4">
 									<div className="p-3 bg-electric-100 rounded-xl">
-										<span className="text-electric-600 text-xl">📊</span>
+										<span className="text-electric-600 text-xl">
+											<FontAwesomeIcon icon={faChartLine} />
+										</span>
 									</div>
 									<div>
 										<div className="text-2xl font-bold text-gray-900">
@@ -122,7 +148,9 @@ export const RubricsPage = () => {
 							<div className="card p-6">
 								<div className="flex items-center gap-4">
 									<div className="p-3 bg-green-100 rounded-xl">
-										<span className="text-green-600 text-xl">⚖️</span>
+										<span className="text-green-600 text-xl">
+											<FontAwesomeIcon icon={faPercent} />
+										</span>
 									</div>
 									<div>
 										<div className="text-2xl font-bold text-gray-900">
@@ -137,7 +165,9 @@ export const RubricsPage = () => {
 							<div className="card p-6">
 								<div className="flex items-center gap-4">
 									<div className="p-3 bg-purple-100 rounded-xl">
-										<span className="text-purple-600 text-xl">🎯</span>
+										<span className="text-purple-600 text-xl">
+											<FontAwesomeIcon icon={faStar} />
+										</span>
 									</div>
 									<div>
 										<div className="text-2xl font-bold text-gray-900">

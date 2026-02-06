@@ -7,6 +7,14 @@ import {ProtectedRoute} from "@/components/Auth";
 import {USER_ROLE_STUDENTS} from "@/gql/User";
 import {useCourse} from "@/hooks";
 import {UserRole, UsersStats} from "@/interface";
+import {
+	faEdit,
+	faGraduationCap,
+	faMagnifyingGlass,
+	faRemove,
+	faTrash,
+} from "@fortawesome/free-solid-svg-icons";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 const CourseManagement: React.FC = () => {
 	const {
@@ -169,14 +177,14 @@ const CourseManagement: React.FC = () => {
 															className="p-2 text-gray-400 hover:text-electric-600 hover:bg-electric-50 rounded-xl transition-all"
 															title="Editar Curso"
 														>
-															✏️
+															<FontAwesomeIcon icon={faEdit} />
 														</button>
 														<button
 															onClick={handleDeleteCourse}
 															className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
 															title="Eliminar Curso"
 														>
-															🗑️
+															<FontAwesomeIcon icon={faTrash} />
 														</button>
 													</div>
 												</div>
@@ -223,7 +231,7 @@ const CourseManagement: React.FC = () => {
 																className="text-gray-300 hover:text-red-500 transition-colors p-2"
 																title="Eliminar del curso"
 															>
-																🗑️
+																<FontAwesomeIcon icon={faRemove} />
 															</button>
 														</div>
 													))}
@@ -245,7 +253,9 @@ const CourseManagement: React.FC = () => {
 									</div>
 								) : (
 									<div className="h-full flex flex-col items-center justify-center py-20 bg-white/40 rounded-[3rem] border-2 border-dashed border-gray-200 backdrop-blur-sm">
-										<div className="text-6xl mb-6">🎓</div>
+										<div className="text-6xl mb-6">
+											<FontAwesomeIcon icon={faGraduationCap} />
+										</div>
 										<h3 className="text-xl font-black text-gray-900 mb-2">
 											Selecciona un curso
 										</h3>
@@ -394,7 +404,9 @@ const CourseManagement: React.FC = () => {
 									))
 								) : (
 									<div className="text-center py-10 text-gray-500">
-										<p className="text-2xl mb-2">🔍</p>
+										<p className="text-2xl mb-2">
+											<FontAwesomeIcon icon={faMagnifyingGlass} />
+										</p>
 										<p>No se encontraron estudiantes activos.</p>
 									</div>
 								)}

@@ -1,6 +1,16 @@
 import React from "react";
 import {RubricBuilderProps} from "@/types";
 import useRubricBuilder from "@/hooks/useRubricBuilder";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {
+	faCheck,
+	faEdit,
+	faFileText,
+	faLightbulb,
+	faMinus,
+	faPlus,
+	faRemove,
+} from "@fortawesome/free-solid-svg-icons";
 
 export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 	rubric,
@@ -97,7 +107,13 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 					className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
 				>
 					<h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-						<span>{showAddForm ? "➖" : "➕"}</span>
+						<span>
+							{showAddForm ? (
+								<FontAwesomeIcon icon={faMinus} />
+							) : (
+								<FontAwesomeIcon icon={faPlus} />
+							)}
+						</span>
 						{showAddForm ? "Cerrar Constructor" : "Añadir Nuevo Criterio"}
 					</h3>
 					{!showAddForm && (
@@ -220,7 +236,9 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 							<div className="flex items-start justify-between">
 								<div className="flex-1">
 									<div className="flex items-center gap-3 mb-2">
-										<span className="text-xl">📋</span>
+										<span className="text-xl text-electric-400">
+											<FontAwesomeIcon icon={faFileText} />
+										</span>
 										<div>
 											<div className="font-semibold text-gray-900">
 												{criteria.title}
@@ -294,7 +312,7 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 										className="p-2 text-gray-400 hover:text-red-500"
 										title="Eliminar criterio"
 									>
-										🗑️
+										<FontAwesomeIcon icon={faRemove} />
 									</button>
 									<button
 										onClick={() =>
@@ -305,7 +323,7 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 										className="p-2 text-gray-400 hover:text-electric-500"
 										title="Editar criterio"
 									>
-										✏️
+										<FontAwesomeIcon icon={faEdit} />
 									</button>
 								</div>
 							</div>
@@ -378,26 +396,36 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 			{/* Quick Tips */}
 			<div className="card p-6 bg-gradient-to-r from-electric-50 to-cyan-50 border border-electric-200">
 				<h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-					<span>💡</span>
+					<span className="text-amber-500">
+						<FontAwesomeIcon icon={faLightbulb} />
+					</span>
 					Consejos para una buena rúbrica
 				</h4>
 				<ul className="space-y-2 text-sm text-gray-700">
 					<li className="flex items-start gap-2">
-						<span className="text-green-500 mt-1">✓</span>
+						<span className="text-green-500 mt-1">
+							<FontAwesomeIcon icon={faCheck} />
+						</span>
 						<span>La suma de ponderaciones debe ser exactamente 100%</span>
 					</li>
 					<li className="flex items-start gap-2">
-						<span className="text-green-500 mt-1">✓</span>
+						<span className="text-green-500 mt-1">
+							<FontAwesomeIcon icon={faCheck} />
+						</span>
 						<span>Define criterios específicos y medibles</span>
 					</li>
 					<li className="flex items-start gap-2">
-						<span className="text-green-500 mt-1">✓</span>
+						<span className="text-green-500 mt-1">
+							<FontAwesomeIcon icon={faCheck} />
+						</span>
 						<span>
 							Incluye descripciones claras para cada nivel de desempeño
 						</span>
 					</li>
 					<li className="flex items-start gap-2">
-						<span className="text-green-500 mt-1">✓</span>
+						<span className="text-green-500 mt-1">
+							<FontAwesomeIcon icon={faCheck} />
+						</span>
 						<span>Considera el tiempo de evaluación que tomará la IA</span>
 					</li>
 				</ul>
