@@ -6,7 +6,7 @@ import Badge from "@/components/Common/Badge";
 import {ProtectedRoute} from "@/components/Auth";
 import {USER_ROLE_STUDENTS} from "@/gql/User";
 import {useCourse} from "@/hooks";
-import {UserRole, UsersStats} from "@/types";
+import {UserRole, UsersStats} from "@/interface";
 
 const CourseManagement: React.FC = () => {
 	const {

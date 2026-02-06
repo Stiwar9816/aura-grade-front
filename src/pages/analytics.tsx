@@ -5,7 +5,7 @@ import GradeDistribution from "@/components/Analytics/GradeDistribution";
 import StudentPerformance from "@/components/Analytics/StudentPerformance";
 // import ActivityTrends from "@/components/Analytics/ActivityTrends";
 import {ProtectedRoute} from "@/components/Auth";
-import {UserRole} from "@/types";
+import {UserRole} from "@/interface";
 
 const AnalyticsPage: React.FC = () => {
 	const [timeRange, setTimeRange] = useState<"week" | "month" | "semester">(

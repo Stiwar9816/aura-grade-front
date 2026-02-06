@@ -8,7 +8,7 @@ import {
 import {ProtectedRoute} from "@/components/Auth";
 import {useRubrics} from "@/hooks";
 import {exportToPDF, exportToCSV} from "@/utils";
-import {UserRole} from "@/types";
+import {UserRole} from "@/interface";
 
 export const RubricsPage = () => {
 	const {

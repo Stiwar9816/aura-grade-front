@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import {DocumentType, UserRole} from "@/types";
+import {DocumentType, UserRole} from "@/interface";
 import {AuthLayout} from "@/components/Auth";
 import {useRegister} from "@/hooks";
 

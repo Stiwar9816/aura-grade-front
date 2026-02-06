@@ -1,5 +1,5 @@
 import React, {useEffect} from "react";
-import {AuthToastProps} from "@/types";
+import {AuthToastProps} from "@/interface";
 
 export const AuthToast: React.FC<AuthToastProps> = ({
 	type,

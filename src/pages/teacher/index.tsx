@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from "react";
+import React, {useState} from "react";
 import {useRouter} from "next/router";
 import Layout from "@/components/Layout";
 import SubmissionTracker from "@/components/Teacher/SubmissionTracker";
@@ -13,7 +13,7 @@ import {
 	useAssignments,
 	useRecentActivity,
 } from "@/hooks";
-import {UserRole} from "@/types";
+import {UserRole} from "@/interface";
 
 const TeacherDashboard: React.FC = () => {
 	const {user} = useAuth();

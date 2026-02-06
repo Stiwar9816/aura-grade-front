@@ -2,7 +2,7 @@
 
 import {useEffect} from "react";
 import {useRouter} from "next/navigation";
-import {UserRole} from "@/types";
+import {UserRole} from "@/interface";
 
 export default function HomePage() {
 	const router = useRouter();

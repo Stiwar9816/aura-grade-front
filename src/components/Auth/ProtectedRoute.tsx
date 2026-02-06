@@ -1,7 +1,7 @@
 import React, {useEffect} from "react";
 import {useRouter} from "next/router";
 import {useAuth} from "@/hooks";
-import {ProtectedRouteProps, UserRole} from "@/types";
+import {ProtectedRouteProps, UserRole} from "@/interface";
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 	children,

@@ -3,7 +3,7 @@ import Layout from "@/components/Layout";
 import AssignmentCreator from "@/components/Teacher/AssignmentCreator";
 import {ProtectedRoute} from "@/components/Auth";
 import SectionHeader from "@/components/Common/SectionHeader";
-import {UserRole} from "@/types";
+import {UserRole} from "@/interface";
 
 const AssignmentsPage: React.FC = () => {
 	return (

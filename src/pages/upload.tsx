@@ -4,7 +4,7 @@ import UploadZone from "@/components/Upload/UploadZone";
 import UploadStepper from "@/components/Upload/UploadStepper";
 import Toast from "@/components/Common/Toast";
 import {ProtectedRoute} from "@/components/Auth";
-import {UserRole} from "@/types";
+import {UserRole} from "@/interface";
 
 const UploadPage: React.FC = () => {
 	const [currentStep, setCurrentStep] = useState<number>(0);

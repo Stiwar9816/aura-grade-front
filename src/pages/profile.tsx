@@ -4,7 +4,7 @@ import {ProtectedRoute} from "@/components/Auth";
 import {useAuth} from "@/hooks";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
-import {UserRole} from "@/types";
+import {UserRole} from "@/interface";
 
 const ProfilePage: React.FC = () => {
 	const {user} = useAuth();
