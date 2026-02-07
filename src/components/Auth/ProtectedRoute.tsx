@@ -15,9 +15,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 		if (!isLoading) {
 			if (!isAuthenticated) {
 				// No autenticado, redirigir a login
-				router.push(
-					`${redirectTo}?redirect=${encodeURIComponent(router.asPath)}`,
-				);
+				router.push(redirectTo);
 			} else if (requiredRole && user) {
 				// Comparar roles directamente sin normalizar
 				const userRole = user.role;

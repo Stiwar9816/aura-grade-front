@@ -87,7 +87,7 @@ const TeacherDashboard: React.FC = () => {
 
 	return (
 		<ProtectedRoute requiredRole={UserRole.TEACHER}>
-			<Layout>
+			<Layout title="Panel de docente" hideHeader>
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
 					<SectionHeader
@@ -98,20 +98,6 @@ const TeacherDashboard: React.FC = () => {
 							user?.role === UserRole.ADMIN
 								? "Vista general del sistema y todos los estudiantes activos"
 								: "Monitorea el progreso de tus estudiantes y gestiona tus evaluaciones"
-						}
-						actions={
-							user?.role === UserRole.TEACHER && (
-								<button
-									onClick={() => {
-										router.push("/teacher/assignments");
-									}}
-									className="btn-primary"
-								>
-									<span className="flex items-center gap-2">
-										<span>Nueva Tarea</span>
-									</span>
-								</button>
-							)
 						}
 						className="mb-8"
 					/>

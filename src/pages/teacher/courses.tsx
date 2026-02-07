@@ -15,6 +15,7 @@ import {
 	faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import SectionHeader from "@/components/Common/SectionHeader";
 
 const CourseManagement: React.FC = () => {
 	const {
@@ -97,8 +98,13 @@ const CourseManagement: React.FC = () => {
 
 	return (
 		<ProtectedRoute requiredRole={UserRole.TEACHER}>
-			<Layout title="Gestión de Cursos">
-				<div className="flex justify-end my-6">
+			<Layout title="Gestión de Cursos" hideHeader>
+				<SectionHeader
+					title="Gestión de Cursos"
+					description="Gestiona tus cursos y estudiantes"
+					className="mb-8"
+				/>
+				<div className="flex justify-end my-4">
 					<button
 						onClick={handleOpenCreateModal}
 						className="btn-primary flex items-center"

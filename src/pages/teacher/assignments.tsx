@@ -8,7 +8,7 @@ import {UserRole} from "@/interface";
 const AssignmentsPage: React.FC = () => {
 	return (
 		<ProtectedRoute requiredRole={UserRole.TEACHER}>
-			<Layout>
+			<Layout title="Crear Tarea" hideHeader>
 				<div className="space-y-8">
 					<SectionHeader
 						title="Crear Nueva Tarea"

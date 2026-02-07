@@ -116,7 +116,7 @@ const StudentDashboard: React.FC = () => {
 
 	return (
 		<ProtectedRoute requiredRole={UserRole.STUDENT}>
-			<Layout title="Panel principal">
+			<Layout title="Panel Estudiante" hideHeader>
 				<div className="max-w-6xl mx-auto">
 					{/* Welcome Banner */}
 					<Banner
