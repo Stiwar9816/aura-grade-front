@@ -1,10 +1,17 @@
-import React, {useState} from "react";
+import {useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/router";
-import useAuth from "@/hooks/useAuth";
-import {UserRole} from "@/types";
+import {useAuth} from "@/hooks";
+import {UserRole} from "@/interface";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {
+	faGear,
+	faQuestionCircle,
+	faSignOut,
+	faUser,
+} from "@fortawesome/free-solid-svg-icons";
 
-const UserMenu: React.FC = () => {
+export const UserMenu = () => {
 	const {user, logout} = useAuth();
 	const router = useRouter();
 	const [isOpen, setIsOpen] = useState(false);
@@ -116,7 +123,9 @@ const UserMenu: React.FC = () => {
 								className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 text-gray-700"
 								onClick={() => setIsOpen(false)}
 							>
-								<span className="text-xl">👤</span>
+								<span className="text-xl">
+									<FontAwesomeIcon icon={faUser} />
+								</span>
 								<span>Mi Perfil</span>
 							</Link>
 							<Link
@@ -124,7 +133,9 @@ const UserMenu: React.FC = () => {
 								className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 text-gray-700"
 								onClick={() => setIsOpen(false)}
 							>
-								<span className="text-xl">⚙️</span>
+								<span className="text-xl">
+									<FontAwesomeIcon icon={faGear} />
+								</span>
 								<span>Configuración</span>
 							</Link>
 							<Link
@@ -132,7 +143,9 @@ const UserMenu: React.FC = () => {
 								className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 text-gray-700"
 								onClick={() => setIsOpen(false)}
 							>
-								<span className="text-xl">❓</span>
+								<span className="text-xl">
+									<FontAwesomeIcon icon={faQuestionCircle} />
+								</span>
 								<span>Ayuda y Soporte</span>
 							</Link>
 
@@ -140,9 +153,11 @@ const UserMenu: React.FC = () => {
 
 							<button
 								onClick={handleLogout}
-								className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 text-red-600 w-full text-left"
+								className="flex items-center gap-3 p-3 rounded-lg hover:bg-red-50 text-red-500 w-full text-left"
 							>
-								<span className="text-xl">🚪</span>
+								<span className="text-xl">
+									<FontAwesomeIcon icon={faSignOut} />
+								</span>
 								<span>Cerrar sesión</span>
 							</button>
 						</div>
@@ -152,5 +167,3 @@ const UserMenu: React.FC = () => {
 		</div>
 	);
 };
-
-export default UserMenu;

@@ -1,15 +1,11 @@
 import React from "react";
+import {EvaluationSummaryProps} from "@/interface";
 
-interface EvaluationSummaryProps {
-	score: number;
-	maxScore: number;
-	feedback: string;
-}
-
-const EvaluationSummary: React.FC<EvaluationSummaryProps> = ({
+export const EvaluationSummary: React.FC<EvaluationSummaryProps> = ({
 	score,
 	maxScore,
 	feedback,
+	evaluationDate,
 }) => {
 	const percentage = (score / maxScore) * 100;
 
@@ -19,14 +15,6 @@ const EvaluationSummary: React.FC<EvaluationSummaryProps> = ({
 		if (percentage >= 60)
 			return "text-yellow-600 bg-yellow-50 border-yellow-200";
 		return "text-red-600 bg-red-50 border-red-200";
-	};
-
-	const getGradeLetter = () => {
-		if (percentage >= 90) return "A";
-		if (percentage >= 80) return "B";
-		if (percentage >= 70) return "C";
-		if (percentage >= 60) return "D";
-		return "F";
 	};
 
 	return (
@@ -69,11 +57,6 @@ const EvaluationSummary: React.FC<EvaluationSummaryProps> = ({
 								{score.toFixed(1)}
 							</span>
 							<span className="text-gray-600">/{maxScore}</span>
-							<div
-								className={`mt-1 px-3 py-1 rounded-full text-sm font-semibold ${getScoreColor()}`}
-							>
-								{getGradeLetter()}
-							</div>
 						</div>
 					</div>
 				</div>
@@ -81,43 +64,19 @@ const EvaluationSummary: React.FC<EvaluationSummaryProps> = ({
 				{/* Feedback Section */}
 				<div className="flex-1">
 					<div className="flex items-center gap-3 mb-4">
-						<div className="p-2 bg-gradient-to-r from-electric-500 to-cyan-500 rounded-lg">
-							<span className="text-white text-xl">📋</span>
-						</div>
 						<h2 className="text-2xl font-bold text-gray-900">
 							Resumen de Evaluación
 						</h2>
 					</div>
 
-					<div className="bg-gray-50 rounded-xl p-5">
+					<div className="bg-gray-100 rounded-xl p-5">
 						<div className="flex items-start gap-3">
-							<span className="text-electric-500 text-xl mt-1">💡</span>
 							<div>
 								<h3 className="font-semibold text-gray-900 mb-2">
 									Feedback General
 								</h3>
 								<p className="text-gray-700 leading-relaxed">{feedback}</p>
 							</div>
-						</div>
-					</div>
-
-					{/* Quick Stats */}
-					<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-						<div className="text-center p-3 bg-gray-50 rounded-lg">
-							<div className="text-lg font-bold text-electric-500">92%</div>
-							<div className="text-xs text-gray-600">Coherencia</div>
-						</div>
-						<div className="text-center p-3 bg-gray-50 rounded-lg">
-							<div className="text-lg font-bold text-green-500">88%</div>
-							<div className="text-xs text-gray-600">Originalidad</div>
-						</div>
-						<div className="text-center p-3 bg-gray-50 rounded-lg">
-							<div className="text-lg font-bold text-cyan-500">95%</div>
-							<div className="text-xs text-gray-600">Formato</div>
-						</div>
-						<div className="text-center p-3 bg-gray-50 rounded-lg">
-							<div className="text-lg font-bold text-deep-purple">85%</div>
-							<div className="text-xs text-gray-600">Investigación</div>
 						</div>
 					</div>
 				</div>
@@ -127,26 +86,21 @@ const EvaluationSummary: React.FC<EvaluationSummaryProps> = ({
 			<div className="mt-6 pt-6 border-t border-gray-200">
 				<div className="flex items-center justify-between text-sm text-gray-500">
 					<div className="flex items-center gap-2">
-						<span>🕒</span>
 						<span>
 							Evaluación generada el{" "}
-							{new Date().toLocaleDateString("es-ES", {
-								day: "numeric",
-								month: "long",
-								year: "numeric",
-								hour: "2-digit",
-								minute: "2-digit",
-							})}
+							{evaluationDate
+								? new Date(evaluationDate).toLocaleDateString("es-ES", {
+										day: "numeric",
+										month: "long",
+										year: "numeric",
+										hour: "2-digit",
+										minute: "2-digit",
+									})
+								: "Fecha desconocida"}
 						</span>
-					</div>
-					<div className="flex items-center gap-2">
-						<span>🤖</span>
-						<span>Modelo: GPT-4 Edu v2.1</span>
 					</div>
 				</div>
 			</div>
 		</div>
 	);
 };
-
-export default EvaluationSummary;

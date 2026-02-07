@@ -1,54 +1,33 @@
-import React, {useState} from "react";
-import {Rubric, RubricCriteria} from "@/types";
+import React from "react";
+import {RubricBuilderProps} from "@/types";
+import useRubricBuilder from "@/hooks/useRubricBuilder";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {
+	faCheck,
+	faEdit,
+	faFileText,
+	faLightbulb,
+	faMinus,
+	faPlus,
+	faRemove,
+} from "@fortawesome/free-solid-svg-icons";
 
-interface RubricBuilderProps {
-	rubric: Rubric;
-	onAddCriteria: (criteria: RubricCriteria) => void;
-	onUpdateCriteria: (id: string, updated: Partial<RubricCriteria>) => void;
-	onDeleteCriteria: (id: string) => void;
-}
-
-const RubricBuilder: React.FC<RubricBuilderProps> = ({
+export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 	rubric,
 	onAddCriteria,
 	onUpdateCriteria,
 	onDeleteCriteria,
 }) => {
-	const [showAddForm, setShowAddForm] = useState(false);
-	const [newCriteria, setNewCriteria] = useState<Partial<RubricCriteria>>({
-		name: "",
-		description: "",
-		weight: 10,
-		maxScore: 10,
-	});
-
-	const [editingId, setEditingId] = useState<string | null>(null);
-
-	const handleAdd = () => {
-		if (!newCriteria.name || !newCriteria.description) return;
-
-		const criteria: RubricCriteria = {
-			id: Date.now().toString(),
-			name: newCriteria.name,
-			description: newCriteria.description,
-			weight: newCriteria.weight || 10,
-			maxScore: newCriteria.maxScore || 10,
-		};
-
-		onAddCriteria(criteria);
-		setNewCriteria({
-			name: "",
-			description: "",
-			weight: 10,
-			maxScore: 10,
-		});
-		setShowAddForm(false);
-	};
-
-	const handleSave = (id: string) => {
-		setEditingId(null);
-		// Los cambios ya se aplican en tiempo real
-	};
+	const {
+		editingId,
+		handleAdd,
+		handleSave,
+		newCriteria,
+		setEditingId,
+		setNewCriteria,
+		setShowAddForm,
+		showAddForm,
+	} = useRubricBuilder({onAddCriteria});
 
 	return (
 		<div className="space-y-6">
@@ -92,7 +71,7 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 									width: `${c.weight}%`,
 									backgroundColor: `hsl(${(idx * 137.5) % 360}, 70%, 60%)`,
 								}}
-								title={`${c.name}: ${c.weight}%`}
+								title={`${c.title}: ${c.weight}%`}
 							/>
 						))}
 						{rubric.totalWeight < 100 && (
@@ -114,7 +93,7 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 										backgroundColor: `hsl(${(idx * 137.5) % 360}, 70%, 60%)`,
 									}}
 								/>
-								<span>{c.name}</span>
+								<span>{c.title}</span>
 							</div>
 						))}
 					</div>
@@ -128,7 +107,13 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 					className="w-full p-6 flex items-center justify-between hover:bg-gray-50 transition-colors"
 				>
 					<h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-						<span>{showAddForm ? "➖" : "➕"}</span>
+						<span>
+							{showAddForm ? (
+								<FontAwesomeIcon icon={faMinus} />
+							) : (
+								<FontAwesomeIcon icon={faPlus} />
+							)}
+						</span>
 						{showAddForm ? "Cerrar Constructor" : "Añadir Nuevo Criterio"}
 					</h3>
 					{!showAddForm && (
@@ -147,9 +132,9 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 								</label>
 								<input
 									type="text"
-									value={newCriteria.name}
+									value={newCriteria.title}
 									onChange={(e) =>
-										setNewCriteria({...newCriteria, name: e.target.value})
+										setNewCriteria({...newCriteria, title: e.target.value})
 									}
 									className="input-primary"
 									placeholder="Ej: Ortografía y Gramática"
@@ -202,11 +187,11 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 									Puntuación Máxima
 								</label>
 								<select
-									value={newCriteria.maxScore}
+									value={newCriteria.maxPoints}
 									onChange={(e) =>
 										setNewCriteria({
 											...newCriteria,
-											maxScore: parseInt(e.target.value),
+											maxPoints: parseInt(e.target.value),
 										})
 									}
 									className="input-primary"
@@ -221,9 +206,9 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 							<div className="flex items-end">
 								<button
 									onClick={handleAdd}
-									disabled={!newCriteria.name || !newCriteria.description}
+									disabled={!newCriteria.title || !newCriteria.description}
 									className={`w-full py-3 rounded-xl font-semibold transition-all ${
-										!newCriteria.name || !newCriteria.description
+										!newCriteria.title || !newCriteria.description
 											? "bg-gray-300 text-gray-500 cursor-not-allowed"
 											: "btn-primary shadow-lg shadow-electric-200"
 									}`}
@@ -251,10 +236,12 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 							<div className="flex items-start justify-between">
 								<div className="flex-1">
 									<div className="flex items-center gap-3 mb-2">
-										<span className="text-xl">📋</span>
+										<span className="text-xl text-electric-400">
+											<FontAwesomeIcon icon={faFileText} />
+										</span>
 										<div>
 											<div className="font-semibold text-gray-900">
-												{criteria.name}
+												{criteria.title}
 											</div>
 											<div className="text-sm text-gray-600">
 												{criteria.description}
@@ -292,10 +279,10 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 												Puntuación máxima
 											</label>
 											<select
-												value={criteria.maxScore}
+												value={criteria.maxPoints}
 												onChange={(e) =>
 													onUpdateCriteria(criteria.id, {
-														maxScore: parseInt(e.target.value),
+														maxPoints: parseInt(e.target.value),
 													})
 												}
 												className="input-primary text-sm"
@@ -313,7 +300,7 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 												Puntos asignables
 											</label>
 											<div className="text-lg font-bold text-gray-900">
-												{criteria.maxScore} puntos
+												{criteria.maxPoints} puntos
 											</div>
 										</div>
 									</div>
@@ -325,18 +312,18 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 										className="p-2 text-gray-400 hover:text-red-500"
 										title="Eliminar criterio"
 									>
-										🗑️
+										<FontAwesomeIcon icon={faRemove} />
 									</button>
 									<button
 										onClick={() =>
 											setEditingId(
-												editingId === criteria.id ? null : criteria.id
+												editingId === criteria.id ? null : criteria.id,
 											)
 										}
 										className="p-2 text-gray-400 hover:text-electric-500"
 										title="Editar criterio"
 									>
-										✏️
+										<FontAwesomeIcon icon={faEdit} />
 									</button>
 								</div>
 							</div>
@@ -350,9 +337,9 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 											</label>
 											<input
 												type="text"
-												value={criteria.name}
+												value={criteria.title}
 												onChange={(e) =>
-													onUpdateCriteria(criteria.id, {name: e.target.value})
+													onUpdateCriteria(criteria.id, {title: e.target.value})
 												}
 												className="input-primary"
 											/>
@@ -409,26 +396,36 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 			{/* Quick Tips */}
 			<div className="card p-6 bg-gradient-to-r from-electric-50 to-cyan-50 border border-electric-200">
 				<h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
-					<span>💡</span>
+					<span className="text-amber-500">
+						<FontAwesomeIcon icon={faLightbulb} />
+					</span>
 					Consejos para una buena rúbrica
 				</h4>
 				<ul className="space-y-2 text-sm text-gray-700">
 					<li className="flex items-start gap-2">
-						<span className="text-green-500 mt-1">✓</span>
+						<span className="text-green-500 mt-1">
+							<FontAwesomeIcon icon={faCheck} />
+						</span>
 						<span>La suma de ponderaciones debe ser exactamente 100%</span>
 					</li>
 					<li className="flex items-start gap-2">
-						<span className="text-green-500 mt-1">✓</span>
+						<span className="text-green-500 mt-1">
+							<FontAwesomeIcon icon={faCheck} />
+						</span>
 						<span>Define criterios específicos y medibles</span>
 					</li>
 					<li className="flex items-start gap-2">
-						<span className="text-green-500 mt-1">✓</span>
+						<span className="text-green-500 mt-1">
+							<FontAwesomeIcon icon={faCheck} />
+						</span>
 						<span>
 							Incluye descripciones claras para cada nivel de desempeño
 						</span>
 					</li>
 					<li className="flex items-start gap-2">
-						<span className="text-green-500 mt-1">✓</span>
+						<span className="text-green-500 mt-1">
+							<FontAwesomeIcon icon={faCheck} />
+						</span>
 						<span>Considera el tiempo de evaluación que tomará la IA</span>
 					</li>
 				</ul>
@@ -436,5 +433,3 @@ const RubricBuilder: React.FC<RubricBuilderProps> = ({
 		</div>
 	);
 };
-
-export default RubricBuilder;

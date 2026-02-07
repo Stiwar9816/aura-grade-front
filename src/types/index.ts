@@ -1,11 +1,9 @@
-export interface User {
-	id: string;
-	name: string;
-	last_name: string;
-	email: string;
-	role: UserRole;
-	token?: string;
-	phone: number;
+export interface DashboardStats {
+	totalStudents: number;
+	activeAssignments: number;
+	pendingEvaluations: number;
+	averageGrade: number;
+	completionRate: number;
 }
 
 export interface Task {
@@ -18,15 +16,8 @@ export interface Task {
 	maxScore: number;
 	studentCount?: number;
 }
-
-export interface RubricCriteria {
-	id: string;
-	name: string;
-	description: string;
-	weight: number;
-	maxScore: number;
-}
-
+// CRITERIA REMOVED (Duplicate)
+// EVALUATION
 export interface Evaluation {
 	id: string;
 	taskId: string;
@@ -43,7 +34,7 @@ export interface CriteriaFeedback {
 	feedback: string;
 	suggestion: string;
 }
-
+// ACTIVITY
 export interface Activity {
 	id: string;
 	type: "upload" | "graded" | "ai_processing" | "rubric_updated" | "alert";
@@ -91,33 +82,11 @@ export interface ValidationResult {
 	warnings?: string[];
 }
 
-export interface RubricCriteria {
-	id: string;
-	name: string;
-	description: string;
-	weight: number; // porcentaje
-	maxScore: number;
-}
+// RUBRIC
 
-export interface Rubric {
-	id: string;
-	name: string;
-	description: string;
-	criteria: RubricCriteria[];
-	totalWeight: number;
-	createdAt: string;
-	updatedAt: string;
-	isActive: boolean;
-}
+// CRITERION
 
-export interface RubricTemplate {
-	id: string;
-	name: string;
-	description: string;
-	criteriaCount: number;
-	usedCount: number;
-}
-
+// ANALYTICS
 export interface AnalyticsData {
 	period: string;
 	averageGrade: number;
@@ -151,58 +120,12 @@ export interface HeatmapData {
 	scores: number[][];
 }
 
-export interface Assignment {
-	id: string;
-	title: string;
-	description: string;
-	dueDate: string;
-	rubric?: {
-		criteria: {
-			name: string;
-			description: string;
-			weight: number;
-		}[];
-	};
-	status: "pending" | "submitted" | "graded" | "overdue";
-}
-
-export interface AssignmentCardProps {
-	assignment: Assignment;
-	onSelect: (assignment: Assignment) => void;
-}
-
 export interface Step {
 	id: number;
 	title: string;
 	description: string;
 	status: "pending" | "active" | "completed";
 	message: string;
-}
-
-export interface RubricCriterion {
-	id: string;
-	name: string;
-	description: string;
-	weight: number;
-	maxScore: number;
-	performanceLevels?: {
-		label: string;
-		description: string;
-		minScore: number;
-		maxScore: number;
-	}[];
-}
-
-export interface AssignmentForm {
-	title: string;
-	description: string;
-	dueDate: string;
-	maxScore: number;
-	rubric: {
-		name: string;
-		description: string;
-		criteria: RubricCriterion[];
-	};
 }
 
 export interface AIEvaluation {
@@ -218,26 +141,6 @@ export interface AIEvaluation {
 	confidence: number;
 }
 
-export interface TeacherOverride {
-	criterionId: string;
-	originalScore: number;
-	newScore: number;
-	reason: string;
-	comments: string;
-}
-
-export interface Submission {
-	id: string;
-	studentName: string;
-	studentEmail: string;
-	assignmentTitle: string;
-	submittedAt: string;
-	status: "pending" | "graded" | "overdue" | "in_review";
-	grade?: number;
-	aiConfidence?: number;
-	needsAttention: boolean;
-}
-
 export interface UserJourney {
 	role: "student" | "teacher";
 	journeyType: "upload" | "evaluation" | "creation" | "review";
@@ -245,120 +148,4 @@ export interface UserJourney {
 	totalSteps: number;
 	estimatedTime: number;
 	isComplete: boolean;
-}
-
-export interface StudentAssignment {
-	id: string;
-	title: string;
-	description: string;
-	dueDate: string;
-	rubric: {
-		criteria: {
-			name: string;
-			description: string;
-			weight: number;
-		}[];
-	};
-	status: "pending" | "submitted" | "graded" | "overdue";
-	grade?: number;
-	feedback?: string;
-}
-
-export interface TeacherAssignment {
-	id: string;
-	title: string;
-	description: string;
-	dueDate: string;
-	totalStudents: number;
-	submissions: number;
-	pendingEvaluations: number;
-	averageGrade: number;
-	rubric: Rubric;
-}
-
-export interface TeacherEvaluation {
-	overallScore: number;
-	criteriaScores: Record<string, number>;
-	overrides: TeacherOverride[];
-	finalFeedback: string;
-	published: boolean;
-}
-
-export interface RegisterFormData {
-	name: string;
-	last_name: string;
-	documentType: DocumentType;
-	documentNum: string;
-	phone: string;
-	email: string;
-	password: string;
-	confirmPassword: string;
-	userType: UserRole;
-	acceptTerms: boolean;
-}
-
-export interface AuthToastProps {
-	type: "success" | "error" | "info" | "welcome";
-	message: string;
-	onClose: () => void;
-	duration?: number;
-}
-
-export interface AuthLayoutProps {
-	children: React.ReactNode;
-	title: string;
-	subtitle: string;
-	heroTitle?: React.ReactNode;
-	heroSubtitle?: string;
-	features?: Array<{
-		icon: string;
-		title: string;
-		description: string;
-		gradient: string;
-	}>;
-}
-
-export interface AuthState {
-	user: User | null;
-	isAuthenticated: boolean;
-	isLoading: boolean;
-	error: string | null;
-}
-
-export interface LoginCredentials {
-	email: string;
-	password: string;
-	rememberMe: boolean;
-}
-
-export interface RegisterData {
-	name: string;
-	last_name: string;
-	document_type?: string;
-	document_num?: number;
-	phone?: number;
-	email: string;
-	password: string;
-	role: UserRole;
-}
-
-export interface ProtectedRouteProps {
-	children: React.ReactNode;
-	requiredRole?: UserRole;
-	redirectTo?: string;
-}
-
-export enum UserRole {
-	STUDENT = "Estudiante",
-	TEACHER = "Docente",
-	ADMIN = "Administrador",
-}
-
-export enum DocumentType {
-	CITIZENSHIP_CARD = "Cedula de ciudadania",
-	PASSPORT = "Pasaporte",
-	CIVIL_REGISRTRY = "Registro civil",
-	FOREIGNER_CARD = "Cedula de extranjeria",
-	MILITARY_ID = "Libreta militar",
-	IDENTITY_CARD = "Tarjeta de identidad",
 }

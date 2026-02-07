@@ -12,7 +12,9 @@ interface SuggestionPanelProps {
 	suggestions: Suggestion[];
 }
 
-const SuggestionPanel: React.FC<SuggestionPanelProps> = ({suggestions}) => {
+export const SuggestionPanel: React.FC<SuggestionPanelProps> = ({
+	suggestions,
+}) => {
 	const [filter, setFilter] = useState<string>("all");
 	const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -142,14 +144,14 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({suggestions}) => {
 												</span>
 												<span
 													className={`text-xs px-2 py-1 rounded-full ${getSeverityColor(
-														suggestion.severity
+														suggestion.severity,
 													)}`}
 												>
 													{suggestion.severity === "high"
 														? "Alta"
 														: suggestion.severity === "medium"
-														? "Media"
-														: "Baja"}
+															? "Media"
+															: "Baja"}
 												</span>
 											</div>
 										</div>
@@ -234,5 +236,3 @@ const SuggestionPanel: React.FC<SuggestionPanelProps> = ({suggestions}) => {
 		</div>
 	);
 };
-
-export default SuggestionPanel;

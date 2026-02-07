@@ -1,6 +1,6 @@
 import React, {useState} from "react";
 import Layout from "@/components/Layout";
-import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 

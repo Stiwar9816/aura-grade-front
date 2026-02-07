@@ -1,7 +1,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import UserMenu from "./Auth/UserMenu";
+import {UserMenu} from "./Auth";
 
 const Header: React.FC = () => {
 	return (

@@ -2,8 +2,8 @@
 
 import {useState} from "react";
 import {useRouter} from "next/navigation";
-import {UserRole} from "@/types";
-import useAuth from "./useAuth";
+import {UserRole} from "@/interface";
+import {useAuth} from "./";
 
 export const useLogin = () => {
 	const router = useRouter();
@@ -55,5 +55,3 @@ export const useLogin = () => {
 		handleSocialLogin,
 	};
 };
-
-export default useLogin;

@@ -1,8 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import AuthLayout from "@/components/Auth/AuthLayout";
-import useLogin from "@/hooks/useLogin";
+import {AuthLayout} from "@/components/Auth";
+import {useLogin} from "@/hooks";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {
+	faChartColumn,
+	faClock,
+	faHeadSideVirus,
+} from "@fortawesome/free-solid-svg-icons";
 
 const LoginPage: React.FC = () => {
 	const {
@@ -18,20 +24,20 @@ const LoginPage: React.FC = () => {
 
 	const features = [
 		{
-			icon: "🤖",
+			icon: <FontAwesomeIcon icon={faHeadSideVirus} />,
 			title: "IA Especializada",
 			description:
 				"Modelos entrenados específicamente para evaluación educativa",
 			gradient: "from-electric-500 to-cyan-500",
 		},
 		{
-			icon: "⚡",
+			icon: <FontAwesomeIcon icon={faClock} />,
 			title: "Feedback Instantáneo",
 			description: "Resultados detallados en menos de 30 segundos",
 			gradient: "from-purple-500 to-pink-500",
 		},
 		{
-			icon: "📊",
+			icon: <FontAwesomeIcon icon={faChartColumn} />,
 			title: "Análisis Profundo",
 			description: "Insights pedagógicos para mejorar el aprendizaje",
 			gradient: "from-green-500 to-emerald-500",

@@ -1,8 +1,9 @@
 import {useState, useEffect} from "react";
-import {AuthState, LoginCredentials, RegisterData} from "@/types";
+import {AuthState, LoginCredentials, RegisterData} from "@/interface";
 import {loginAction, registerAction} from "@/actions/auth";
+import {isTokenExpired} from "@/utils/authUtils";
 
-const useAuth = () => {
+export const useAuth = () => {
 	const [authState, setAuthState] = useState<AuthState>({
 		user: null,
 		isAuthenticated: false,
@@ -12,18 +13,41 @@ const useAuth = () => {
 
 	// Check authentication on mount using localStorage
 	useEffect(() => {
-		const storedUser = localStorage.getItem("auraGrade_user");
-		if (storedUser) {
-			try {
-				const user = JSON.parse(storedUser);
-				setAuthState({
-					user,
-					isAuthenticated: true,
-					isLoading: false,
-					error: null,
-				});
-			} catch (error) {
-				localStorage.removeItem("auraGrade_user");
+		const checkAuth = () => {
+			const storedUser = localStorage.getItem("auraGrade_user");
+			if (storedUser) {
+				try {
+					const user = JSON.parse(storedUser);
+					if (user.token && isTokenExpired(user.token)) {
+						// Token expired
+						console.log("Token expirado, cerrando sesión...");
+						localStorage.removeItem("auraGrade_user");
+						setAuthState({
+							user: null,
+							isAuthenticated: false,
+							isLoading: false,
+							error: null,
+						});
+					} else {
+						// Token valid
+						setAuthState({
+							user,
+							isAuthenticated: true,
+							isLoading: false,
+							error: null,
+						});
+					}
+				} catch (error) {
+					console.error("Error al verificar la autenticación:", error);
+					localStorage.removeItem("auraGrade_user");
+					setAuthState({
+						user: null,
+						isAuthenticated: false,
+						isLoading: false,
+						error: null,
+					});
+				}
+			} else {
 				setAuthState({
 					user: null,
 					isAuthenticated: false,
@@ -31,18 +55,35 @@ const useAuth = () => {
 					error: null,
 				});
 			}
-		} else {
-			setAuthState({
-				user: null,
-				isAuthenticated: false,
-				isLoading: false,
-				error: null,
-			});
-		}
+		};
+
+		checkAuth();
+
+		// Optional: Periodic check
+		const interval = setInterval(() => {
+			const storedUser = localStorage.getItem("auraGrade_user");
+			if (storedUser) {
+				const user = JSON.parse(storedUser);
+				if (user.token && isTokenExpired(user.token)) {
+					console.log("La sesión expiró durante el uso");
+					localStorage.removeItem("auraGrade_user");
+					setAuthState({
+						user: null,
+						isAuthenticated: false,
+						isLoading: false,
+						error: null,
+					});
+					// Force redirect if needed, but state change might handle it
+					window.location.href = "/login";
+				}
+			}
+		}, 60000); // Check every minute
+
+		return () => clearInterval(interval);
 	}, []);
 
 	const login = async (
-		credentials: Pick<LoginCredentials, "email" | "password">
+		credentials: Pick<LoginCredentials, "email" | "password">,
 	) => {
 		setAuthState((prev) => ({...prev, isLoading: true, error: null}));
 
@@ -132,5 +173,3 @@ const useAuth = () => {
 		logout,
 	};
 };
-
-export default useAuth;

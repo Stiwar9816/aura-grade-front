@@ -27,6 +27,16 @@ Aura Grade tiene como objetivo cerrar la brecha entre la evaluación tradicional
 - **Estilos**: [Tailwind CSS](https://tailwindcss.com/)
 - **Lenguaje**: [TypeScript](https://www.typescriptlang.org/)
 - **Componentes de UI**: Componentes estéticos personalizados con accesibilidad tipo Radix.
+- **Gestión de Estado y Datos**: [Apollo Client](https://www.apollographql.com/docs/react/) para la integración con GraphQL.
+
+## ⚙️ Configuración del Entorno
+
+Asegúrate de crear un archivo `.env.local` basado en `.env.example` (si existe) o incluir la siguiente variable para la conexión con la API:
+
+```bash
+NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:3000/graphql # Ajusta esto a la URL de tu backend
+NEXT_PUBLIC_API_URL=http://localhost:3000/api # Ajusta esto a la URL de tu backend
+```
 
 ## 🚀 Cómo Empezar
 
