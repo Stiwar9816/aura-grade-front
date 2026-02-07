@@ -1,5 +1,7 @@
 import React, {useState} from "react";
-import type {RubricLibraryProps} from "@/types";
+import type {RubricLibraryProps} from "@/interface";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faFileText} from "@fortawesome/free-solid-svg-icons";
 
 export const RubricLibrary: React.FC<RubricLibraryProps> = ({
 	templates,
@@ -12,7 +14,7 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
 	const [search, setSearch] = useState("");
 	const [filter, setFilter] = useState<"all" | "popular" | "recent">("all");
 
-	const filteredTemplates = templates.filter((template) =>
+	const filteredTemplates = templates.filter((template: any) =>
 		template.title.toLowerCase().includes(search.toLowerCase()),
 	);
 
@@ -85,14 +87,16 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
 			{/* Grid de plantillas */}
 			{!loading && !error && (
 				<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-					{filteredTemplates.map((template) => (
+					{filteredTemplates.map((template: any) => (
 						<div
 							key={template.id}
 							className="card p-6 hover:shadow-lg transition-shadow group"
 						>
 							<div className="flex items-start justify-between mb-4">
 								<div className="p-3 bg-gradient-to-r from-electric-500 to-cyan-500 rounded-xl">
-									<span className="text-white text-xl">📋</span>
+									<span className="text-white text-xl">
+										<FontAwesomeIcon icon={faFileText} />
+									</span>
 								</div>
 								<span className="text-sm font-semibold text-electric-600">
 									{template.maxTotalScore} pts

@@ -1,5 +1,5 @@
 import {useState, useEffect} from "react";
-import {getSubmissionById} from "@/actions";
+import {SubmissionActions} from "@/actions";
 import {EvaluationDetailState} from "@/interface";
 import {mapSubmissionToEvaluation} from "@/utils";
 
@@ -13,6 +13,7 @@ export const useEvaluationDetail = (submissionId: string | null) => {
 		aiComments: "",
 		studentName: "",
 	});
+	const {getSubmissionById} = SubmissionActions();
 
 	useEffect(() => {
 		const fetchEvaluation = async () => {

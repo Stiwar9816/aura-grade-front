@@ -7,3 +7,4 @@ export * from "./Teacher.interface";
 export * from "./User.interface";
 export * from "./Activity.interface";
 export * from "./Evaluation.interface";
+export * from "./Analytic.interface";

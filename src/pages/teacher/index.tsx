@@ -19,8 +19,6 @@ import {
 	faCloudArrowUp,
 	faFilePen,
 	faHouse,
-	faPencil,
-	faRing,
 } from "@fortawesome/free-solid-svg-icons";
 
 const TeacherDashboard: React.FC = () => {

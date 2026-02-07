@@ -1,18 +1,14 @@
-import {useQuery} from "@apollo/client/react";
-import {USER_ROLE_STUDENTS} from "@/gql/User";
 import {useAuth} from "@/hooks";
-import {UserRole, UsersStats} from "@/interface";
+import {useUserStatsActions} from "@/actions";
+import {UserRole} from "@/interface";
 import {DashboardStats} from "@/types";
 
 export const useUserStats = () => {
 	const {user: currentUser} = useAuth();
-	const {data, loading, error} = useQuery<UsersStats>(USER_ROLE_STUDENTS, {
-		fetchPolicy: "cache-and-network",
-		skip: !currentUser,
-	});
+	const {userStats, loading, error} = useUserStatsActions(currentUser);
 
 	const calculateStats = (): DashboardStats => {
-		if (!data || !data.users || !currentUser) {
+		if (!userStats || !currentUser) {
 			return {
 				totalStudents: 0,
 				activeAssignments: 0,
@@ -26,7 +22,7 @@ export const useUserStats = () => {
 		const isTeacher = currentUser.role === UserRole.TEACHER;
 
 		// 1. Filtrar estudiantes según el rol
-		let students = data.users.filter(
+		let students = userStats.users.filter(
 			(u) => u.role === UserRole.STUDENT && u.isActive === true,
 		);
 
@@ -55,7 +51,9 @@ export const useUserStats = () => {
 
 		if (isAdmin) {
 			// Admin: todas las tareas activas del sistema que no han vencido
-			const allTeachers = data.users.filter((u) => u.role === UserRole.TEACHER);
+			const allTeachers = userStats.users.filter(
+				(u) => u.role === UserRole.TEACHER,
+			);
 			relevantAssignments = allTeachers.flatMap(
 				(teacher) =>
 					teacher.assignments?.filter(
@@ -64,7 +62,7 @@ export const useUserStats = () => {
 			);
 			activeAssignments = relevantAssignments.length;
 		} else if (isTeacher) {
-			const teacherData = data.users.find(
+			const teacherData = userStats.users.find(
 				(u) => String(u.id) === String(currentUser.id),
 			);
 
@@ -84,7 +82,9 @@ export const useUserStats = () => {
 
 				// Fallback 2: Colectar todas las tareas únicas de todos los usuarios
 				if (relevantAssignments.length === 0) {
-					const allAssignments = data.users.flatMap((u) => u.assignments || []);
+					const allAssignments = userStats.users.flatMap(
+						(u) => u.assignments || [],
+					);
 					const uniqueMap = new Map();
 					allAssignments.forEach((a: any) => {
 						if (a && !uniqueMap.has(a.id)) {

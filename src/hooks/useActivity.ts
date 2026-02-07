@@ -1,20 +1,12 @@
-import {useQuery} from "@apollo/client/react";
-import {GET_RECENT_ACTIVITY} from "@/gql/Activity";
-import {ActivityItem, ActivityType} from "@/interface";
 import {useAuth} from "@/hooks";
+import {useActivityActions} from "@/actions";
+import {ActivityItem, ActivityType} from "@/interface";
 import {formatDistanceToNow} from "date-fns";
 import {es} from "date-fns/locale";
 
 export const useRecentActivity = (limit: number = 8) => {
 	const {user} = useAuth();
-
-	const {data, loading, error} = useQuery<{submissions: any[]}>(
-		GET_RECENT_ACTIVITY,
-		{
-			fetchPolicy: "cache-and-network",
-			pollInterval: 30000,
-		},
-	);
+	const {data, loading, error} = useActivityActions();
 
 	const processActivity = (): ActivityItem[] => {
 		if (!data?.submissions) return [];

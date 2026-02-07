@@ -1,15 +1,11 @@
-import {useQuery} from "@apollo/client/react";
-import {GET_TEACHER_SUBMISSIONS} from "@/gql/Submission";
-import {Submission, SubmissionsData} from "@/interface";
+import {Submission} from "@/interface";
+import {SubmissionActions} from "@/actions/submission.actions";
 
 export const useSubmission = () => {
-	const {data, loading, error, refetch} = useQuery<SubmissionsData>(
-		GET_TEACHER_SUBMISSIONS,
-	);
-
+	const {GetTeacherSubmissions, loading, error, refetch} = SubmissionActions();
 	// Handle potential undefined data safely
 	const submissions: Submission[] =
-		data?.submissions?.map((s: any) => {
+		GetTeacherSubmissions?.submissions?.map((s: any) => {
 			// Calcular si necesita atención
 			const daysSinceSubmission = s.createdAt
 				? Math.floor(

@@ -1,24 +1,33 @@
 import React, {useState} from "react";
 import Layout from "@/components/Layout";
-import PerformanceHeatmap from "@/components/Analytics/PerformanceHeatmap";
-import GradeDistribution from "@/components/Analytics/GradeDistribution";
-import StudentPerformance from "@/components/Analytics/StudentPerformance";
-// import ActivityTrends from "@/components/Analytics/ActivityTrends";
+import {GradeDistribution, StudentPerformance} from "@/components/Analytics";
 import {ProtectedRoute} from "@/components/Auth";
+import {useAnalyticsData} from "@/hooks";
 import {UserRole} from "@/interface";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {
+	faChartLine,
+	faChartPie,
+	faRobot,
+} from "@fortawesome/free-solid-svg-icons";
 
 const AnalyticsPage: React.FC = () => {
-	const [timeRange, setTimeRange] = useState<"week" | "month" | "semester">(
-		"month",
+	const [timeRange, setTimeRange] = useState<"Semana" | "Mes" | "Semestre">(
+		"Mes",
 	);
 	const [selectedCourse, setSelectedCourse] = useState<string>("all");
+	const {
+		distributionData,
+		studentsData,
+		averageGrade,
+		loading,
+		approvalRate,
+		courses,
+	} = useAnalyticsData(timeRange, selectedCourse);
 
-	const courses = [
+	const allCourses = [
 		{id: "all", name: "Todos los cursos"},
-		{id: "math101", name: "Matemáticas Básicas"},
-		{id: "cs201", name: "Programación I"},
-		{id: "hist301", name: "Historia Universal"},
-		{id: "eng401", name: "Inglés Avanzado"},
+		...(courses || []),
 	];
 
 	return (
@@ -40,9 +49,9 @@ const AnalyticsPage: React.FC = () => {
 									onChange={(e) => setSelectedCourse(e.target.value)}
 									className="bg-transparent border-none focus:ring-0 text-sm font-bold text-gray-700 px-2 cursor-pointer"
 								>
-									{courses.map((course) => (
+									{allCourses.map((course: any) => (
 										<option key={course.id} value={course.id}>
-											{course.name}
+											{course.name || course.course_name}
 										</option>
 									))}
 								</select>
@@ -50,7 +59,7 @@ const AnalyticsPage: React.FC = () => {
 								<div className="h-6 w-px bg-gray-200 mx-2 hidden md:block"></div>
 
 								<div className="flex bg-gray-100/80 rounded-2xl p-1">
-									{["week", "month", "semester"].map((range) => (
+									{["Semana", "Mes", "Semestre"].map((range) => (
 										<button
 											key={range}
 											onClick={() => setTimeRange(range as any)}
@@ -60,9 +69,9 @@ const AnalyticsPage: React.FC = () => {
 													: "text-gray-500 hover:text-gray-900"
 											}`}
 										>
-											{range === "week"
+											{range === "Semana"
 												? "Semana"
-												: range === "month"
+												: range === "Mes"
 													? "Mes"
 													: "Semestre"}
 										</button>
@@ -76,24 +85,31 @@ const AnalyticsPage: React.FC = () => {
 							{[
 								{
 									label: "Promedio General",
-									value: "8.4",
-									trend: "+0.3",
+									value: loading ? "..." : averageGrade,
 									color: "green",
-									icon: "📊",
+									icon: <FontAwesomeIcon icon={faChartPie} />,
 								},
 								{
 									label: "Tasa de Aprobación",
-									value: "92%",
-									trend: "+5%",
+									value: loading ? "..." : approvalRate,
 									color: "blue",
-									icon: "✅",
+									icon: <FontAwesomeIcon icon={faChartLine} />,
 								},
 								{
 									label: "Evaluaciones IA",
-									value: "347",
-									trend: "+47",
+									value: loading
+										? "..."
+										: String(
+												studentsData
+													? studentsData.reduce(
+															(acc: number, s: any) =>
+																acc + (s.criteria ? s.criteria.length : 0),
+															0,
+														)
+													: 0,
+											),
 									color: "purple",
-									icon: "🤖",
+									icon: <FontAwesomeIcon icon={faRobot} />,
 								},
 							].map((stat, i) => (
 								<div
@@ -113,11 +129,6 @@ const AnalyticsPage: React.FC = () => {
 												<h4 className="text-3xl font-black text-gray-900">
 													{stat.value}
 												</h4>
-												<span
-													className={`text-[10px] font-bold px-2 py-0.5 rounded-lg bg-${stat.color}-50 text-${stat.color}-600 inline-block mt-1`}
-												>
-													{stat.trend} VS PREV
-												</span>
 											</div>
 											<div className="w-16 h-10">
 												{/* SVG Sparkline placeholder */}
@@ -161,19 +172,26 @@ const AnalyticsPage: React.FC = () => {
 
 					{/* Main Analytics Grid */}
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-						{/* Heatmap */}
-						<div className="lg:col-span-2">
-							<PerformanceHeatmap timeRange={timeRange} />
-						</div>
-
 						{/* Grade Distribution */}
 						<div>
-							<GradeDistribution timeRange={timeRange} />
+							{loading ? (
+								<p>Cargando distribución...</p>
+							) : (
+								<GradeDistribution
+									timeRange={timeRange}
+									data={distributionData}
+									approvalRate={approvalRate}
+								/>
+							)}
 						</div>
 
 						{/* Student Performance */}
 						<div>
-							<StudentPerformance />
+							{loading ? (
+								<p>Cargando rendimiento...</p>
+							) : (
+								<StudentPerformance students={studentsData || []} />
+							)}
 						</div>
 					</div>
 				</div>

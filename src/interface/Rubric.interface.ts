@@ -38,8 +38,8 @@ export interface Rubric {
 	criteria: RubricCriteria[];
 	totalWeight: number;
 	isActive: boolean;
-	createdAt: string;
-	updatedAt: string;
+	createdAt?: string;
+	updatedAt?: string;
 }
 
 export interface RubricTemplate {

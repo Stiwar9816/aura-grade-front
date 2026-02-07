@@ -1,46 +1,26 @@
-import {GET_TASK_TEACHER, CREATE_ASSIGNMENT} from "@/gql/Assignment";
-import {useMutation, useQuery} from "@apollo/client/react";
+import {useAssignmentActions} from "@/actions";
 import {useAuth} from "@/hooks";
 import {UserRole} from "@/interface";
 
 export const useAssignments = () => {
 	const {user} = useAuth();
 	const isAdmin = user?.role === UserRole.ADMIN;
-
-	const {data, loading, error, refetch} = useQuery<{assignments: any[]}>(
-		GET_TASK_TEACHER,
-		{
-			skip: !user,
-			fetchPolicy: "cache-and-network",
-		},
-	);
-
-	const [createMutation, {loading: createLoading, error: createError}] =
-		useMutation(CREATE_ASSIGNMENT, {
-			refetchQueries: [{query: GET_TASK_TEACHER}],
-		});
-
-	const createAssignment = async (payload: any) => {
-		try {
-			const result = await createMutation({
-				variables: {
-					createAssignmentInput: payload,
-				},
-			});
-			return result.data?.createAssignment;
-		} catch (err) {
-			console.error("Error creating assignment:", err);
-			throw err;
-		}
-	};
+	const {
+		assignments,
+		createAssignment,
+		createError,
+		createLoading,
+		error,
+		loading,
+	} = useAssignmentActions();
 
 	const processAssignments = () => {
-		if (!data?.assignments) return [];
+		if (!assignments) return [];
 
 		// Filtro manual por docente si el back no lo hace
-		let filtered = data.assignments;
+		let filtered = assignments;
 		if (!isAdmin && user?.id) {
-			filtered = data.assignments.filter(
+			filtered = assignments.filter(
 				(assignment: any) => assignment.user?.id === user.id,
 			);
 		}
@@ -97,6 +77,5 @@ export const useAssignments = () => {
 		createLoading,
 		createError,
 		createAssignment,
-		refetch,
 	};
 };

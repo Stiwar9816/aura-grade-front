@@ -18,7 +18,7 @@ export const useCourse = () => {
 
 	const createCourse = async (course_name: string, code_course: string) => {
 		if (!user?.id) {
-			throw new Error("User ID is required to create a course");
+			throw new Error("Se requiere el ID del usuario para crear un curso");
 		}
 		try {
 			await createCourseMutation({
@@ -32,7 +32,7 @@ export const useCourse = () => {
 			});
 			refetch();
 		} catch (error) {
-			console.error("Error creating course:", error);
+			console.error("Error al crear el curso:", error);
 			throw error;
 		}
 	};
@@ -49,7 +49,7 @@ export const useCourse = () => {
 			});
 			refetch();
 		} catch (error) {
-			console.error("Error updating course:", error);
+			console.error("Error al actualizar el curso:", error);
 			throw error;
 		}
 	};
@@ -70,7 +70,7 @@ export const useCourse = () => {
 				},
 			});
 		} catch (error) {
-			console.error("Error adding student:", error);
+			console.error("Error al agregar estudiante:", error);
 			throw error;
 		}
 	};
@@ -105,7 +105,7 @@ export const useCourse = () => {
 			});
 			refetch();
 		} catch (error) {
-			console.error("Error deleting course:", error);
+			console.error("Error al eliminar el curso:", error);
 			throw error;
 		}
 	};
@@ -121,7 +121,7 @@ export const useCourse = () => {
 				await createCourse(name, code);
 			}
 		} catch (error) {
-			console.error("Error saving course:", error);
+			console.error("Error al guardar el curso:", error);
 			throw error;
 		}
 	};

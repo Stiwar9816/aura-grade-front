@@ -20,7 +20,7 @@ export const useAuth = () => {
 					const user = JSON.parse(storedUser);
 					if (user.token && isTokenExpired(user.token)) {
 						// Token expired
-						console.log("Token expired, logging out...");
+						console.log("Token expirado, cerrando sesión...");
 						localStorage.removeItem("auraGrade_user");
 						setAuthState({
 							user: null,
@@ -38,6 +38,7 @@ export const useAuth = () => {
 						});
 					}
 				} catch (error) {
+					console.error("Error al verificar la autenticación:", error);
 					localStorage.removeItem("auraGrade_user");
 					setAuthState({
 						user: null,
@@ -64,7 +65,7 @@ export const useAuth = () => {
 			if (storedUser) {
 				const user = JSON.parse(storedUser);
 				if (user.token && isTokenExpired(user.token)) {
-					console.log("Session expired during usage");
+					console.log("La sesión expiró durante el uso");
 					localStorage.removeItem("auraGrade_user");
 					setAuthState({
 						user: null,
