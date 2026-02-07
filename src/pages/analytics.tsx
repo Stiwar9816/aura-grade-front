@@ -10,6 +10,7 @@ import {
 	faChartPie,
 	faRobot,
 } from "@fortawesome/free-solid-svg-icons";
+import SectionHeader from "@/components/Common/SectionHeader";
 
 const AnalyticsPage: React.FC = () => {
 	const [timeRange, setTimeRange] = useState<"Semana" | "Mes" | "Semestre">(
@@ -32,17 +33,16 @@ const AnalyticsPage: React.FC = () => {
 
 	return (
 		<ProtectedRoute requiredRole={UserRole.TEACHER}>
-			<Layout title="Panel de Analíticas">
+			<Layout title="Analíticas" hideHeader>
+				<SectionHeader
+					title="Analíticas"
+					description="Monitoreo predictivo y análisis de brechas pedagógicas"
+					className="mb-8"
+				/>
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
 					<div className="mb-10">
-						<div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
-							<div>
-								<p className="text-gray-500 font-medium mt-1">
-									Monitoreo predictivo y análisis de brechas pedagógicas
-								</p>
-							</div>
-
+						<div className="flex flex-col md:flex-row md:items-center justify-end gap-6 mb-10">
 							<div className="flex flex-wrap gap-2 items-center bg-white/50 p-2 rounded-[2rem] border border-gray-100 shadow-sm backdrop-blur-sm">
 								<select
 									value={selectedCourse}
@@ -178,7 +178,6 @@ const AnalyticsPage: React.FC = () => {
 								<p>Cargando distribución...</p>
 							) : (
 								<GradeDistribution
-									timeRange={timeRange}
 									data={distributionData}
 									approvalRate={approvalRate}
 								/>
