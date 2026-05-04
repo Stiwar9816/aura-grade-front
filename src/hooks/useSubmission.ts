@@ -1,41 +1,128 @@
-import {Submission} from "@/interface";
+import {Submission, SubmissionDetail, SubmissionStatus} from "@/interface";
 import {SubmissionActions} from "@/actions/submission.actions";
+import {
+	AssignmentSubmission,
+	ProcessedTeacherAssignment,
+	useAssignments,
+} from "./useAssignments";
+
+const normalizeStatusValue = (status?: string | null) =>
+	status?.toUpperCase().replace(/[-\s]+/g, "_") || "";
+
+const isPublishedSubmission = (status?: string, evaluationStatus?: string) =>
+	normalizeStatusValue(status) === "PUBLISHED" ||
+	normalizeStatusValue(evaluationStatus) === "PUBLISHED";
+
+const getTeacherReviewStatus = (
+	status?: string,
+	evaluationStatus?: string,
+): SubmissionStatus => {
+	const normalizedStatus = normalizeStatusValue(status);
+	const normalizedEvaluationStatus = normalizeStatusValue(evaluationStatus);
+
+	if (isPublishedSubmission(normalizedStatus, normalizedEvaluationStatus)) {
+		return SubmissionStatus.PUBLISHED;
+	}
+	if (normalizedStatus === "FAILED") return SubmissionStatus.FAILED;
+	if (normalizedStatus === "IN_PROGRESS") return SubmissionStatus.IN_PROGRESS;
+	if (normalizedStatus === "PENDING") return SubmissionStatus.PENDING;
+	if (
+		normalizedStatus === "REVIEW_PENDING" ||
+		normalizedStatus === "GRADED" ||
+		normalizedEvaluationStatus
+	) {
+		return SubmissionStatus.REVIEW_PENDING;
+	}
+
+	return SubmissionStatus.PENDING;
+};
 
 export const useSubmission = () => {
 	const {GetTeacherSubmissions, loading, error, refetch} = SubmissionActions();
-	// Handle potential undefined data safely
-	const submissions: Submission[] =
-		GetTeacherSubmissions?.submissions?.map((s: any) => {
-			// Calcular si necesita atención
-			const daysSinceSubmission = s.createdAt
-				? Math.floor(
-						(Date.now() - new Date(s.createdAt).getTime()) /
-							(1000 * 60 * 60 * 24),
-					)
-				: 0;
+	const {
+		assignments,
+		loading: assignmentsLoading,
+		error: assignmentsError,
+	} = useAssignments();
 
-			const needsAttention = s.status === "PENDING" && daysSinceSubmission > 3; // Más de 3 días sin revisar
+	const mapSubmission = (
+		s: SubmissionDetail | AssignmentSubmission,
+		assignment?: ProcessedTeacherAssignment,
+	): Submission => {
+		// Calcular si necesita atención
+		const daysSinceSubmission = s.createdAt
+			? Math.floor(
+					(Date.now() - new Date(s.createdAt).getTime()) /
+						(1000 * 60 * 60 * 24),
+				)
+			: 0;
 
-			return {
-				id: s.id,
-				studentName: s.student
-					? `${s.student.name} ${s.student.last_name || ""}`
-					: "Estudiante Desconocido",
-				studentEmail: s.student?.email || "",
-				assignmentTitle: s.assignment?.title || "Tarea sin título",
-				courseName: s.assignment?.course?.course_name || "Sin curso",
-				rubricName: s.assignment?.rubric?.title || "Sin rúbrica",
-				submittedAt: s.createdAt,
-				status: s.status,
-				grade: s.evaluation?.totalScore,
-				needsAttention,
-			};
-		}) || [];
+		const rawStatus = normalizeStatusValue(s.status);
+		const needsAttention = rawStatus === "PENDING" && daysSinceSubmission > 3; // Más de 3 días sin revisar
+
+		const normalizedStatus = getTeacherReviewStatus(
+			s.status,
+			s.evaluation?.status,
+		);
+
+		return {
+			id: s.id,
+			studentName: s.student
+				? `${s.student.name} ${s.student.last_name || ""}`
+				: "Estudiante Desconocido",
+			studentEmail: s.student?.email || "",
+			assignmentTitle:
+				"assignment" in s
+					? s.assignment?.title || "Tarea sin título"
+					: assignment?.title || "Tarea sin título",
+			courseName:
+				"assignment" in s
+					? s.assignment?.course?.course_name || "Sin curso"
+					: assignment?.courseName || "Sin curso",
+			rubricName:
+				"assignment" in s
+					? s.assignment?.rubric?.title || "Sin rúbrica"
+					: assignment?.rubricTitle || "Sin rúbrica",
+			submittedAt: s.createdAt || new Date().toISOString(),
+			status: normalizedStatus,
+			grade:
+				typeof s.evaluation?.totalScore === "number"
+					? s.evaluation.totalScore
+					: undefined,
+			needsAttention,
+		};
+	};
+
+	const querySubmissions =
+		GetTeacherSubmissions?.submissions?.map((s: SubmissionDetail) =>
+			mapSubmission(s),
+		) || [];
+	const assignmentSubmissions = assignments.flatMap(
+		(assignment: ProcessedTeacherAssignment) =>
+			assignment.submissionItems.map((submission) =>
+				mapSubmission(submission, assignment),
+			),
+	);
+	const submissions = Array.from(
+		new Map(
+			[...querySubmissions, ...assignmentSubmissions].map((submission) => [
+				submission.id,
+				submission,
+			]),
+		).values(),
+	).sort(
+		(a, b) =>
+			new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
+	);
+	const effectiveLoading =
+		submissions.length === 0 && (loading || assignmentsLoading);
+	const effectiveError =
+		submissions.length === 0 ? error || assignmentsError : undefined;
 
 	return {
 		submissions,
-		loading,
-		error,
+		loading: effectiveLoading,
+		error: effectiveError,
 		refetch,
 	};
 };

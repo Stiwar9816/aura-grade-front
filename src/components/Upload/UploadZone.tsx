@@ -2,6 +2,8 @@ import React, {useCallback, useState, useRef} from "react";
 
 interface UploadZoneProps {
 	onUploadStart: (file: File) => void;
+	disabled?: boolean;
+	assignmentTitle?: string;
 }
 
 interface FileValidation {
@@ -9,7 +11,11 @@ interface FileValidation {
 	error?: string;
 }
 
-const UploadZone: React.FC<UploadZoneProps> = ({onUploadStart}) => {
+const UploadZone: React.FC<UploadZoneProps> = ({
+	onUploadStart,
+	disabled = false,
+	assignmentTitle,
+}) => {
 	const [file, setFile] = useState<File | null>(null);
 	const [error, setError] = useState<string>("");
 	const [isDragging, setIsDragging] = useState<boolean>(false);
@@ -70,17 +76,20 @@ const UploadZone: React.FC<UploadZoneProps> = ({onUploadStart}) => {
 			e.preventDefault();
 			setIsDragging(false);
 
+			if (disabled) return;
+
 			if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
 				handleFileSelect(e.dataTransfer.files[0]);
 			}
 		},
-		[handleFileSelect]
+		[disabled, handleFileSelect]
 	);
 
 	const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
 		e.preventDefault();
+		if (disabled) return;
 		setIsDragging(true);
-	}, []);
+	}, [disabled]);
 
 	const onDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
 		e.preventDefault();
@@ -94,13 +103,13 @@ const UploadZone: React.FC<UploadZoneProps> = ({onUploadStart}) => {
 	};
 
 	const handleUpload = () => {
-		if (file) {
+		if (file && !disabled) {
 			onUploadStart(file);
 		}
 	};
 
 	const triggerFileInput = () => {
-		if (fileInputRef.current) {
+		if (!disabled && fileInputRef.current) {
 			fileInputRef.current.click();
 		}
 	};
@@ -124,6 +133,20 @@ const UploadZone: React.FC<UploadZoneProps> = ({onUploadStart}) => {
 		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 	};
 
+	const zoneIcon = isDragging ? "📁" : error ? "⚠️" : file ? "✅" : "📤";
+	const zoneTitle = isDragging
+		? "¡Suelta tu archivo aquí!"
+		: disabled
+			? "Selecciona una tarea primero"
+			: file
+				? "Archivo listo"
+				: "Arrastra y suelta tu trabajo";
+	const zoneSubtitle = file
+		? `"${file.name}" seleccionado`
+		: disabled
+			? "El centro de entregas necesita saber a qué tarea corresponde el archivo"
+			: "o haz clic para seleccionar archivos";
+
 	return (
 		<div className="card p-8">
 			<div className="text-center mb-8">
@@ -131,7 +154,9 @@ const UploadZone: React.FC<UploadZoneProps> = ({onUploadStart}) => {
 					Sube tu trabajo
 				</h2>
 				<p className="text-gray-600">
-					Arrastra o selecciona tu archivo para comenzar la evaluación con IA
+					{assignmentTitle
+						? `Entrega para: ${assignmentTitle}`
+						: "Selecciona una tarea para comenzar la entrega"}
 				</p>
 			</div>
 
@@ -142,7 +167,9 @@ const UploadZone: React.FC<UploadZoneProps> = ({onUploadStart}) => {
 				onDragLeave={onDragLeave}
 				onClick={!file ? triggerFileInput : undefined}
 				className={`relative border-2 rounded-3xl p-12 text-center cursor-pointer transition-all duration-500 overflow-hidden ${
-					isDragging
+					disabled
+						? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+						: isDragging
 						? "border-electric-500 bg-electric-50/50 backdrop-blur-md shadow-2xl shadow-electric-500/20 scale-[1.01]"
 						: error
 						? "border-red-500 bg-red-50/50 backdrop-blur-md"
@@ -163,23 +190,13 @@ const UploadZone: React.FC<UploadZoneProps> = ({onUploadStart}) => {
 				/>
 
 				<div className="space-y-4">
-					<div className="text-6xl mb-4">
-						{isDragging ? "📁" : error ? "⚠️" : file ? "✅" : "📤"}
-					</div>
+					<div className="text-6xl mb-4">{zoneIcon}</div>
 
 					<div>
 						<h3 className="text-xl font-bold text-gray-900 mb-2">
-							{isDragging
-								? "¡Suelta tu archivo aquí!"
-								: file
-								? "Archivo listo"
-								: "Arrastra y suelta tu trabajo"}
+							{zoneTitle}
 						</h3>
-						<p className="text-gray-600">
-							{file
-								? `"${file.name}" seleccionado`
-								: "o haz clic para seleccionar archivos"}
-						</p>
+						<p className="text-gray-600">{zoneSubtitle}</p>
 					</div>
 
 					<div className="inline-flex flex-wrap items-center gap-3 px-5 py-1.5 bg-white/60 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-sm text-gray-600">
@@ -281,7 +298,10 @@ const UploadZone: React.FC<UploadZoneProps> = ({onUploadStart}) => {
 						{/* Upload Button */}
 						<button
 							onClick={handleUpload}
-							className="w-full btn-primary py-4 text-lg"
+							disabled={disabled}
+							className={`w-full btn-primary py-4 text-lg ${
+								disabled ? "opacity-50 cursor-not-allowed" : ""
+							}`}
 						>
 							<span className="flex items-center justify-center gap-3">
 								<span>🚀</span>

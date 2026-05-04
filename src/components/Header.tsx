@@ -15,7 +15,7 @@ const Header: React.FC = () => {
 							alt="Logo"
 							width={160}
 							height={160}
-							className="object-cover"
+							className="object-contain"
 						/>
 					</Link>
 				</div>

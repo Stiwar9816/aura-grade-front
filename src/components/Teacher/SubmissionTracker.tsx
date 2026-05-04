@@ -1,9 +1,9 @@
 import React, {useState} from "react";
-import {Submission} from "@/types";
+import {Submission} from "@/interface";
 import {useSubmission} from "@/hooks";
 
 const SubmissionTracker: React.FC = () => {
-	const {submissions: dataSubmissions, loading} = useSubmission();
+	const {submissions: dataSubmissions, loading, error} = useSubmission();
 	const [filter, setFilter] = useState<string>("all");
 	const [search, setSearch] = useState<string>("");
 
@@ -34,8 +34,8 @@ const SubmissionTracker: React.FC = () => {
 				};
 			case "REVIEW_PENDING":
 				return {
-					color: "bg-blue-100 text-blue-800",
-					label: "En revisión",
+					color: "bg-violet-100 text-violet-800",
+					label: "Pendiente de revisión",
 				};
 			case "IN_PROGRESS":
 				return {
@@ -100,13 +100,29 @@ const SubmissionTracker: React.FC = () => {
 						className="input-primary"
 					>
 						<option value="all">Todas las entregas</option>
-						<option value="PENDING">Pendientes de calificar</option>
+						<option value="PENDING">Recibidas</option>
 						<option value="PUBLISHED">Calificadas</option>
-						<option value="REVIEW_PENDING">En revisión</option>
+						<option value="REVIEW_PENDING">Pendientes de revisión</option>
 						<option value="FAILED">Fallidas</option>
 					</select>
 				</div>
 			</div>
+
+			{error && (
+				<div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-100">
+					<p className="text-sm font-semibold text-red-700">
+						No se pudieron cargar las entregas: {error.message}
+					</p>
+				</div>
+			)}
+
+			{loading && submissions.length === 0 && (
+				<div className="mb-6 space-y-3">
+					<div className="h-12 rounded-xl bg-gray-100 animate-pulse" />
+					<div className="h-12 rounded-xl bg-gray-100 animate-pulse" />
+					<div className="h-12 rounded-xl bg-gray-100 animate-pulse" />
+				</div>
+			)}
 
 			{/* Stats */}
 			<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -206,7 +222,7 @@ const SubmissionTracker: React.FC = () => {
 										</span>
 									</td>
 									<td className="py-4 px-4">
-										{submission.grade ? (
+										{typeof submission.grade === "number" ? (
 											<div className="flex items-center gap-2">
 												<div
 													className={`text-lg font-bold ${
@@ -235,7 +251,11 @@ const SubmissionTracker: React.FC = () => {
 												}
 												className="px-3 py-1.5 bg-electric-500 text-white text-sm rounded-lg hover:bg-electric-600"
 											>
-												{submission.status === "PUBLISHED" ? "Ver" : "Evaluar"}
+												{submission.status === "PUBLISHED"
+													? "Ver"
+													: submission.status === "REVIEW_PENDING"
+														? "Revisar"
+														: "Evaluar"}
 											</button>
 
 											{submission.needsAttention && (

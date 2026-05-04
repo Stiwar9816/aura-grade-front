@@ -11,8 +11,10 @@ import {
 	useUserStats,
 	useAssignments,
 	useRecentActivity,
+	useSubmission,
 } from "@/hooks";
-import {UserRole} from "@/interface";
+import type {ProcessedTeacherAssignment} from "@/hooks";
+import {SubmissionStatus, UserRole} from "@/interface";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faBell,
@@ -20,6 +22,40 @@ import {
 	faFilePen,
 	faHouse,
 } from "@fortawesome/free-solid-svg-icons";
+
+type TeacherDashboardTab = {
+	id: "overview" | "submissions";
+	label: string;
+	icon: React.ReactNode;
+	badge?: number;
+};
+
+const StatSkeleton = () => (
+	<div className="h-8 w-16 bg-gray-200 rounded animate-pulse mx-auto mb-2"></div>
+);
+
+const AssignmentSkeleton = () => (
+	<Card className="p-4 bg-white/60 border border-gray-100">
+		<div className="animate-pulse space-y-3">
+			<div className="h-4 bg-gray-200 rounded w-3/4"></div>
+			<div className="h-3 bg-gray-200 rounded w-1/2"></div>
+			<div className="flex gap-4 mt-4">
+				<div className="h-8 bg-gray-200 rounded w-20"></div>
+				<div className="h-8 bg-gray-200 rounded w-24"></div>
+			</div>
+		</div>
+	</Card>
+);
+
+const ActivitySkeleton = () => (
+	<div className="flex items-start gap-4 p-3">
+		<div className="w-10 h-10 bg-gray-200 rounded-xl animate-pulse"></div>
+		<div className="flex-1 space-y-2">
+			<div className="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+			<div className="h-2 bg-gray-200 rounded w-1/2 animate-pulse"></div>
+		</div>
+	</div>
+);
 
 const TeacherDashboard: React.FC = () => {
 	const {user} = useAuth();
@@ -34,6 +70,8 @@ const TeacherDashboard: React.FC = () => {
 		loading: assignmentsLoading,
 		error: assignmentsError,
 	} = useAssignments();
+	const {submissions: teacherSubmissions, loading: submissionsLoading} =
+		useSubmission();
 	const {activities, loading: activitiesLoading} = useRecentActivity(8);
 
 	const router = useRouter();
@@ -54,36 +92,42 @@ const TeacherDashboard: React.FC = () => {
 		);
 	}
 
-	// Componente de skeleton para loading
-	const StatSkeleton = () => (
-		<div className="h-8 w-16 bg-gray-200 rounded animate-pulse mx-auto mb-2"></div>
+	const activeAssignmentsList = assignments.filter(
+		(assignment: ProcessedTeacherAssignment) => !assignment.isExpired,
 	);
-
-	const AssignmentSkeleton = () => (
-		<Card className="p-4 bg-white/60 border border-gray-100">
-			<div className="animate-pulse space-y-3">
-				<div className="h-4 bg-gray-200 rounded w-3/4"></div>
-				<div className="h-3 bg-gray-200 rounded w-1/2"></div>
-				<div className="flex gap-4 mt-4">
-					<div className="h-8 bg-gray-200 rounded w-20"></div>
-					<div className="h-8 bg-gray-200 rounded w-24"></div>
-				</div>
-			</div>
-		</Card>
+	const expiredAssignmentsList = assignments.filter(
+		(assignment: ProcessedTeacherAssignment) => assignment.isExpired,
 	);
-
-	const ActivitySkeleton = () => (
-		<div className="flex items-start gap-4 p-3">
-			<div className="w-10 h-10 bg-gray-200 rounded-xl animate-pulse"></div>
-			<div className="flex-1 space-y-2">
-				<div className="h-3 bg-gray-200 rounded w-3/4 animate-pulse"></div>
-				<div className="h-2 bg-gray-200 rounded w-1/2 animate-pulse"></div>
-			</div>
-		</div>
+	const assignmentPendingReviewCount = assignments.reduce(
+		(total: number, assignment: ProcessedTeacherAssignment) =>
+			total + assignment.pending,
+		0,
 	);
-
-	const activeAssignmentsList = assignments.filter((a: any) => !a.isExpired);
-	const expiredAssignmentsList = assignments.filter((a: any) => a.isExpired);
+	const submissionPendingReviewCount = teacherSubmissions.filter((submission) =>
+		[
+			SubmissionStatus.PENDING,
+			SubmissionStatus.IN_PROGRESS,
+			SubmissionStatus.REVIEW_PENDING,
+			SubmissionStatus.GRADED,
+		].includes(submission.status),
+	).length;
+	const pendingReviewCount = Math.max(
+		assignmentPendingReviewCount,
+		submissionPendingReviewCount,
+	);
+	const tabs: TeacherDashboardTab[] = [
+		{
+			id: "overview",
+			label: "Vista General",
+			icon: <FontAwesomeIcon icon={faHouse} />,
+		},
+		{
+			id: "submissions",
+			label: "Entregas",
+			icon: <FontAwesomeIcon icon={faCloudArrowUp} />,
+			badge: pendingReviewCount,
+		},
+	];
 
 	return (
 		<ProtectedRoute requiredRole={UserRole.TEACHER}>
@@ -105,23 +149,11 @@ const TeacherDashboard: React.FC = () => {
 					{/* Tabs */}
 					<div className="border-b border-gray-200">
 						<nav className="flex space-x-8">
-							{[
-								{
-									id: "overview",
-									label: "Vista General",
-									icon: <FontAwesomeIcon icon={faHouse} />,
-								},
-								{
-									id: "submissions",
-									label: "Entregas",
-									icon: <FontAwesomeIcon icon={faCloudArrowUp} />,
-									badge: stats.pendingEvaluations,
-								},
-							].map((tab) => (
+							{tabs.map((tab) => (
 								<button
 									key={tab.id}
 									onClick={() => {
-										setActiveTab(tab.id as any);
+										setActiveTab(tab.id);
 									}}
 									className={`flex items-center gap-2 py-4 px-1 font-medium border-b-2 transition-colors ${
 										activeTab === tab.id
@@ -183,10 +215,12 @@ const TeacherDashboard: React.FC = () => {
 										<StatSkeleton />
 									) : (
 										<div className="text-2xl font-bold text-yellow-500 group-hover:scale-110 transition-transform">
-											{stats.pendingEvaluations}
+											{assignmentsLoading && submissionsLoading
+												? "-"
+												: pendingReviewCount}
 										</div>
 									)}
-									<div className="text-sm text-gray-600">Pendientes</div>
+									<div className="text-sm text-gray-600">Por revisar</div>
 								</Card>
 
 								<Card className="text-center group hoverable">
@@ -255,14 +289,18 @@ const TeacherDashboard: React.FC = () => {
 														sección inferior
 													</p>
 													{user?.role === UserRole.TEACHER && (
-														<button className="btn-primary">
+														<button
+															onClick={() => router.push("/teacher/assignments")}
+															className="btn-primary"
+														>
 															Crear nueva tarea
 														</button>
 													)}
 												</Card>
 											) : (
 												// Lista de tareas activas
-												activeAssignmentsList.map((assignment: any) => (
+												activeAssignmentsList.map(
+													(assignment: ProcessedTeacherAssignment) => (
 													<Card
 														key={assignment.id}
 														hoverable
@@ -326,12 +364,20 @@ const TeacherDashboard: React.FC = () => {
 																)}
 															</div>
 
-															<button className="text-xs font-bold text-electric-500 hover:text-electric-600 transition-colors bg-electric-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-electric-200">
+															<button
+																onClick={() =>
+																	router.push(
+																		`/teacher/assignments/${assignment.id}`,
+																	)
+																}
+																className="text-xs font-bold text-electric-500 hover:text-electric-600 transition-colors bg-electric-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-electric-200"
+															>
 																Ver detalles →
 															</button>
 														</div>
 													</Card>
-												))
+													),
+												)
 											)}
 
 											{/* Collapsible Section for Expired Assignments */}
@@ -358,7 +404,9 @@ const TeacherDashboard: React.FC = () => {
 														{showExpired && (
 															<div className="mt-4 space-y-4">
 																{expiredAssignmentsList.map(
-																	(assignment: any) => (
+																	(
+																		assignment: ProcessedTeacherAssignment,
+																	) => (
 																		<Card
 																			key={assignment.id}
 																			className="p-4 bg-gray-50/50 border border-gray-100 opacity-75 grayscale-[0.5] hover:opacity-100 hover:grayscale-0 transition-all"
@@ -396,7 +444,14 @@ const TeacherDashboard: React.FC = () => {
 																				<div className="text-xs text-gray-500">
 																					{assignment.submissions} entregas
 																				</div>
-																				<button className="text-xs font-bold text-gray-500 hover:text-electric-500 transition-colors">
+																				<button
+																					onClick={() =>
+																						router.push(
+																							`/teacher/assignments/${assignment.id}`,
+																						)
+																					}
+																					className="text-xs font-bold text-gray-500 hover:text-electric-500 transition-colors"
+																				>
 																					Ver reporte →
 																				</button>
 																			</div>
@@ -448,7 +503,7 @@ const TeacherDashboard: React.FC = () => {
 												</div>
 											) : (
 												// Lista de actividades
-												activities.map((activity: any) => (
+												activities.map((activity) => (
 													<div
 														key={activity.id}
 														className="flex items-start gap-4 p-3 rounded-xl hover:bg-white transition-all duration-300 group"

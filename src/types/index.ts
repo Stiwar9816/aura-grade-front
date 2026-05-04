@@ -11,10 +11,42 @@ export interface Task {
 	title: string;
 	description: string;
 	dueDate: string;
-	status: "pending" | "submitted" | "graded" | "overdue";
+	status: "pending" | "submitted" | "review_pending" | "graded" | "overdue";
 	score?: number;
 	maxScore: number;
 	studentCount?: number;
+}
+
+export interface AssignmentCardProps {
+	assignment: {
+		id: string;
+		title: string;
+		description: string;
+		dueDate: string;
+		status: "pending" | "submitted" | "review_pending" | "graded" | "overdue";
+		score?: number;
+		maxScore: number;
+		percentage?: number;
+		submissionId?: string;
+		submissionHistory: {
+			id: string;
+			fileUrl?: string;
+			status?: string;
+			createdAt?: string;
+			version: number;
+			score?: number;
+			feedback?: string;
+			isPublished: boolean;
+		}[];
+		rubric?: {
+			criteria: {
+				name: string;
+				description: string;
+				weight: number;
+			}[];
+		};
+	};
+	onSelect: (assignment: AssignmentCardProps["assignment"]) => void;
 }
 // CRITERIA REMOVED (Duplicate)
 // EVALUATION

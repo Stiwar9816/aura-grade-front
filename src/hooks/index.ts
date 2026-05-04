@@ -8,6 +8,16 @@ export {useUserStats} from "./useUserStats";
 export {useSubmission} from "./useSubmission";
 export {useCourse} from "./useCourse";
 export {useAssignments} from "./useAssignments";
+export type {
+	AssignmentRubricCriterion,
+	AssignmentSubmission,
+	ProcessedTeacherAssignment,
+} from "./useAssignments";
 export {useRecentActivity} from "./useActivity";
 export {useEvaluationDetail} from "./useEvaluationDetail";
 export {useAnalyticsData} from "./useAnalyticsData";
+export {useStudentAcademicData} from "./useStudentAcademicData";
+export type {
+	StudentAssignmentCardData,
+	StudentCourseReport,
+} from "./useStudentAcademicData";

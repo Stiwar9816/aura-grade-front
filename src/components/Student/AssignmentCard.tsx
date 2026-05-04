@@ -7,6 +7,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 }) => {
 	const [timeLeft, setTimeLeft] = useState<string>("");
 	const [showRubric, setShowRubric] = useState<boolean>(false);
+	const submissionHistory = assignment.submissionHistory || [];
 
 	useEffect(() => {
 		const calculateTimeLeft = () => {
@@ -43,6 +44,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 	const getStatusConfig = () => {
 		switch (assignment.status) {
 			case "pending":
+			case "overdue": {
 				const isOverdue =
 					assignment.dueDate && new Date(assignment.dueDate) < new Date();
 				return {
@@ -52,11 +54,13 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 						: "bg-amber-50 text-amber-600 ring-1 ring-amber-100",
 					icon: isOverdue ? "⚠️" : "⏳",
 				};
+			}
 			case "submitted":
+			case "review_pending":
 				return {
-					label: "Entregado",
-					classes: "bg-blue-50 text-blue-600 ring-1 ring-blue-100",
-					icon: "📤",
+					label: "En revisión",
+					classes: "bg-violet-50 text-violet-600 ring-1 ring-violet-100",
+					icon: "🔎",
 				};
 			case "graded":
 				return {
@@ -105,6 +109,15 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 						</div>
 					)}
 				</div>
+
+				{submissionHistory.length > 0 && (
+					<div className="mb-4 text-xs font-bold text-gray-500 uppercase tracking-wide">
+						{submissionHistory.length}{" "}
+						{submissionHistory.length === 1
+							? "versión enviada"
+							: "versiones enviadas"}
+					</div>
+				)}
 
 				{/* Title & Description */}
 				<div className="mb-6 flex-1">
@@ -166,26 +179,43 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 									Tu Nota
 								</span>
 								<span className="text-xl font-semibold text-emerald-500 leading-none">
-									8.7
+									{assignment.score?.toFixed(1) || "-"}
 								</span>
+								{assignment.maxScore && (
+									<span className="text-[10px] font-semibold text-gray-400 block">
+										/{assignment.maxScore}
+									</span>
+								)}
 							</div>
 						)}
 
 						<button
 							onClick={() => onSelect(assignment)}
 							className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300 ${
-								assignment.status === "pending"
+								["pending", "submitted", "review_pending"].includes(
+									assignment.status,
+								)
 									? "bg-electric-500 text-white shadow-lg shadow-electric-500/20 hover:shadow-electric-500/40 hover:-translate-y-1 active:scale-95"
 									: "bg-gray-50 text-gray-400 hover:bg-gray-100"
 							}`}
 							title={
 								assignment.status === "pending"
 									? "Entregar Tarea"
+									: assignment.status === "submitted"
+										? "Ver entrega"
+									: assignment.status === "review_pending"
+										? "Ver entrega"
 									: "Ver Detalle"
 							}
 						>
 							<span className="text-lg">
-								{assignment.status === "pending" ? "🚀" : "🔍"}
+								{assignment.status === "pending"
+									? "🚀"
+									: assignment.status === "submitted"
+										? "🔍"
+									: assignment.status === "review_pending"
+										? "🔍"
+										: "🔍"}
 							</span>
 						</button>
 					</div>

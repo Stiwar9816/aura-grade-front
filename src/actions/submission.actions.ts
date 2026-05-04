@@ -9,19 +9,25 @@ export const SubmissionActions = () => {
 		loading,
 		error,
 		refetch,
-	} = useQuery<SubmissionsData>(GET_TEACHER_SUBMISSIONS);
+	} = useQuery<SubmissionsData>(GET_TEACHER_SUBMISSIONS, {
+		fetchPolicy: "cache-and-network",
+		errorPolicy: "all",
+	});
 
 	const getSubmissionById = async (
 		id: string,
 	): Promise<SubmissionDetail | null> => {
 		try {
-			const {data}: any = await client.query({
+			const {data} = await client.query<
+				{submission: SubmissionDetail | null},
+				{submissionId: string}
+			>({
 				query: GET_SUBMISSION_BY_ID,
 				variables: {submissionId: id},
 				fetchPolicy: "network-only",
 			});
 
-			return data.submission || null;
+			return data?.submission || null;
 		} catch (error) {
 			console.error("Error fetching submission:", error);
 			throw error;

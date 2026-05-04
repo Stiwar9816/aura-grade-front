@@ -3,7 +3,7 @@ import React from "react";
 interface BannerProps {
 	title: string;
 	description: string;
-	icon?: string;
+	icon?: React.ReactNode;
 	className?: string;
 }
 
