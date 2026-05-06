@@ -30,6 +30,7 @@ import {
 	faRotateRight,
 } from "@fortawesome/free-solid-svg-icons";
 import {MappedEvaluationData, SubmissionDetail, UserRole} from "@/interface";
+import {STANDARD_GRADE_MAX} from "@/utils/gradeScale";
 
 const REEVALUATION_REQUESTS_KEY = "auragrade_reevaluation_requests";
 
@@ -374,12 +375,6 @@ const EvaluationPage: React.FC = () => {
 								<div className="space-y-4">
 									{deliveredAssignments.map((assignment) => {
 										const status = getResultStatus(assignment);
-										const pendingVersionsCount =
-											assignment.status === "graded"
-												? 0
-												: assignment.submissionHistory.filter(
-														(submission) => !submission.isPublished,
-													).length;
 
 										return (
 											<div
@@ -411,57 +406,6 @@ const EvaluationPage: React.FC = () => {
 																	"La tarea fue entregada y está pendiente de retroalimentación."}
 															</p>
 														</div>
-														{assignment.submissionHistory.length > 0 && (
-															<div className="mt-4 p-4 rounded-xl bg-white border border-gray-100">
-																<div className="text-xs font-bold text-gray-400 uppercase mb-3">
-																	Historial de entregas
-																</div>
-																<div className="space-y-2">
-																	{assignment.submissionHistory
-																		.slice()
-																		.reverse()
-																		.map((submission) => (
-																			<div
-																				key={submission.id}
-																				className="flex items-center justify-between gap-3 text-sm"
-																			>
-																				<div>
-																					<span className="font-bold text-gray-800">
-																						Versión {submission.version}
-																					</span>
-																					<span className="text-gray-500 ml-2">
-																						{submission.createdAt
-																							? new Date(
-																									submission.createdAt,
-																								).toLocaleDateString(
-																									"es-ES",
-																									{
-																										day: "numeric",
-																										month: "short",
-																										year: "numeric",
-																										hour: "2-digit",
-																										minute: "2-digit",
-																									},
-																								)
-																							: "Sin fecha"}
-																					</span>
-																				</div>
-																				<Badge
-																					variant={
-																						submission.isPublished
-																							? "success"
-																							: "warning"
-																					}
-																				>
-																					{submission.isPublished
-																						? "Calificada"
-																						: "En revisión"}
-																				</Badge>
-																			</div>
-																		))}
-																</div>
-															</div>
-														)}
 													</div>
 
 													<div className="lg:w-56 shrink-0">
@@ -489,14 +433,6 @@ const EvaluationPage: React.FC = () => {
 														</div>
 														<div className="text-xs text-gray-500 mb-3 text-center">
 															Fecha límite: {formatDate(assignment.dueDate)}
-														</div>
-														<div className="mb-3 p-3 rounded-xl bg-amber-50 border border-amber-100 text-center">
-															<div className="text-xs font-bold text-amber-700 uppercase mb-1">
-																Entregas pendientes
-															</div>
-															<div className="text-2xl font-black text-amber-600">
-																{pendingVersionsCount}
-															</div>
 														</div>
 														<button
 															disabled={!assignment.submissionId}
@@ -564,7 +500,7 @@ const EvaluationPage: React.FC = () => {
 		submissionDetail?.evaluation?.status === "PUBLISHED";
 	const scoreDraft = evaluationData.overallScore;
 	const feedbackDraft = evaluationData.generalFeedback;
-	const maxScore = evaluationData.maxScore || 10;
+	const maxScore = evaluationData.maxScore || STANDARD_GRADE_MAX;
 	const relatedAssignment = submissionDetail?.assignment?.id
 		? assignments.find(
 				(assignment) => assignment.id === submissionDetail.assignment.id,

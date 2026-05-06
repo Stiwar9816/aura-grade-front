@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import {Submission} from "@/interface";
 import {useSubmission} from "@/hooks";
+import {STANDARD_GRADE_MAX} from "@/utils/gradeScale";
 
 const SubmissionTracker: React.FC = () => {
 	const {submissions: dataSubmissions, loading, error} = useSubmission();
@@ -226,18 +227,20 @@ const SubmissionTracker: React.FC = () => {
 											<div className="flex items-center gap-2">
 												<div
 													className={`text-lg font-bold ${
-														submission.grade >= 9
+														submission.grade >= 4.5
 															? "text-green-600"
-															: submission.grade >= 7
+															: submission.grade >= 4
 																? "text-blue-600"
-																: submission.grade >= 6
+																: submission.grade >= 3
 																	? "text-yellow-600"
 																	: "text-red-600"
 													}`}
 												>
 													{submission.grade.toFixed(1)}
 												</div>
-												<div className="text-sm text-gray-600">/10</div>
+												<div className="text-sm text-gray-600">
+													/{STANDARD_GRADE_MAX}
+												</div>
 											</div>
 										) : (
 											<div className="text-gray-400">—</div>

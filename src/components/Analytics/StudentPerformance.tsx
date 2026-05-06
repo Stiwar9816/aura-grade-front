@@ -2,6 +2,7 @@ import React, {useState} from "react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faGifts} from "@fortawesome/free-solid-svg-icons";
 import type {StudentPerformanceProps} from "@/interface";
+import {STANDARD_GRADE_MAX} from "@/utils/gradeScale";
 
 export const StudentPerformance: React.FC<StudentPerformanceProps> = ({
 	students = [],
@@ -23,7 +24,7 @@ export const StudentPerformance: React.FC<StudentPerformanceProps> = ({
 	});
 
 	const getGradeHSL = (score: number) => {
-		const hue = Math.pow(score / 10, 1.5) * 140;
+		const hue = Math.pow(score / STANDARD_GRADE_MAX, 1.5) * 140;
 		return `hsl(${hue}, 70%, 50%)`;
 	};
 
@@ -153,7 +154,7 @@ export const StudentPerformance: React.FC<StudentPerformanceProps> = ({
 					</div>
 					<div className="text-center p-3">
 						<div className="text-lg font-bold text-gray-900">
-							{students.filter((s) => s.grade >= 9).length}
+							{students.filter((s) => s.grade >= 4.5).length}
 						</div>
 						<div className="text-sm text-gray-600">Excelentes</div>
 					</div>

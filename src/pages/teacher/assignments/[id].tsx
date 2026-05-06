@@ -14,6 +14,7 @@ import {
 	useAssignments,
 } from "@/hooks";
 import {SubmissionDetail, SubmissionStatus, SubmissionsData, UserRole} from "@/interface";
+import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faArrowLeft,
@@ -369,11 +370,12 @@ const AssignmentDetailPage: React.FC = () => {
 															{typeof submission.evaluation?.totalScore ===
 															"number" ? (
 																<div className="font-black text-gray-900">
-																	{submission.evaluation.totalScore}
+																	{normalizeGrade(
+																		submission.evaluation.totalScore,
+																		assignment.rubric?.maxTotalScore,
+																	)?.toFixed(1)}
 																	<span className="text-xs font-bold text-gray-400">
-																		{" "}
-																		/{" "}
-																		{assignment.rubric?.maxTotalScore || 10}
+																		{" "}/ {STANDARD_GRADE_MAX}
 																	</span>
 																</div>
 															) : (

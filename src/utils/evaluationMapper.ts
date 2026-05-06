@@ -1,4 +1,5 @@
 import {SubmissionDetail, MappedEvaluationData} from "@/interface";
+import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
 
 export const mapSubmissionToEvaluation = (
 	submission: SubmissionDetail,
@@ -12,8 +13,12 @@ export const mapSubmissionToEvaluation = (
 		"No hay comentarios generales disponibles.";
 
 	const evaluationData = {
-		overallScore: submission.evaluation?.totalScore || 0,
-		maxScore: submission.assignment?.rubric?.maxTotalScore || 100,
+		overallScore:
+			normalizeGrade(
+				submission.evaluation?.totalScore,
+				submission.assignment?.rubric?.maxTotalScore,
+			) || 0,
+		maxScore: STANDARD_GRADE_MAX,
 		generalFeedback:
 			submission.evaluation?.generalFeedback || "Sin feedback general.",
 		evaluationDate: submission.evaluation?.createdAt,

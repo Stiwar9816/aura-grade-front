@@ -4,6 +4,7 @@ import {useAuth} from "./useAuth";
 import {UserRole} from "@/interface";
 import {GET_ASSIGNMENT_BY_ID} from "@/gql/Assignment";
 import client from "@/lib/apolloClient";
+import {normalizeGrade, getScoreTime} from "@/utils/gradeScale";
 
 export interface AssignmentStudent {
 	id: string;
@@ -128,8 +129,33 @@ const mergeSubmissions = (...sources: AssignmentSubmission[][]) => {
 	});
 
 	return Array.from(merged.values()).sort((a, b) => {
-		const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-		const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+		const aTime = getScoreTime(a.createdAt);
+		const bTime = getScoreTime(b.createdAt);
+		return bTime - aTime;
+	});
+};
+
+const getSubmissionOwnerKey = (submission: AssignmentSubmission) =>
+	submission.student?.id || submission.student?.email || submission.id;
+
+const getLatestSubmissionsByStudent = (submissions: AssignmentSubmission[]) => {
+	const latestByStudent = new Map<string, AssignmentSubmission>();
+
+	submissions.forEach((submission) => {
+		const key = getSubmissionOwnerKey(submission);
+		const current = latestByStudent.get(key);
+
+		if (
+			!current ||
+			getScoreTime(submission.createdAt) >= getScoreTime(current.createdAt)
+		) {
+			latestByStudent.set(key, submission);
+		}
+	});
+
+	return Array.from(latestByStudent.values()).sort((a, b) => {
+		const aTime = getScoreTime(a.createdAt);
+		const bTime = getScoreTime(b.createdAt);
 		return bTime - aTime;
 	});
 };
@@ -249,26 +275,27 @@ export const useAssignments = () => {
 				assignment.submissions || [],
 				assignmentDetail?.submissions || [],
 			);
-			const evaluations = submissions
-				.map((submission) => submission.evaluation)
-				.filter((evaluation): evaluation is AssignmentEvaluation =>
-					Boolean(
-						evaluation &&
-							normalizeStatusValue(evaluation.status) === "PUBLISHED" &&
-							typeof evaluation.totalScore === "number",
-					),
-				);
-
-			const totalScore = evaluations.reduce(
-				(acc: number, evaluation) => acc + (evaluation.totalScore || 0),
+			const latestSubmissions = getLatestSubmissionsByStudent(submissions);
+			const publishedLatestSubmissions = latestSubmissions.filter(
+				(submission) =>
+					isPublishedSubmission(submission) &&
+					typeof submission.evaluation?.totalScore === "number",
+			);
+			const totalScore = publishedLatestSubmissions.reduce(
+				(acc: number, submission) =>
+					acc +
+					(normalizeGrade(
+						submission.evaluation?.totalScore,
+						assignment.rubric?.maxTotalScore,
+					) || 0),
 				0,
 			);
 			const average =
-				evaluations.length > 0
-					? Number((totalScore / evaluations.length).toFixed(1))
+				publishedLatestSubmissions.length > 0
+					? Number((totalScore / publishedLatestSubmissions.length).toFixed(1))
 					: 0;
 
-			const pending = submissions.filter(isPendingTeacherReview).length;
+			const pending = latestSubmissions.filter(isPendingTeacherReview).length;
 
 			const dueDate = new Date(assignment.dueDate);
 			const isExpired = dueDate < now;
@@ -282,8 +309,8 @@ export const useAssignments = () => {
 				courseName: assignment.course?.course_name,
 				rubric: assignment.rubric,
 				rubricTitle: assignment.rubric?.title,
-				submissionItems: submissions,
-				submissions: submissions.length,
+				submissionItems: latestSubmissions,
+				submissions: latestSubmissions.length,
 				pending,
 				average,
 				isActive: assignment.isActive,

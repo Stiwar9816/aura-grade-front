@@ -3,6 +3,7 @@ import {GET_TASK_TEACHER} from "@/gql/Assignment";
 import {GET_ALL_COURSES} from "@/gql/Course";
 import {GET_TEACHER_SUBMISSIONS} from "@/gql/Submission";
 import {useAuth} from "@/hooks";
+import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
 
 type CourseUser = {
 	id: string;
@@ -142,11 +143,6 @@ const sortSubmissionsByDate = (submissions: SubmissionRecord[]) =>
 		return aTime - bTime;
 	});
 
-const getPublishedSubmission = (submissions: SubmissionRecord[]) =>
-	sortSubmissionsByDate(submissions)
-		.filter(isGradedSubmission)
-		.at(-1);
-
 const getLatestSubmission = (submissions: SubmissionRecord[]) =>
 	sortSubmissionsByDate(submissions).at(-1);
 
@@ -161,7 +157,7 @@ const getAssignmentStatus = (
 	return new Date(assignment.dueDate) < new Date() ? "overdue" : "pending";
 };
 
-const normalizeScore = (score?: number | null, maxScore = 10) => {
+const normalizeScore = (score?: number | null, maxScore = STANDARD_GRADE_MAX) => {
 	if (typeof score !== "number" || maxScore <= 0) return undefined;
 	return Math.round((score / maxScore) * 100);
 };
@@ -258,29 +254,43 @@ export const useStudentAcademicData = () => {
 							index,
 					),
 			);
-			const publishedSubmission = getPublishedSubmission(studentSubmissions);
 			const latestSubmission = getLatestSubmission(studentSubmissions);
-			const displaySubmission = publishedSubmission || latestSubmission;
-			const maxScore = assignment.rubric?.maxTotalScore || 10;
-			const isPublished = isGradedSubmission(publishedSubmission);
+			const displaySubmission = latestSubmission;
+			const maxScore = STANDARD_GRADE_MAX;
+			const isPublished = isGradedSubmission(displaySubmission);
 			const score = isPublished
-				? publishedSubmission?.evaluation?.totalScore
+				? normalizeGrade(
+						displaySubmission?.evaluation?.totalScore,
+						assignment.rubric?.maxTotalScore,
+					)
 				: undefined;
 			const percentage = normalizeScore(score, maxScore);
-			const submissionHistory = studentSubmissions.map((submission, index) => ({
-				id: submission.id,
-				fileUrl: submission.fileUrl,
-				status: submission.status,
-				createdAt: submission.createdAt,
-				version: index + 1,
-				score: isGradedSubmission(submission)
-					? submission.evaluation?.totalScore
-					: undefined,
-				feedback: isGradedSubmission(submission)
-					? submission.evaluation?.generalFeedback
-					: undefined,
-				isPublished: isGradedSubmission(submission),
-			}));
+			const submissionVersion = latestSubmission
+				? studentSubmissions.findIndex(
+						(submission) => submission.id === latestSubmission.id,
+					) + 1
+				: 0;
+			const submissionHistory = latestSubmission
+				? [
+						{
+							id: latestSubmission.id,
+							fileUrl: latestSubmission.fileUrl,
+							status: latestSubmission.status,
+							createdAt: latestSubmission.createdAt,
+							version: submissionVersion || 1,
+							score: isGradedSubmission(latestSubmission)
+								? normalizeGrade(
+										latestSubmission.evaluation?.totalScore,
+										assignment.rubric?.maxTotalScore,
+									)
+								: undefined,
+							feedback: isGradedSubmission(latestSubmission)
+								? latestSubmission.evaluation?.generalFeedback
+								: undefined,
+							isPublished: isGradedSubmission(latestSubmission),
+						},
+					]
+				: [];
 
 			return {
 				id: assignment.id,
@@ -295,7 +305,7 @@ export const useStudentAcademicData = () => {
 				courseName: assignment.course?.course_name,
 				submissionId: displaySubmission?.id,
 				feedback: isPublished
-					? publishedSubmission?.evaluation?.generalFeedback
+					? displaySubmission?.evaluation?.generalFeedback
 					: undefined,
 				submissionHistory,
 				rubric: {
@@ -353,7 +363,9 @@ export const useStudentAcademicData = () => {
 					assignment.status === "pending" || assignment.status === "overdue",
 			).length,
 			currentPercentage,
-			currentGrade: Number(((currentPercentage / 100) * 10).toFixed(1)),
+			currentGrade: Number(
+				((currentPercentage / 100) * STANDARD_GRADE_MAX).toFixed(1),
+			),
 		} satisfies StudentCourseReport;
 	});
 
@@ -381,7 +393,9 @@ export const useStudentAcademicData = () => {
 		).length,
 		gradedCount: gradedAssignments.length,
 		averagePercentage,
-		averageGrade: Number(((averagePercentage / 100) * 10).toFixed(1)),
+		averageGrade: Number(
+			((averagePercentage / 100) * STANDARD_GRADE_MAX).toFixed(1),
+		),
 		deliveredCount: assignments.filter((assignment) =>
 			["submitted", "review_pending", "graded"].includes(assignment.status),
 		).length,

@@ -5,6 +5,7 @@ import {
 	ProcessedTeacherAssignment,
 	useAssignments,
 } from "./useAssignments";
+import {getScoreTime, normalizeGrade} from "@/utils/gradeScale";
 
 const normalizeStatusValue = (status?: string | null) =>
 	status?.toUpperCase().replace(/[-\s]+/g, "_") || "";
@@ -87,7 +88,12 @@ export const useSubmission = () => {
 			status: normalizedStatus,
 			grade:
 				typeof s.evaluation?.totalScore === "number"
-					? s.evaluation.totalScore
+					? normalizeGrade(
+							s.evaluation.totalScore,
+							"assignment" in s
+								? s.assignment?.rubric?.maxTotalScore
+								: assignment?.rubric?.maxTotalScore,
+						)
 					: undefined,
 			needsAttention,
 		};
@@ -103,17 +109,34 @@ export const useSubmission = () => {
 				mapSubmission(submission, assignment),
 			),
 	);
-	const submissions = Array.from(
+	const dedupedById = Array.from(
 		new Map(
 			[...querySubmissions, ...assignmentSubmissions].map((submission) => [
 				submission.id,
 				submission,
 			]),
 		).values(),
-	).sort(
-		(a, b) =>
-			new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime(),
 	);
+	const submissions = Array.from(
+		dedupedById
+			.reduce((latestByStudentAssignment, submission) => {
+				const key = `${submission.courseName || "course"}|${submission.assignmentTitle}|${
+					submission.studentEmail || submission.studentName
+				}`;
+				const current = latestByStudentAssignment.get(key);
+
+				if (
+					!current ||
+					getScoreTime(submission.submittedAt) >=
+						getScoreTime(current.submittedAt)
+				) {
+					latestByStudentAssignment.set(key, submission);
+				}
+
+				return latestByStudentAssignment;
+			}, new Map<string, Submission>())
+			.values(),
+	).sort((a, b) => getScoreTime(b.submittedAt) - getScoreTime(a.submittedAt));
 	const effectiveLoading =
 		submissions.length === 0 && (loading || assignmentsLoading);
 	const effectiveError =

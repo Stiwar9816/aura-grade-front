@@ -166,6 +166,7 @@ export const GET_TEACHER_SUBMISSIONS: DocumentNode = gql`
 				rubric {
 					id
 					title
+					maxTotalScore
 				}
 			}
 			evaluation {
