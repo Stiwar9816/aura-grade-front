@@ -8,6 +8,8 @@ export const USER_ROLE_STUDENTS: DocumentNode = gql`
 			last_name
 			role
 			isActive
+			email
+			phone
 			submissions {
 				id
 				status
@@ -25,6 +27,20 @@ export const USER_ROLE_STUDENTS: DocumentNode = gql`
 			courses {
 				id
 			}
+		}
+	}
+`;
+
+export const UPDATE_USER: DocumentNode = gql`
+	mutation UpdateUser($updateUserInput: UpdateUserInput!) {
+		updateUser(updateUserInput: $updateUserInput) {
+			id
+			name
+			last_name
+			email
+			phone
+			role
+			isActive
 		}
 	}
 `;

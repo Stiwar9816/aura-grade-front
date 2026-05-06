@@ -28,7 +28,7 @@ export const UserMenu = () => {
 			case UserRole.STUDENT:
 				return "bg-green-100 text-green-900";
 			case UserRole.TEACHER:
-				return "bg-blue-100 text-blue-900";
+				return "bg-electric-500 text-white";
 			case UserRole.ADMIN:
 				return "bg-purple-100 text-purple-900";
 			default:
@@ -105,14 +105,14 @@ export const UserMenu = () => {
 					<div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 animate-slideIn">
 						<div className="p-4 border-b border-gray-100">
 							<div className="flex items-center gap-3">
-								<div className="w-12 h-12 bg-gradient-to-r from-electric-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold">
+								<div className="w-14 h-10 bg-gradient-to-r from-electric-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold">
 									{getInitials()}
 								</div>
 								<div>
 									<div className="font-semibold text-gray-900">
 										{user?.name} {user?.last_name}
 									</div>
-									<div className="text-sm text-gray-600">{user?.email}</div>
+									<div className="text-xs text-gray-600">{user?.email}</div>
 								</div>
 							</div>
 						</div>

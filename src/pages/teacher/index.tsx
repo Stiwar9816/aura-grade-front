@@ -18,9 +18,12 @@ import {SubmissionStatus, UserRole} from "@/interface";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faBell,
+	faCheck,
 	faCloudArrowUp,
 	faFilePen,
 	faHouse,
+	faRobot,
+	faUser,
 } from "@fortawesome/free-solid-svg-icons";
 
 type TeacherDashboardTab = {
@@ -290,7 +293,9 @@ const TeacherDashboard: React.FC = () => {
 													</p>
 													{user?.role === UserRole.TEACHER && (
 														<button
-															onClick={() => router.push("/teacher/assignments")}
+															onClick={() =>
+																router.push("/teacher/assignments")
+															}
 															className="btn-primary"
 														>
 															Crear nueva tarea
@@ -301,81 +306,81 @@ const TeacherDashboard: React.FC = () => {
 												// Lista de tareas activas
 												activeAssignmentsList.map(
 													(assignment: ProcessedTeacherAssignment) => (
-													<Card
-														key={assignment.id}
-														hoverable
-														className="p-4 bg-white/60 border border-gray-100 group shadow-sm"
-													>
-														<div className="flex items-center justify-between mb-3">
-															<div className="flex-1">
-																<h3 className="font-bold text-gray-900 group-hover:text-electric-600 transition-colors">
-																	{assignment.title}
-																</h3>
-																<div className="flex items-center gap-2 mt-1">
-																	<div className="text-xs font-medium text-gray-500">
-																		Vence:{" "}
-																		{new Date(
-																			assignment.dueDate,
-																		).toLocaleDateString("es-ES", {
-																			day: "numeric",
-																			month: "short",
-																			year: "numeric",
-																		})}
+														<Card
+															key={assignment.id}
+															hoverable
+															className="p-4 bg-white/60 border border-gray-100 group shadow-sm"
+														>
+															<div className="flex items-center justify-between mb-3">
+																<div className="flex-1">
+																	<h3 className="font-bold text-gray-900 group-hover:text-electric-600 transition-colors">
+																		{assignment.title}
+																	</h3>
+																	<div className="flex items-center gap-2 mt-1">
+																		<div className="text-xs font-medium text-gray-500">
+																			Vence:{" "}
+																			{new Date(
+																				assignment.dueDate,
+																			).toLocaleDateString("es-ES", {
+																				day: "numeric",
+																				month: "short",
+																				year: "numeric",
+																			})}
+																		</div>
+																		{assignment.courseName && (
+																			<>
+																				<span className="text-gray-300">•</span>
+																				<span className="text-xs text-gray-500">
+																					{assignment.courseName}
+																				</span>
+																			</>
+																		)}
 																	</div>
-																	{assignment.courseName && (
-																		<>
-																			<span className="text-gray-300">•</span>
-																			<span className="text-xs text-gray-500">
-																				{assignment.courseName}
-																			</span>
-																		</>
+																</div>
+																<div className="text-right">
+																	<div className="text-lg font-black text-gray-900">
+																		{assignment.average > 0
+																			? assignment.average
+																			: "-"}
+																	</div>
+																	<div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
+																		Promedio
+																	</div>
+																</div>
+															</div>
+
+															<div className="flex items-center justify-between mt-4">
+																<div className="flex items-center gap-4">
+																	<div className="text-sm">
+																		<span className="font-bold text-gray-900">
+																			{assignment.submissions}
+																		</span>
+																		<span className="text-gray-500 ml-1">
+																			{assignment.submissions === 1
+																				? "entrega"
+																				: "entregas"}
+																		</span>
+																	</div>
+																	{assignment.pending > 0 && (
+																		<Badge variant="warning">
+																			{assignment.pending} pendiente
+																			{assignment.pending !== 1 ? "s" : ""}
+																		</Badge>
 																	)}
 																</div>
-															</div>
-															<div className="text-right">
-																<div className="text-lg font-black text-gray-900">
-																	{assignment.average > 0
-																		? assignment.average
-																		: "-"}
-																</div>
-																<div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
-																	Promedio
-																</div>
-															</div>
-														</div>
 
-														<div className="flex items-center justify-between mt-4">
-															<div className="flex items-center gap-4">
-																<div className="text-sm">
-																	<span className="font-bold text-gray-900">
-																		{assignment.submissions}
-																	</span>
-																	<span className="text-gray-500 ml-1">
-																		{assignment.submissions === 1
-																			? "entrega"
-																			: "entregas"}
-																	</span>
-																</div>
-																{assignment.pending > 0 && (
-																	<Badge variant="warning">
-																		{assignment.pending} pendiente
-																		{assignment.pending !== 1 ? "s" : ""}
-																	</Badge>
-																)}
+																<button
+																	onClick={() =>
+																		router.push(
+																			`/teacher/assignments/${assignment.id}`,
+																		)
+																	}
+																	className="text-xs font-bold text-electric-500 hover:text-electric-600 transition-colors bg-electric-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-electric-200"
+																>
+																	Ver detalles →
+																</button>
 															</div>
-
-															<button
-																onClick={() =>
-																	router.push(
-																		`/teacher/assignments/${assignment.id}`,
-																	)
-																}
-																className="text-xs font-bold text-electric-500 hover:text-electric-600 transition-colors bg-electric-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-electric-200"
-															>
-																Ver detalles →
-															</button>
-														</div>
-													</Card>
+														</Card>
 													),
 												)
 											)}
@@ -404,9 +409,7 @@ const TeacherDashboard: React.FC = () => {
 														{showExpired && (
 															<div className="mt-4 space-y-4">
 																{expiredAssignmentsList.map(
-																	(
-																		assignment: ProcessedTeacherAssignment,
-																	) => (
+																	(assignment: ProcessedTeacherAssignment) => (
 																		<Card
 																			key={assignment.id}
 																			className="p-4 bg-gray-50/50 border border-gray-100 opacity-75 grayscale-[0.5] hover:opacity-100 hover:grayscale-0 transition-all"
@@ -517,11 +520,13 @@ const TeacherDashboard: React.FC = () => {
 																		: "bg-gray-50 text-gray-500"
 															} group-hover:scale-110 transition-transform`}
 														>
-															{activity.type === "system"
-																? "🤖"
-																: activity.type === "evaluation"
-																	? "✅"
-																	: "👤"}
+															{activity.type === "system" ? (
+																<FontAwesomeIcon icon={faRobot} />
+															) : activity.type === "evaluation" ? (
+																<FontAwesomeIcon icon={faCheck} />
+															) : (
+																<FontAwesomeIcon icon={faUser} />
+															)}
 														</div>
 														<div className="flex-1 min-w-0">
 															<p className="text-sm text-gray-600 leading-tight">

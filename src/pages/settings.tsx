@@ -1,35 +1,191 @@
-import React, {useState} from "react";
+import React, {useEffect, useMemo, useState} from "react";
+import {useMutation} from "@apollo/client/react";
 import Layout from "@/components/Layout";
 import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
+import {useAuth} from "@/hooks";
+import {UPDATE_USER} from "@/gql/User";
+import {UpdateUserInput, User} from "@/interface";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faArrowsRotate, faMoon, faSun} from "@fortawesome/free-solid-svg-icons";
+import {
+	DEFAULT_THEME,
+	ThemeSetting,
+	applyTheme,
+	getSettingsKey,
+	notifySettingsUpdated,
+} from "@/utils/theme";
 
-const SettingsPage: React.FC = () => {
-	const [notifications, setNotifications] = useState({
+type NotificationSettings = {
+	email: boolean;
+	push: boolean;
+	submissions: boolean;
+	grades: boolean;
+};
+
+type PrivacySettings = {
+	profileVisible: boolean;
+	showEmail: boolean;
+};
+
+type AppSettings = {
+	notifications: NotificationSettings;
+	privacy: PrivacySettings;
+	theme: ThemeSetting;
+};
+
+const defaultSettings: AppSettings = {
+	notifications: {
 		email: true,
 		push: false,
 		submissions: true,
 		grades: true,
-	});
-
-	const [privacy, setPrivacy] = useState({
+	},
+	privacy: {
 		profileVisible: true,
 		showEmail: false,
-	});
+	},
+	theme: DEFAULT_THEME,
+};
 
-	const [theme, setTheme] = useState("light");
+const SettingsPage: React.FC = () => {
+	const {user, logout} = useAuth();
+	const [updateUserMutation, {loading: deletingAccount}] = useMutation<{
+		updateUser: User;
+	}>(UPDATE_USER);
+	const settingsKey = useMemo(() => getSettingsKey(user?.id), [user?.id]);
+	const [notifications, setNotifications] = useState<NotificationSettings>(
+		defaultSettings.notifications,
+	);
+	const [privacy, setPrivacy] = useState<PrivacySettings>(
+		defaultSettings.privacy,
+	);
+	const [theme, setTheme] = useState<ThemeSetting>(defaultSettings.theme);
+	const [statusMessage, setStatusMessage] = useState<string | null>(null);
+	const [deleteConfirmation, setDeleteConfirmation] = useState("");
+
+	useEffect(() => {
+		if (typeof window === "undefined") return;
+
+		try {
+			const rawSettings = window.localStorage.getItem(settingsKey);
+			if (!rawSettings) {
+				applyTheme(defaultSettings.theme);
+				return;
+			}
+
+			const savedSettings = JSON.parse(rawSettings) as Partial<AppSettings>;
+			const nextSettings: AppSettings = {
+				notifications: {
+					...defaultSettings.notifications,
+					...savedSettings.notifications,
+				},
+				privacy: {
+					...defaultSettings.privacy,
+					...savedSettings.privacy,
+				},
+				theme: savedSettings.theme || defaultSettings.theme,
+			};
+
+			window.requestAnimationFrame(() => {
+				setNotifications(nextSettings.notifications);
+				setPrivacy(nextSettings.privacy);
+				setTheme(nextSettings.theme);
+				applyTheme(nextSettings.theme);
+			});
+		} catch {
+			window.requestAnimationFrame(() => {
+				setStatusMessage("No se pudieron cargar tus preferencias guardadas.");
+			});
+		}
+	}, [settingsKey]);
+
+	const saveSettings = (nextSettings?: AppSettings) => {
+		const settingsToSave = nextSettings || {notifications, privacy, theme};
+
+		window.localStorage.setItem(settingsKey, JSON.stringify(settingsToSave));
+		applyTheme(settingsToSave.theme);
+		notifySettingsUpdated();
+		setStatusMessage("Configuración guardada correctamente.");
+	};
+
+	const resetSettings = () => {
+		setNotifications(defaultSettings.notifications);
+		setPrivacy(defaultSettings.privacy);
+		setTheme(defaultSettings.theme);
+		saveSettings(defaultSettings);
+	};
+
+	const handleThemeChange = (nextTheme: ThemeSetting) => {
+		setTheme(nextTheme);
+		applyTheme(nextTheme);
+	};
+
+	const handlePushToggle = async (checked: boolean) => {
+		if (checked && typeof window !== "undefined" && "Notification" in window) {
+			const permission = await Notification.requestPermission();
+
+			if (permission !== "granted") {
+				setStatusMessage("No se activaron las notificaciones push.");
+				setNotifications((current) => ({...current, push: false}));
+				return;
+			}
+		}
+
+		setNotifications((current) => ({...current, push: checked}));
+	};
+
+	const handleDeleteAccount = async () => {
+		if (deleteConfirmation !== "ELIMINAR") {
+			setStatusMessage('Escribe "ELIMINAR" para confirmar.');
+			return;
+		}
+
+		if (!user?.id) {
+			setStatusMessage("No hay una sesión activa para desactivar.");
+			return;
+		}
+
+		const updateUserInput: UpdateUserInput = {
+			id: user.id,
+			isActive: false,
+			role: user.role,
+		};
+
+		try {
+			await updateUserMutation({
+				variables: {updateUserInput},
+			});
+			window.localStorage.removeItem(settingsKey);
+			window.localStorage.removeItem("auraGrade_user");
+			logout();
+			window.location.href = "/login";
+		} catch (error) {
+			setStatusMessage(
+				error instanceof Error
+					? error.message
+					: "No se pudo desactivar la cuenta.",
+			);
+		}
+	};
 
 	return (
 		<ProtectedRoute>
 			<Layout title="Configuración">
 				<div className="max-w-4xl mx-auto space-y-6">
-					{/* Notificaciones */}
 					<Card>
 						<SectionHeader
 							title="Notificaciones"
 							description="Gestiona cómo y cuándo recibes notificaciones"
 							className="mb-6"
 						/>
+
+						{statusMessage && (
+							<div className="mb-6 rounded-xl border border-electric-100 bg-electric-50 px-4 py-3 text-sm font-semibold text-electric-700">
+								{statusMessage}
+							</div>
+						)}
 
 						<div className="space-y-4">
 							<div className="flex items-center justify-between py-3 border-b border-gray-100">
@@ -45,10 +201,10 @@ const SettingsPage: React.FC = () => {
 									<input
 										type="checkbox"
 										checked={notifications.email}
-										onChange={(e) =>
+										onChange={(event) =>
 											setNotifications({
 												...notifications,
-												email: e.target.checked,
+												email: event.target.checked,
 											})
 										}
 										className="sr-only peer"
@@ -70,12 +226,7 @@ const SettingsPage: React.FC = () => {
 									<input
 										type="checkbox"
 										checked={notifications.push}
-										onChange={(e) =>
-											setNotifications({
-												...notifications,
-												push: e.target.checked,
-											})
-										}
+										onChange={(event) => handlePushToggle(event.target.checked)}
 										className="sr-only peer"
 									/>
 									<div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-electric-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-electric-500"></div>
@@ -93,10 +244,10 @@ const SettingsPage: React.FC = () => {
 									<input
 										type="checkbox"
 										checked={notifications.submissions}
-										onChange={(e) =>
+										onChange={(event) =>
 											setNotifications({
 												...notifications,
-												submissions: e.target.checked,
+												submissions: event.target.checked,
 											})
 										}
 										className="sr-only peer"
@@ -116,10 +267,10 @@ const SettingsPage: React.FC = () => {
 									<input
 										type="checkbox"
 										checked={notifications.grades}
-										onChange={(e) =>
+										onChange={(event) =>
 											setNotifications({
 												...notifications,
-												grades: e.target.checked,
+												grades: event.target.checked,
 											})
 										}
 										className="sr-only peer"
@@ -130,64 +281,6 @@ const SettingsPage: React.FC = () => {
 						</div>
 					</Card>
 
-					{/* Privacidad */}
-					<Card>
-						<SectionHeader
-							title="Privacidad"
-							description="Controla quién puede ver tu información"
-							className="mb-6"
-						/>
-
-						<div className="space-y-4">
-							<div className="flex items-center justify-between py-3 border-b border-gray-100">
-								<div>
-									<h4 className="font-medium text-gray-900">Perfil Visible</h4>
-									<p className="text-sm text-gray-600">
-										Permite que otros usuarios vean tu perfil
-									</p>
-								</div>
-								<label className="relative inline-flex items-center cursor-pointer">
-									<input
-										type="checkbox"
-										checked={privacy.profileVisible}
-										onChange={(e) =>
-											setPrivacy({
-												...privacy,
-												profileVisible: e.target.checked,
-											})
-										}
-										className="sr-only peer"
-									/>
-									<div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-electric-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-electric-500"></div>
-								</label>
-							</div>
-
-							<div className="flex items-center justify-between py-3">
-								<div>
-									<h4 className="font-medium text-gray-900">Mostrar Email</h4>
-									<p className="text-sm text-gray-600">
-										Mostrar tu correo en tu perfil público
-									</p>
-								</div>
-								<label className="relative inline-flex items-center cursor-pointer">
-									<input
-										type="checkbox"
-										checked={privacy.showEmail}
-										onChange={(e) =>
-											setPrivacy({
-												...privacy,
-												showEmail: e.target.checked,
-											})
-										}
-										className="sr-only peer"
-									/>
-									<div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-electric-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-electric-500"></div>
-								</label>
-							</div>
-						</div>
-					</Card>
-
-					{/* Apariencia */}
 					<Card>
 						<SectionHeader
 							title="Apariencia"
@@ -200,44 +293,57 @@ const SettingsPage: React.FC = () => {
 								Tema
 							</label>
 							<div className="grid grid-cols-3 gap-4">
-								<button
-									onClick={() => setTheme("light")}
-									className={`p-4 border-2 rounded-xl transition-all ${
-										theme === "light"
-											? "border-electric-500 bg-electric-50"
-											: "border-gray-200 hover:border-gray-300"
-									}`}
-								>
-									<div className="text-2xl mb-2">☀️</div>
-									<div className="font-medium">Claro</div>
-								</button>
-								<button
-									onClick={() => setTheme("dark")}
-									className={`p-4 border-2 rounded-xl transition-all ${
-										theme === "dark"
-											? "border-electric-500 bg-electric-50"
-											: "border-gray-200 hover:border-gray-300"
-									}`}
-								>
-									<div className="text-2xl mb-2">🌙</div>
-									<div className="font-medium">Oscuro</div>
-								</button>
-								<button
-									onClick={() => setTheme("auto")}
-									className={`p-4 border-2 rounded-xl transition-all ${
-										theme === "auto"
-											? "border-electric-500 bg-electric-50"
-											: "border-gray-200 hover:border-gray-300"
-									}`}
-								>
-									<div className="text-2xl mb-2">🔄</div>
-									<div className="font-medium">Auto</div>
-								</button>
+								{[
+									{
+										id: "light",
+										icon: <FontAwesomeIcon icon={faSun} />,
+										label: "Claro",
+									},
+									{
+										id: "dark",
+										icon: <FontAwesomeIcon icon={faMoon} />,
+										label: "Oscuro",
+									},
+									{
+										id: "auto",
+										icon: <FontAwesomeIcon icon={faArrowsRotate} />,
+										label: "Auto",
+									},
+								].map((item) => (
+									<button
+										key={item.id}
+										onClick={() => handleThemeChange(item.id as ThemeSetting)}
+										className={`p-4 border-2 rounded-xl transition-all ${
+											theme === item.id
+												? "border-electric-500 bg-electric-50"
+												: "border-gray-200 hover:border-gray-300"
+										}`}
+									>
+										<div className="text-2xl mb-2">{item.icon}</div>
+										<div className="font-medium">{item.label}</div>
+									</button>
+								))}
 							</div>
 						</div>
 					</Card>
 
-					{/* Zona de Peligro */}
+					<div className="flex flex-col sm:flex-row justify-end gap-3">
+						<button
+							type="button"
+							onClick={resetSettings}
+							className="px-5 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold text-gray-700"
+						>
+							Restaurar valores
+						</button>
+						<button
+							type="button"
+							onClick={() => saveSettings()}
+							className="btn-primary"
+						>
+							Guardar configuración
+						</button>
+					</div>
+
 					<Card className="border-red-200">
 						<SectionHeader
 							title="Zona de Peligro"
@@ -254,8 +360,21 @@ const SettingsPage: React.FC = () => {
 									Una vez que elimines tu cuenta, no hay vuelta atrás. Por
 									favor, asegúrate de esto.
 								</p>
-								<button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-									Eliminar mi cuenta
+								<input
+									type="text"
+									value={deleteConfirmation}
+									onChange={(event) =>
+										setDeleteConfirmation(event.target.value)
+									}
+									placeholder='Escribe "ELIMINAR"'
+									className="w-full max-w-xs px-4 py-2 border border-red-200 rounded-lg mb-4 focus:ring-2 focus:ring-red-200 focus:border-red-400"
+								/>
+								<button
+									onClick={handleDeleteAccount}
+									disabled={deletingAccount}
+									className="block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-200"
+								>
+									{deletingAccount ? "Eliminando..." : "Eliminar mi cuenta"}
 								</button>
 							</div>
 						</div>
