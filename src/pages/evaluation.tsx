@@ -231,9 +231,8 @@ const EvaluationPage: React.FC = () => {
 	);
 	const [showReevaluationForm, setShowReevaluationForm] =
 		useState<boolean>(false);
-	const [publishEvaluation, {loading: publishing}] = useMutation(
-		PUBLISH_EVALUATION,
-	);
+	const [publishEvaluation, {loading: publishing}] =
+		useMutation(PUBLISH_EVALUATION);
 
 	useEffect(() => {
 		setReportStatus(null);
@@ -409,7 +408,7 @@ const EvaluationPage: React.FC = () => {
 													</div>
 
 													<div className="lg:w-56 shrink-0">
-														<div className="p-4 rounded-xl bg-electric-50 border border-electric-100 text-center mb-3">
+														<div className="p-4 rounded-xl bg-electric-50/15 border border-electric-100 text-center mb-3">
 															<div className="text-xs font-bold text-electric-700 uppercase mb-1">
 																Resultado
 															</div>
@@ -420,9 +419,6 @@ const EvaluationPage: React.FC = () => {
 																		<span className="text-sm text-electric-500">
 																			/{assignment.maxScore}
 																		</span>
-																	</div>
-																	<div className="text-sm font-bold text-gray-500">
-																		{assignment.percentage}% obtenido
 																	</div>
 																</>
 															) : (
@@ -512,14 +508,16 @@ const EvaluationPage: React.FC = () => {
 	);
 	const canSendNewVersion = Boolean(
 		relatedAssignment &&
-			relatedAssignment.status !== "graded" &&
-			new Date(relatedAssignment.dueDate) >= new Date(),
+		relatedAssignment.status !== "graded" &&
+		new Date(relatedAssignment.dueDate) >= new Date(),
 	);
 
 	const handlePublishEvaluation = async () => {
 		if (!submissionId) return;
 		if (!submissionDetail?.evaluation?.id) {
-			setPublishError("Esta entrega aún no tiene evaluación de IA para publicar.");
+			setPublishError(
+				"Esta entrega aún no tiene evaluación de IA para publicar.",
+			);
 			setPublishSuccess(null);
 			return;
 		}
@@ -527,7 +525,11 @@ const EvaluationPage: React.FC = () => {
 		const parsedScore = Number(finalScore || scoreDraft);
 		const feedbackToPublish = (finalFeedback || feedbackDraft || "").trim();
 
-		if (!Number.isFinite(parsedScore) || parsedScore < 0 || parsedScore > maxScore) {
+		if (
+			!Number.isFinite(parsedScore) ||
+			parsedScore < 0 ||
+			parsedScore > maxScore
+		) {
 			setPublishError(`La nota final debe estar entre 0 y ${maxScore}.`);
 			setPublishSuccess(null);
 			return;
@@ -675,7 +677,10 @@ const EvaluationPage: React.FC = () => {
 							<div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
 								<div>
 									<div className="flex items-center gap-2 mb-3">
-										<FontAwesomeIcon icon={faClock} className="text-amber-500" />
+										<FontAwesomeIcon
+											icon={faClock}
+											className="text-amber-500"
+										/>
 										<span className="text-xs font-black text-amber-700 uppercase tracking-widest">
 											Entrega recibida
 										</span>
@@ -685,8 +690,8 @@ const EvaluationPage: React.FC = () => {
 									</h1>
 									<p className="text-gray-600">
 										Tu trabajo está en revisión docente. La nota y la
-										retroalimentación final aparecerán cuando el docente publique
-										el resultado.
+										retroalimentación final aparecerán cuando el docente
+										publique el resultado.
 									</p>
 								</div>
 								<div className="grid grid-cols-2 gap-3 min-w-64">
@@ -854,7 +859,9 @@ const EvaluationPage: React.FC = () => {
 							Volver atrás
 						</button>
 						<Badge variant={isPublishedEvaluation ? "success" : "warning"}>
-							{isPublishedEvaluation ? "Resultado publicado" : "Borrador interno"}
+							{isPublishedEvaluation
+								? "Resultado publicado"
+								: "Borrador interno"}
 						</Badge>
 					</div>
 
@@ -1059,7 +1066,9 @@ const EvaluationPage: React.FC = () => {
 						}`}
 					>
 						{/* Tabla de criterios */}
-						<div className={canViewDraft && showComparison ? "lg:col-span-1" : ""}>
+						<div
+							className={canViewDraft && showComparison ? "lg:col-span-1" : ""}
+						>
 							<CriteriaTable criteria={evaluationData.criteria} />
 						</div>
 

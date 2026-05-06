@@ -18,9 +18,13 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faBookOpen,
 	faCalendarDays,
+	faCheck,
 	faCircleCheck,
+	faCloudUpload,
 	faFileLines,
 	faGraduationCap,
+	faRobot,
+	faSearch,
 } from "@fortawesome/free-solid-svg-icons";
 
 type ToastState = {
@@ -165,7 +169,9 @@ const createSubmissionWithFile = async (
 
 	if (!response.ok) {
 		const errorBody = await response.text();
-		throw new Error(`El backend rechazó la entrega (${response.status}): ${errorBody}`);
+		throw new Error(
+			`El backend rechazó la entrega (${response.status}): ${errorBody}`,
+		);
 	}
 
 	const payload = await response.json();
@@ -247,7 +253,8 @@ const fetchSubmissionById = async (submissionId: string) => {
 	const payload = await response.json();
 	if (payload.errors?.length) {
 		throw new Error(
-			payload.errors[0]?.message || "Error al consultar el estado de la entrega.",
+			payload.errors[0]?.message ||
+				"Error al consultar el estado de la entrega.",
 		);
 	}
 
@@ -288,8 +295,9 @@ const UploadPage: React.FC = () => {
 	);
 
 	const selectedAssignment =
-		assignments.find((assignment) => assignment.id === effectiveSelectedAssignmentId) ||
-		null;
+		assignments.find(
+			(assignment) => assignment.id === effectiveSelectedAssignmentId,
+		) || null;
 	const selectedAssignmentExpired = selectedAssignment
 		? selectedAssignment.status === "overdue" ||
 			new Date(selectedAssignment.dueDate) < new Date()
@@ -305,25 +313,25 @@ const UploadPage: React.FC = () => {
 			id: 1,
 			title: "Subir archivo",
 			description: "Registrando archivo seleccionado",
-			icon: "📤",
+			icon: <FontAwesomeIcon icon={faCloudUpload} />,
 		},
 		{
 			id: 2,
 			title: "Enviando entrega",
 			description: "El backend recibe el archivo completo",
-			icon: "🔍",
+			icon: <FontAwesomeIcon icon={faSearch} />,
 		},
 		{
 			id: 3,
 			title: "Generando evaluación",
 			description: "La IA procesa la entrega según la rúbrica",
-			icon: "🤖",
+			icon: <FontAwesomeIcon icon={faRobot} />,
 		},
 		{
 			id: 4,
 			title: "Resultado listo",
 			description: "Calificación o revisión registrada",
-			icon: "✅",
+			icon: <FontAwesomeIcon icon={faCheck} />,
 		},
 	];
 
@@ -532,11 +540,11 @@ const UploadPage: React.FC = () => {
 													? "Entregada"
 													: selectedAssignment.status === "review_pending"
 														? "En revisión"
-													: selectedAssignment.status === "graded"
-														? "Calificada"
-													: selectedAssignment.status === "overdue"
-														? "Vencida"
-														: "Pendiente"}
+														: selectedAssignment.status === "graded"
+															? "Calificada"
+															: selectedAssignment.status === "overdue"
+																? "Vencida"
+																: "Pendiente"}
 											</Badge>
 										</div>
 										<p className="text-sm text-gray-600 mt-3">
@@ -642,9 +650,7 @@ const UploadPage: React.FC = () => {
 															</div>
 															<Badge
 																variant={
-																	submission.isPublished
-																		? "success"
-																		: "warning"
+																	submission.isPublished ? "success" : "warning"
 																}
 															>
 																{submission.isPublished
@@ -783,7 +789,9 @@ const UploadPage: React.FC = () => {
 										{currentStep > 0 && currentStep < 4 && (
 											<div className="w-full max-w-md mb-6">
 												<div className="flex justify-between text-sm text-gray-600 mb-2">
-													<span>{progressLabel || "Procesando entrega..."}</span>
+													<span>
+														{progressLabel || "Procesando entrega..."}
+													</span>
 													<span>{uploadProgress}%</span>
 												</div>
 												<div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">

@@ -179,9 +179,9 @@ const StudentCoursesPage: React.FC = () => {
 														{selectedCourse.name}
 													</h2>
 													<p className="text-sm text-gray-500 mt-2">
-														La nota actual se calcula con las tareas calificadas.
-														Las tareas pendientes se integran progresivamente al
-														recibir evaluación.
+														La nota actual se calcula con las tareas
+														calificadas. Las tareas pendientes se integran
+														progresivamente al recibir evaluación.
 													</p>
 												</div>
 												<div className="text-right">
@@ -218,7 +218,9 @@ const StudentCoursesPage: React.FC = () => {
 													<div className="text-2xl font-black text-blue-600">
 														{selectedCourse.deliveredAssignments}
 													</div>
-													<div className="text-xs text-gray-500">Entregadas</div>
+													<div className="text-xs text-gray-500">
+														Entregadas
+													</div>
 												</div>
 												<div className="p-4 rounded-xl bg-green-50">
 													<FontAwesomeIcon
@@ -228,7 +230,9 @@ const StudentCoursesPage: React.FC = () => {
 													<div className="text-2xl font-black text-green-600">
 														{selectedCourse.gradedAssignments}
 													</div>
-													<div className="text-xs text-gray-500">Calificadas</div>
+													<div className="text-xs text-gray-500">
+														Calificadas
+													</div>
 												</div>
 												<div className="p-4 rounded-xl bg-yellow-50">
 													<FontAwesomeIcon
@@ -279,9 +283,7 @@ const StudentCoursesPage: React.FC = () => {
 																<th className="text-left py-3 px-4 text-sm font-bold text-gray-600">
 																	Nota
 																</th>
-																<th className="text-left py-3 px-4 text-sm font-bold text-gray-600">
-																	Porcentaje
-																</th>
+
 																<th className="text-right py-3 px-4 text-sm font-bold text-gray-600">
 																	Acción
 																</th>
@@ -289,7 +291,9 @@ const StudentCoursesPage: React.FC = () => {
 														</thead>
 														<tbody>
 															{selectedCourse.assignments.map((assignment) => {
-																const status = getStatusBadge(assignment.status);
+																const status = getStatusBadge(
+																	assignment.status,
+																);
 
 																return (
 																	<tr
@@ -303,11 +307,12 @@ const StudentCoursesPage: React.FC = () => {
 																			<div className="text-xs text-gray-500 line-clamp-1">
 																				{assignment.description}
 																			</div>
-																			{assignment.submissionHistory.length > 0 && (
+																			{assignment.submissionHistory.length >
+																				0 && (
 																				<div className="text-xs font-bold text-electric-600 mt-1">
 																					{assignment.submissionHistory.length}{" "}
-																					{assignment.submissionHistory.length ===
-																					1
+																					{assignment.submissionHistory
+																						.length === 1
 																						? "versión enviada"
 																						: "versiones enviadas"}
 																				</div>
@@ -333,20 +338,7 @@ const StudentCoursesPage: React.FC = () => {
 																				<span className="text-gray-400">-</span>
 																			)}
 																		</td>
-																		<td className="py-4 px-4">
-																			{assignment.percentage !== undefined ? (
-																				<div className="min-w-28">
-																					<div className="text-sm font-bold text-gray-900 mb-1">
-																						{assignment.percentage}%
-																					</div>
-																					<CourseProgressBar
-																						value={assignment.percentage}
-																					/>
-																				</div>
-																			) : (
-																				<span className="text-gray-400">Pendiente</span>
-																			)}
-																		</td>
+
 																		<td className="py-4 px-4 text-right">
 																			<button
 																				onClick={() =>

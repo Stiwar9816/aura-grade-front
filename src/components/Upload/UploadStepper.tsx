@@ -1,3 +1,5 @@
+import {faCheck} from "@fortawesome/free-solid-svg-icons";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import React from "react";
 
 interface Step {
@@ -53,8 +55,8 @@ const UploadStepper: React.FC<UploadStepperProps> = ({
 							stepId === 2
 								? "bg-cyan-400"
 								: stepId === 3
-								? "bg-purple-400"
-								: "bg-electric-400"
+									? "bg-purple-400"
+									: "bg-electric-400"
 						}`}
 					></div>
 
@@ -123,8 +125,8 @@ const UploadStepper: React.FC<UploadStepperProps> = ({
 												status === "completed"
 													? "text-green-600"
 													: status === "active"
-													? "text-electric-500"
-													: "text-gray-500"
+														? "text-electric-500"
+														: "text-gray-500"
 											}`}
 										>
 											{step.title}
@@ -141,15 +143,15 @@ const UploadStepper: React.FC<UploadStepperProps> = ({
 												status === "completed"
 													? "bg-green-100 text-green-800"
 													: status === "active"
-													? "bg-electric-100 text-electric-800 animate-pulse"
-													: "bg-gray-100 text-gray-800"
+														? "bg-electric-100 text-electric-800 animate-pulse"
+														: "bg-gray-100 text-gray-800"
 											}`}
 										>
 											{status === "completed"
 												? "Completado"
 												: status === "active"
-												? "En progreso"
-												: "Pendiente"}
+													? "En progreso"
+													: "Pendiente"}
 										</span>
 									</div>
 								</div>
@@ -174,8 +176,8 @@ const UploadStepper: React.FC<UploadStepperProps> = ({
 									isActive
 										? "border-electric-500 bg-electric-50"
 										: isCompleted
-										? "border-green-500 bg-green-50"
-										: "border-gray-200"
+											? "border-green-500 bg-green-50"
+											: "border-gray-200"
 								}`}
 							>
 								{/* Step Icon */}
@@ -192,8 +194,8 @@ const UploadStepper: React.FC<UploadStepperProps> = ({
 													isActive
 														? "text-electric-500"
 														: isCompleted
-														? "text-green-600"
-														: "text-gray-700"
+															? "text-green-600"
+															: "text-gray-700"
 												}`}
 											>
 												{step.title}
@@ -208,11 +210,15 @@ const UploadStepper: React.FC<UploadStepperProps> = ({
 													isCompleted
 														? "bg-green-100 text-green-800"
 														: isActive
-														? "bg-electric-100 text-electric-800"
-														: "bg-gray-100 text-gray-800"
+															? "bg-electric-100 text-electric-800"
+															: "bg-gray-100 text-gray-800"
 												}`}
 											>
-												{isCompleted ? "✓" : `${index + 1}/${steps.length}`}
+												{isCompleted ? (
+													<FontAwesomeIcon icon={faCheck} />
+												) : (
+													`${index + 1}/${steps.length}`
+												)}
 											</span>
 										</div>
 									</div>

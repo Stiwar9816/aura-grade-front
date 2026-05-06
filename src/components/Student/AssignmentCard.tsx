@@ -1,4 +1,13 @@
 import {AssignmentCardProps} from "@/types";
+import {
+	faCheck,
+	faClock,
+	faExclamationTriangle,
+	faEye,
+	faFileText,
+	faSearch,
+} from "@fortawesome/free-solid-svg-icons";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import React, {useState, useEffect} from "react";
 
 const AssignmentCard: React.FC<AssignmentCardProps> = ({
@@ -22,7 +31,7 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 
 			const days = Math.floor(diff / (1000 * 60 * 60 * 24));
 			const hours = Math.floor(
-				(diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+				(diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60),
 			);
 			const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
 
@@ -52,7 +61,11 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 					classes: isOverdue
 						? "bg-red-50 text-red-600 ring-1 ring-red-100"
 						: "bg-amber-50 text-amber-600 ring-1 ring-amber-100",
-					icon: isOverdue ? "⚠️" : "⏳",
+					icon: isOverdue ? (
+						<FontAwesomeIcon icon={faExclamationTriangle} />
+					) : (
+						<FontAwesomeIcon icon={faClock} />
+					),
 				};
 			}
 			case "submitted":
@@ -60,19 +73,19 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 				return {
 					label: "En revisión",
 					classes: "bg-violet-50 text-violet-600 ring-1 ring-violet-100",
-					icon: "🔎",
+					icon: <FontAwesomeIcon icon={faSearch} />,
 				};
 			case "graded":
 				return {
 					label: "Calificado",
 					classes: "bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100",
-					icon: "✅",
+					icon: <FontAwesomeIcon icon={faCheck} />,
 				};
 			default:
 				return {
 					label: "Pendiente",
 					classes: "bg-gray-50 text-gray-600 ring-1 ring-gray-100",
-					icon: "📄",
+					icon: <FontAwesomeIcon icon={faFileText} />,
 				};
 		}
 	};
@@ -203,19 +216,21 @@ const AssignmentCard: React.FC<AssignmentCardProps> = ({
 									? "Entregar Tarea"
 									: assignment.status === "submitted"
 										? "Ver entrega"
-									: assignment.status === "review_pending"
-										? "Ver entrega"
-									: "Ver Detalle"
+										: assignment.status === "review_pending"
+											? "Ver entrega"
+											: "Ver Detalle"
 							}
 						>
 							<span className="text-lg">
-								{assignment.status === "pending"
-									? "🚀"
-									: assignment.status === "submitted"
-										? "🔍"
-									: assignment.status === "review_pending"
-										? "🔍"
-										: "🔍"}
+								{assignment.status === "pending" ? (
+									<FontAwesomeIcon icon={faClock} />
+								) : assignment.status === "submitted" ? (
+									<FontAwesomeIcon icon={faSearch} />
+								) : assignment.status === "review_pending" ? (
+									<FontAwesomeIcon icon={faSearch} />
+								) : (
+									<FontAwesomeIcon icon={faEye} />
+								)}
 							</span>
 						</button>
 					</div>

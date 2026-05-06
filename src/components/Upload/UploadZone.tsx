@@ -1,3 +1,11 @@
+import {
+	faCloudUpload,
+	faFileText,
+	faFolderOpen,
+	faRocket,
+	faTriangleExclamation,
+} from "@fortawesome/free-solid-svg-icons";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import React, {useCallback, useState, useRef} from "react";
 
 interface UploadZoneProps {
@@ -82,14 +90,17 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 				handleFileSelect(e.dataTransfer.files[0]);
 			}
 		},
-		[disabled, handleFileSelect]
+		[disabled, handleFileSelect],
 	);
 
-	const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-		e.preventDefault();
-		if (disabled) return;
-		setIsDragging(true);
-	}, [disabled]);
+	const onDragOver = useCallback(
+		(e: React.DragEvent<HTMLDivElement>) => {
+			e.preventDefault();
+			if (disabled) return;
+			setIsDragging(true);
+		},
+		[disabled],
+	);
 
 	const onDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
 		e.preventDefault();
@@ -119,7 +130,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 		switch (extension) {
 			case "docx":
 			case "doc":
-				return "📝";
+				return <FontAwesomeIcon icon={faFileText} />;
 			default:
 				return "📎";
 		}
@@ -133,7 +144,15 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 		return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 	};
 
-	const zoneIcon = isDragging ? "📁" : error ? "⚠️" : file ? "✅" : "📤";
+	const zoneIcon = isDragging ? (
+		<FontAwesomeIcon icon={faFolderOpen} />
+	) : error ? (
+		<FontAwesomeIcon icon={faTriangleExclamation} />
+	) : file ? (
+		<FontAwesomeIcon icon={faFileText} />
+	) : (
+		<FontAwesomeIcon icon={faCloudUpload} />
+	);
 	const zoneTitle = isDragging
 		? "¡Suelta tu archivo aquí!"
 		: disabled
@@ -170,12 +189,12 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 					disabled
 						? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
 						: isDragging
-						? "border-electric-500 bg-electric-50/50 backdrop-blur-md shadow-2xl shadow-electric-500/20 scale-[1.01]"
-						: error
-						? "border-red-500 bg-red-50/50 backdrop-blur-md"
-						: file
-						? "border-green-500 bg-green-50/50 backdrop-blur-md shadow-lg shadow-green-500/10"
-						: "border-gray-200 bg-white/40 backdrop-blur-sm hover:border-electric-400 hover:bg-white/60 hover:shadow-xl hover:shadow-electric-500/5 group"
+							? "border-electric-500 bg-electric-50/50 backdrop-blur-md shadow-2xl shadow-electric-500/20 scale-[1.01]"
+							: error
+								? "border-red-500 bg-red-50/50 backdrop-blur-md"
+								: file
+									? "border-green-500 bg-green-900/50 backdrop-blur-md shadow-lg shadow-green-500/10"
+									: "border-gray-200 bg-white/40 backdrop-blur-sm hover:border-electric-400 hover:bg-white/60 hover:shadow-xl hover:shadow-electric-500/5 group"
 				}`}
 			>
 				{/* Background Aura Glow (Only visible on hover/drag) */}
@@ -201,11 +220,17 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 
 					<div className="inline-flex flex-wrap items-center gap-3 px-5 py-1.5 bg-white/60 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-sm text-gray-600">
 						<span className="flex items-center gap-1.5">
-							<span className="text-blue-500">📄</span> .DOC
+							<span className="text-blue-500">
+								<FontAwesomeIcon icon={faFileText} />
+							</span>{" "}
+							.DOC
 						</span>
 						<span className="w-1 h-1 bg-gray-300 rounded-full"></span>
 						<span className="flex items-center gap-1.5">
-							<span className="text-blue-500">📝</span> .DOCX
+							<span className="text-blue-500">
+								<FontAwesomeIcon icon={faFileText} />
+							</span>{" "}
+							.DOCX
 						</span>
 						<span className="w-1 h-1 bg-gray-300 rounded-full"></span>
 						<span className="flex items-center gap-1.5">
@@ -222,7 +247,9 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 				<div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
 					<div className="flex items-center gap-3">
 						<div className="p-2 bg-red-100 rounded-lg">
-							<span className="text-red-600 text-xl">⚠️</span>
+							<span className="text-red-600 text-xl">
+								<FontAwesomeIcon icon={faTriangleExclamation} />
+							</span>
 						</div>
 						<div>
 							<h4 className="font-medium text-gray-900">Error de validación</h4>
@@ -304,7 +331,9 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 							}`}
 						>
 							<span className="flex items-center justify-center gap-3">
-								<span>🚀</span>
+								<span>
+									<FontAwesomeIcon icon={faRocket} />
+								</span>
 								<span>Iniciar Evaluación con IA</span>
 							</span>
 						</button>

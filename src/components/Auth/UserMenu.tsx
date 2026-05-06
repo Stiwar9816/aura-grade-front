@@ -26,11 +26,11 @@ export const UserMenu = () => {
 	const getRoleColor = () => {
 		switch (user?.role) {
 			case UserRole.STUDENT:
-				return "bg-green-100 text-green-900";
+				return "bg-green-500 text-white";
 			case UserRole.TEACHER:
 				return "bg-electric-500 text-white";
 			case UserRole.ADMIN:
-				return "bg-purple-100 text-purple-900";
+				return "bg-purple-500 text-white";
 			default:
 				return "bg-gray-100 text-gray-900";
 		}
