@@ -286,7 +286,9 @@ const UploadPage: React.FC = () => {
 	const deliverableAssignments = useMemo(
 		() =>
 			assignments.filter((assignment) =>
-				["pending", "submitted", "review_pending"].includes(assignment.status),
+				["pending", "submitted", "review_pending", "overdue"].includes(
+					assignment.status,
+				),
 			),
 		[assignments],
 	);

@@ -3,7 +3,12 @@ import {GET_TASK_TEACHER} from "@/gql/Assignment";
 import {GET_ALL_COURSES} from "@/gql/Course";
 import {GET_TEACHER_SUBMISSIONS} from "@/gql/Submission";
 import {useAuth} from "@/hooks";
-import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
+import {
+	STANDARD_GRADE_MAX,
+	averageGrades,
+	gradeToPercentage,
+	normalizeGrade,
+} from "@/utils/gradeScale";
 
 type CourseUser = {
 	id: string;
@@ -157,11 +162,6 @@ const getAssignmentStatus = (
 	return new Date(assignment.dueDate) < new Date() ? "overdue" : "pending";
 };
 
-const normalizeScore = (score?: number | null, maxScore = STANDARD_GRADE_MAX) => {
-	if (typeof score !== "number" || maxScore <= 0) return undefined;
-	return Math.round((score / maxScore) * 100);
-};
-
 export const useStudentAcademicData = () => {
 	const {user} = useAuth();
 	const {
@@ -264,7 +264,15 @@ export const useStudentAcademicData = () => {
 						assignment.rubric?.maxTotalScore,
 					)
 				: undefined;
-			const percentage = normalizeScore(score, maxScore);
+			const percentage = gradeToPercentage(score);
+			const rubricCriteria = assignment.rubric?.criteria || [];
+			const rubricMaxScore =
+				assignment.rubric?.maxTotalScore ||
+				rubricCriteria.reduce(
+					(total, criterion) => total + (criterion.maxPoints || 0),
+					0,
+				) ||
+				STANDARD_GRADE_MAX;
 			const submissionVersion = latestSubmission
 				? studentSubmissions.findIndex(
 						(submission) => submission.id === latestSubmission.id,
@@ -310,12 +318,12 @@ export const useStudentAcademicData = () => {
 				submissionHistory,
 				rubric: {
 					criteria:
-						assignment.rubric?.criteria?.map((criterion) => ({
+						rubricCriteria.map((criterion) => ({
 							name: criterion.title || criterion.name || "Criterio",
 							description: "",
 							weight:
 								criterion.weight ||
-								Math.round(((criterion.maxPoints || 0) / maxScore) * 100) ||
+								Math.round(((criterion.maxPoints || 0) / rubricMaxScore) * 100) ||
 								0,
 						})) || [],
 				},
@@ -338,16 +346,10 @@ export const useStudentAcademicData = () => {
 		const reviewPendingAssignments = courseAssignments.filter((assignment) =>
 			["submitted", "review_pending"].includes(assignment.status),
 		);
-		const percentages = gradedAssignments
-			.map((assignment) => assignment.percentage)
-			.filter((value): value is number => value !== undefined);
-		const currentPercentage =
-			percentages.length > 0
-				? Math.round(
-						percentages.reduce((sum, value) => sum + value, 0) /
-							percentages.length,
-					)
-				: 0;
+		const currentGrade = averageGrades(
+			gradedAssignments.map((assignment) => assignment.score),
+		);
+		const currentPercentage = gradeToPercentage(currentGrade) || 0;
 
 		return {
 			id: course.id,
@@ -363,25 +365,17 @@ export const useStudentAcademicData = () => {
 					assignment.status === "pending" || assignment.status === "overdue",
 			).length,
 			currentPercentage,
-			currentGrade: Number(
-				((currentPercentage / 100) * STANDARD_GRADE_MAX).toFixed(1),
-			),
+			currentGrade: currentGrade || 0,
 		} satisfies StudentCourseReport;
 	});
 
 	const gradedAssignments = assignments.filter(
 		(assignment) => assignment.status === "graded",
 	);
-	const percentages = gradedAssignments
-		.map((assignment) => assignment.percentage)
-		.filter((value): value is number => value !== undefined);
-	const averagePercentage =
-		percentages.length > 0
-			? Math.round(
-					percentages.reduce((sum, value) => sum + value, 0) /
-						percentages.length,
-				)
-			: 0;
+	const averageGradeValue = averageGrades(
+		gradedAssignments.map((assignment) => assignment.score),
+	);
+	const averagePercentage = gradeToPercentage(averageGradeValue) || 0;
 
 	return {
 		courses,
@@ -393,9 +387,7 @@ export const useStudentAcademicData = () => {
 		).length,
 		gradedCount: gradedAssignments.length,
 		averagePercentage,
-		averageGrade: Number(
-			((averagePercentage / 100) * STANDARD_GRADE_MAX).toFixed(1),
-		),
+		averageGrade: averageGradeValue || 0,
 		deliveredCount: assignments.filter((assignment) =>
 			["submitted", "review_pending", "graded"].includes(assignment.status),
 		).length,

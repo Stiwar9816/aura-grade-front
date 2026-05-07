@@ -37,19 +37,13 @@ import {
 	notifySuccess,
 	notifyWarning,
 } from "@/utils/toastNotify";
-
-const REEVALUATION_REQUESTS_KEY = "auragrade_reevaluation_requests";
-
-interface ReevaluationRequest {
-	id: string;
-	submissionId: string;
-	assignmentId?: string;
-	studentId?: string;
-	studentName: string;
-	reason: string;
-	status: "pending";
-	createdAt: string;
-}
+import {
+	getReevaluationRequestId,
+	getStoredReevaluationRequests,
+	ReevaluationRequest,
+	resolveStoredReevaluationRequest,
+	saveStoredReevaluationRequests,
+} from "@/utils/reevaluationRequests";
 
 type ShareNavigator = Navigator & {
 	canShare?: (data: {files?: File[]}) => boolean;
@@ -100,39 +94,6 @@ const formatDateTime = (date?: string) => {
 		hour: "2-digit",
 		minute: "2-digit",
 	});
-};
-
-const getStoredReevaluationRequests = (): ReevaluationRequest[] => {
-	if (typeof window === "undefined") return [];
-
-	try {
-		const rawRequests = window.localStorage.getItem(REEVALUATION_REQUESTS_KEY);
-		if (!rawRequests) return [];
-
-		const requests = JSON.parse(rawRequests);
-		return Array.isArray(requests) ? requests : [];
-	} catch {
-		return [];
-	}
-};
-
-const saveStoredReevaluationRequests = (
-	requests: ReevaluationRequest[],
-): void => {
-	if (typeof window === "undefined") return;
-
-	window.localStorage.setItem(
-		REEVALUATION_REQUESTS_KEY,
-		JSON.stringify(requests),
-	);
-};
-
-const getRequestId = () => {
-	if (typeof window !== "undefined" && window.crypto?.randomUUID) {
-		return window.crypto.randomUUID();
-	}
-
-	return `reevaluation-${Date.now()}`;
 };
 
 const getSafeFileName = (value: string) =>
@@ -499,9 +460,11 @@ const EvaluationPage: React.FC = () => {
 
 	const canViewDraft =
 		user?.role === UserRole.TEACHER || user?.role === UserRole.ADMIN;
+	const hasPendingReevaluationRequest = Boolean(reevaluationStatus);
 	const isPublishedEvaluation =
-		submissionDetail?.status === "PUBLISHED" ||
-		submissionDetail?.evaluation?.status === "PUBLISHED";
+		!hasPendingReevaluationRequest &&
+		(submissionDetail?.status === "PUBLISHED" ||
+			submissionDetail?.evaluation?.status === "PUBLISHED");
 	const scoreDraft = evaluationData.overallScore;
 	const feedbackDraft = evaluationData.generalFeedback;
 	const maxScore = evaluationData.maxScore || STANDARD_GRADE_MAX;
@@ -572,6 +535,8 @@ const EvaluationPage: React.FC = () => {
 				],
 				awaitRefetchQueries: true,
 			});
+			resolveStoredReevaluationRequest(submissionId);
+			setReevaluationStatus(null);
 			setPublishSuccess("Nota final publicada para el estudiante.");
 			notifySuccess("Nota final publicada para el estudiante.");
 		} catch (error) {
@@ -659,7 +624,7 @@ const EvaluationPage: React.FC = () => {
 
 		const createdAt = new Date().toISOString();
 		const newRequest: ReevaluationRequest = {
-			id: getRequestId(),
+			id: getReevaluationRequestId(),
 			submissionId,
 			assignmentId: submissionDetail.assignment?.id,
 			studentId: submissionDetail.student?.id,

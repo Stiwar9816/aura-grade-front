@@ -1,10 +1,11 @@
 import {useEffect, useMemo, useState} from "react";
 import {useAssignmentActions} from "@/actions";
 import {useAuth} from "./useAuth";
-import {UserRole} from "@/interface";
+import {SubmissionStatus, UserRole} from "@/interface";
 import {GET_ASSIGNMENT_BY_ID} from "@/gql/Assignment";
 import client from "@/lib/apolloClient";
 import {normalizeGrade, getScoreTime} from "@/utils/gradeScale";
+import {getPendingReevaluationSubmissionIds} from "@/utils/reevaluationRequests";
 
 export interface AssignmentStudent {
 	id: string;
@@ -32,6 +33,7 @@ export interface AssignmentSubmission {
 	updatedAt?: string;
 	student?: AssignmentStudent;
 	evaluation?: AssignmentEvaluation;
+	hasReevaluationRequest?: boolean;
 }
 
 export interface AssignmentRubricCriterion {
@@ -95,21 +97,30 @@ export interface ProcessedTeacherAssignment {
 const normalizeStatusValue = (status?: string | null) =>
 	status?.toUpperCase().replace(/[-\s]+/g, "_") || "";
 
-const isPublishedSubmission = (submission: AssignmentSubmission) =>
-	normalizeStatusValue(submission.status) === "PUBLISHED" ||
-	normalizeStatusValue(submission.evaluation?.status) === "PUBLISHED";
+const isPublishedSubmission = (
+	submission: AssignmentSubmission,
+	reevaluationSubmissionIds: Set<string>,
+) =>
+	!reevaluationSubmissionIds.has(submission.id) &&
+	(normalizeStatusValue(submission.status) === "PUBLISHED" ||
+		normalizeStatusValue(submission.evaluation?.status) === "PUBLISHED");
 
-const isPendingTeacherReview = (submission: AssignmentSubmission) => {
+const isPendingTeacherReview = (
+	submission: AssignmentSubmission,
+	reevaluationSubmissionIds: Set<string>,
+) => {
 	const status = normalizeStatusValue(submission.status);
 
 	return (
-		!isPublishedSubmission(submission) &&
+		(reevaluationSubmissionIds.has(submission.id) ||
+			!isPublishedSubmission(submission, reevaluationSubmissionIds)) &&
 		(status === "REVIEW_PENDING" ||
 			status === "GRADED" ||
 			status === "PENDING" ||
 			status === "IN_PROGRESS" ||
 			status === "SUBMITTED" ||
-			Boolean(submission.evaluation))
+			Boolean(submission.evaluation) ||
+			reevaluationSubmissionIds.has(submission.id))
 	);
 };
 
@@ -268,6 +279,7 @@ export const useAssignments = () => {
 		if (!filteredAssignments.length) return [];
 
 		const now = new Date();
+		const reevaluationSubmissionIds = getPendingReevaluationSubmissionIds();
 
 		return filteredAssignments.map((assignment: TeacherAssignment) => {
 			const assignmentDetail = assignmentDetailsById[assignment.id];
@@ -275,10 +287,19 @@ export const useAssignments = () => {
 				assignment.submissions || [],
 				assignmentDetail?.submissions || [],
 			);
-			const latestSubmissions = getLatestSubmissionsByStudent(submissions);
+			const latestSubmissions = getLatestSubmissionsByStudent(submissions).map(
+				(submission) =>
+					reevaluationSubmissionIds.has(submission.id)
+						? {
+								...submission,
+								status: SubmissionStatus.REVIEW_PENDING,
+								hasReevaluationRequest: true,
+							}
+						: submission,
+			);
 			const publishedLatestSubmissions = latestSubmissions.filter(
 				(submission) =>
-					isPublishedSubmission(submission) &&
+					isPublishedSubmission(submission, reevaluationSubmissionIds) &&
 					typeof submission.evaluation?.totalScore === "number",
 			);
 			const totalScore = publishedLatestSubmissions.reduce(
@@ -295,7 +316,9 @@ export const useAssignments = () => {
 					? Number((totalScore / publishedLatestSubmissions.length).toFixed(1))
 					: 0;
 
-			const pending = latestSubmissions.filter(isPendingTeacherReview).length;
+			const pending = latestSubmissions.filter((submission) =>
+				isPendingTeacherReview(submission, reevaluationSubmissionIds),
+			).length;
 
 			const dueDate = new Date(assignment.dueDate);
 			const isExpired = dueDate < now;

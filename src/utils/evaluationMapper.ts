@@ -61,8 +61,9 @@ export const mapSubmissionToEvaluation = (
 				return {
 					id: c.id,
 					name: c.title,
-					score: criterionFeedback.score || 0,
-					maxScore: c.maxPoints,
+					score:
+						normalizeGrade(criterionFeedback.score, c.maxPoints) || 0,
+					maxScore: STANDARD_GRADE_MAX,
 					feedback:
 						criterionFeedback.feedback || "Sin feedback específico disponible.",
 					suggestion: criterionFeedback.suggestion || "",

@@ -6,6 +6,7 @@ import {
 	useAssignments,
 } from "./useAssignments";
 import {getScoreTime, normalizeGrade} from "@/utils/gradeScale";
+import {getReevaluationRequestBySubmissionId} from "@/utils/reevaluationRequests";
 
 const normalizeStatusValue = (status?: string | null) =>
 	status?.toUpperCase().replace(/[-\s]+/g, "_") || "";
@@ -50,6 +51,7 @@ export const useSubmission = () => {
 		s: SubmissionDetail | AssignmentSubmission,
 		assignment?: ProcessedTeacherAssignment,
 	): Submission => {
+		const reevaluationRequest = getReevaluationRequestBySubmissionId(s.id);
 		// Calcular si necesita atención
 		const daysSinceSubmission = s.createdAt
 			? Math.floor(
@@ -59,12 +61,13 @@ export const useSubmission = () => {
 			: 0;
 
 		const rawStatus = normalizeStatusValue(s.status);
-		const needsAttention = rawStatus === "PENDING" && daysSinceSubmission > 3; // Más de 3 días sin revisar
+		const needsAttention =
+			Boolean(reevaluationRequest) ||
+			(rawStatus === "PENDING" && daysSinceSubmission > 3); // Más de 3 días sin revisar
 
-		const normalizedStatus = getTeacherReviewStatus(
-			s.status,
-			s.evaluation?.status,
-		);
+		const normalizedStatus = reevaluationRequest
+			? SubmissionStatus.REVIEW_PENDING
+			: getTeacherReviewStatus(s.status, s.evaluation?.status);
 
 		return {
 			id: s.id,
@@ -96,6 +99,9 @@ export const useSubmission = () => {
 						)
 					: undefined,
 			needsAttention,
+			hasReevaluationRequest: Boolean(reevaluationRequest),
+			reevaluationReason: reevaluationRequest?.reason,
+			reevaluationRequestedAt: reevaluationRequest?.createdAt,
 		};
 	};
 

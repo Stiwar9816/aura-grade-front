@@ -5,6 +5,7 @@ import {es} from "date-fns/locale";
 import {
 	PASSING_GRADE,
 	STANDARD_GRADE_MAX,
+	gradeToPercentage,
 	getScoreTime,
 	normalizeGrade,
 } from "@/utils/gradeScale";
@@ -179,10 +180,8 @@ export const useAnalyticsData = (
 					}
 
 					const data = criteriaDataRaw.get(name)!;
-					// Normalizar score a 0-100
-					let score = c.score || 0;
-					const max = c.maxPoints || 20; // Default max?
-					const normalizedScore = Math.round((score / max) * 100);
+					const grade = normalizeGrade(c.score || 0, c.maxPoints || c.maxScore);
+					const normalizedScore = gradeToPercentage(grade) || 0;
 
 					data[idx].sum += normalizedScore;
 					data[idx].count += 1;
@@ -337,8 +336,8 @@ export const useAnalyticsData = (
 						.slice(0, 3)
 						.map((c: any) => ({
 							name: c.name || c.title,
-							score: c.score || 0,
-							maxScore: c.maxPoints || 20,
+							score: normalizeGrade(c.score || 0, c.maxPoints || c.maxScore) || 0,
+							maxScore: STANDARD_GRADE_MAX,
 						}));
 				} catch {}
 			}

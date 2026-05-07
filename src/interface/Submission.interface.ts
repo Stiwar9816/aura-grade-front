@@ -10,6 +10,9 @@ export interface Submission {
 	needsAttention: boolean;
 	courseName?: string;
 	rubricName?: string;
+	hasReevaluationRequest?: boolean;
+	reevaluationReason?: string;
+	reevaluationRequestedAt?: string;
 }
 
 export interface SubmissionDetail {

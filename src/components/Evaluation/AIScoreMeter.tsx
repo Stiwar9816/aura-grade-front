@@ -1,4 +1,5 @@
 import React from "react";
+import {gradeToPercentage} from "@/utils/gradeScale";
 
 interface AIScoreMeterProps {
 	score: number;
@@ -13,7 +14,7 @@ export const AIScoreMeter: React.FC<AIScoreMeterProps> = ({
 	label,
 	description,
 }) => {
-	const percentage = (score / maxScore) * 100;
+	const percentage = gradeToPercentage(score) ?? 0;
 
 	const getGradientColor = () => {
 		if (percentage >= 80) return "from-green-500 to-green-400";
@@ -50,9 +51,9 @@ export const AIScoreMeter: React.FC<AIScoreMeterProps> = ({
 			{/* Markers */}
 			<div className="flex justify-between text-xs text-gray-500 mt-2">
 				<span>0</span>
-				<span>{maxScore * 0.25}</span>
-				<span>{maxScore * 0.5}</span>
-				<span>{maxScore * 0.75}</span>
+				<span>{(maxScore * 0.25).toFixed(1)}</span>
+				<span>{(maxScore * 0.5).toFixed(1)}</span>
+				<span>{(maxScore * 0.75).toFixed(1)}</span>
 				<span>{maxScore}</span>
 			</div>
 

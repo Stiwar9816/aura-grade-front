@@ -63,7 +63,7 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 						<span>{rubric.totalWeight}/100%</span>
 					</div>
 					<div className="w-full h-6 bg-gray-100 rounded-xl overflow-hidden flex gap-0.5 p-1 border border-gray-200">
-						{rubric.criteria.map((c, idx) => (
+						{rubric.criteria.map((c: any, idx: number) => (
 							<div
 								key={c.id}
 								className="h-full rounded-sm transition-all duration-500 hover:opacity-80"
@@ -82,7 +82,7 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 						)}
 					</div>
 					<div className="flex flex-wrap gap-3 mt-3">
-						{rubric.criteria.map((c, idx) => (
+						{rubric.criteria.map((c: any, idx: number) => (
 							<div
 								key={c.id}
 								className="flex items-center gap-1.5 text-xs text-gray-500"
@@ -228,7 +228,7 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 				</h3>
 
 				<div className="space-y-4">
-					{rubric.criteria.map((criteria, index) => (
+					{rubric.criteria.map((criteria: any, index: number) => (
 						<div
 							key={criteria.id}
 							className="p-4 border border-gray-200 rounded-xl hover:border-electric-500 transition-colors group"

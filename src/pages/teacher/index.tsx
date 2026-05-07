@@ -68,7 +68,7 @@ const TeacherDashboard: React.FC = () => {
 	const [activeTab, setActiveTab] = useState<"overview" | "submissions">(
 		"overview",
 	);
-	const [showExpired, setShowExpired] = useState(false);
+	const [showExpired, setShowExpired] = useState(true);
 	const [activityLimit, setActivityLimit] = useState(8);
 	const [selectedCourse, setSelectedCourse] = useState<string>("all");
 
@@ -105,40 +105,50 @@ const TeacherDashboard: React.FC = () => {
 
 	React.useEffect(() => {
 		if (activitiesError) {
-			notifyError(activitiesError.message || "Error al cargar actividad reciente");
+			notifyError(
+				activitiesError.message || "Error al cargar actividad reciente",
+			);
 		}
 	}, [activitiesError]);
 
-	const {activeAssignmentsList, expiredAssignmentsList, courses} =
-		React.useMemo(() => {
-			const active: ProcessedTeacherAssignment[] = [];
-			const expired: ProcessedTeacherAssignment[] = [];
-			const courseSet = new Set<string>();
+	const {
+		activeAssignmentsList,
+		pendingAssignmentsList,
+		expiredAssignmentsList,
+		courses,
+	} = React.useMemo(() => {
+		const active: ProcessedTeacherAssignment[] = [];
+		const pending: ProcessedTeacherAssignment[] = [];
+		const expired: ProcessedTeacherAssignment[] = [];
+		const courseSet = new Set<string>();
 
-			assignments.forEach((assignment: ProcessedTeacherAssignment) => {
-				if (assignment.courseName) {
-					courseSet.add(assignment.courseName);
-				}
+		assignments.forEach((assignment: ProcessedTeacherAssignment) => {
+			if (assignment.courseName) {
+				courseSet.add(assignment.courseName);
+			}
 
-				if (
-					selectedCourse !== "all" &&
-					assignment.courseName !== selectedCourse
-				) {
-					return;
-				}
+			if (
+				selectedCourse !== "all" &&
+				assignment.courseName !== selectedCourse
+			) {
+				return;
+			}
 
-				if (assignment.isExpired) {
-					expired.push(assignment);
-				} else {
-					active.push(assignment);
-				}
-			});
-			return {
-				activeAssignmentsList: active,
-				expiredAssignmentsList: expired,
-				courses: Array.from(courseSet).sort(),
-			};
-		}, [assignments, selectedCourse]);
+			if (assignment.isExpired) {
+				expired.push(assignment);
+			} else if (assignment.pending > 0 || assignment.submissions === 0) {
+				pending.push(assignment);
+			} else {
+				active.push(assignment);
+			}
+		});
+		return {
+			activeAssignmentsList: active,
+			pendingAssignmentsList: pending,
+			expiredAssignmentsList: expired,
+			courses: Array.from(courseSet).sort(),
+		};
+	}, [assignments, selectedCourse]);
 
 	const pendingReviewCount = React.useMemo(() => {
 		return assignments.reduce(
@@ -267,7 +277,8 @@ const TeacherDashboard: React.FC = () => {
 											<StatSkeleton />
 										) : (
 											<div className="text-2xl font-bold text-electric-500 group-hover:scale-110 transition-transform">
-												{activeAssignmentsList.length}
+												{pendingAssignmentsList.length +
+													activeAssignmentsList.length}
 											</div>
 										)}
 										<div className="text-sm text-gray-600">Tareas activas</div>
@@ -313,31 +324,27 @@ const TeacherDashboard: React.FC = () => {
 									<div className="lg:col-span-2">
 										<Card className="border-none shadow-none bg-white/40 ring-1 ring-gray-100">
 											<SectionHeader
-												title="Tareas Activas"
+												title="Tareas activas"
 												actions={
 													<div className="flex flex-wrap items-center gap-3">
 														{!assignmentsLoading && courses.length > 0 && (
 															<select
 																value={selectedCourse}
-																onChange={(e) => setSelectedCourse(e.target.value)}
+																onChange={(e) =>
+																	setSelectedCourse(e.target.value)
+																}
 																className="text-sm bg-white border border-gray-200 text-gray-700 py-1.5 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-electric-500 transition-shadow cursor-pointer"
 																aria-label="Filtrar por curso"
 															>
 																<option value="all">Todos los cursos</option>
-																{courses.map(course => (
-																	<option key={course} value={course}>{course}</option>
+																{courses.map((course) => (
+																	<option key={course} value={course}>
+																		{course}
+																	</option>
 																))}
 															</select>
 														)}
-														{!assignmentsLoading &&
-															activeAssignmentsList.length > 0 && (
-																<span className="text-xs font-bold text-gray-400 uppercase tracking-widest hidden sm:inline">
-																	{activeAssignmentsList.length}{" "}
-																	{activeAssignmentsList.length === 1
-																		? "tarea"
-																		: "tareas"}
-																</span>
-															)}
+
 														{user?.role === UserRole.TEACHER && (
 															<button
 																onClick={() =>
@@ -366,7 +373,8 @@ const TeacherDashboard: React.FC = () => {
 														<AssignmentSkeleton />
 														<AssignmentSkeleton />
 													</>
-												) : activeAssignmentsList.length === 0 ? (
+												) : pendingAssignmentsList.length === 0 &&
+												  activeAssignmentsList.length === 0 ? (
 													// Estado vacío para tareas activas
 													<Card className="p-8 text-center bg-white/60 border border-gray-100">
 														<div className="text-4xl mb-3">
@@ -391,128 +399,228 @@ const TeacherDashboard: React.FC = () => {
 														)}
 													</Card>
 												) : (
-													// Lista de tareas activas
-													activeAssignmentsList.map(
-														(assignment: ProcessedTeacherAssignment) => (
-															<Card
-																key={assignment.id}
-																hoverable
-																className="p-4 bg-white/60 border border-gray-100 group shadow-sm"
-															>
-																<div className="flex items-center justify-between mb-3">
-																	<div className="flex-1">
-																		<h3 className="font-bold text-gray-900 group-hover:text-electric-600 transition-colors">
-																			{assignment.title}
-																		</h3>
-																		<div className="flex items-center gap-2 mt-1">
-																			<div className="text-xs font-medium text-gray-500">
-																				Vence:{" "}
-																				{new Date(
-																					assignment.dueDate,
-																				).toLocaleDateString("es-ES", {
-																					day: "numeric",
-																					month: "short",
-																					year: "numeric",
-																				})}
+													<>
+														{pendingAssignmentsList.length > 0 && (
+															<div className="space-y-3">
+																{pendingAssignmentsList.map(
+																	(assignment: ProcessedTeacherAssignment) => (
+																		<Card
+																			key={assignment.id}
+																			hoverable
+																			className="p-4 bg-amber-50/60 border border-amber-100 group shadow-sm"
+																		>
+																			<div className="flex items-center justify-between mb-3">
+																				<div className="flex-1">
+																					<h3 className="font-bold text-gray-900 group-hover:text-electric-600 transition-colors">
+																						{assignment.title}
+																					</h3>
+																					<div className="flex items-center gap-2 mt-1">
+																						<div className="text-xs font-medium text-gray-500">
+																							Vence:{" "}
+																							{new Date(
+																								assignment.dueDate,
+																							).toLocaleDateString("es-ES", {
+																								day: "numeric",
+																								month: "short",
+																								year: "numeric",
+																							})}
+																						</div>
+																						{assignment.courseName && (
+																							<>
+																								<span className="text-gray-300">
+																									•
+																								</span>
+																								<span className="text-xs text-gray-500">
+																									{assignment.courseName}
+																								</span>
+																							</>
+																						)}
+																					</div>
+																				</div>
+																				<div className="text-right">
+																					<div className="text-lg font-black text-gray-900">
+																						{assignment.average > 0
+																							? assignment.average
+																							: "-"}
+																					</div>
+																					<div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
+																						Promedio
+																					</div>
+																				</div>
 																			</div>
-																			{assignment.courseName && (
-																				<>
-																					<span className="text-gray-300">
-																						•
-																					</span>
-																					<span className="text-xs text-gray-500">
-																						{assignment.courseName}
-																					</span>
-																				</>
-																			)}
-																		</div>
-																	</div>
-																	<div className="text-right">
-																		<div className="text-lg font-black text-gray-900">
-																			{assignment.average > 0
-																				? assignment.average
-																				: "-"}
-																		</div>
-																		<div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
-																			Promedio
-																		</div>
-																	</div>
-																</div>
 
-																<div className="flex items-center justify-between mt-4">
-																	<div className="flex items-center gap-4">
-																		<div className="text-sm">
-																			<span className="font-bold text-gray-900">
-																				{assignment.submissions}
-																			</span>
-																			<span className="text-gray-500 ml-1">
-																				{assignment.submissions === 1
-																					? "entrega"
-																					: "entregas"}
-																			</span>
-																		</div>
-																		{assignment.pending > 0 && (
-																			<Badge variant="warning">
-																				{assignment.pending} pendiente
-																				{assignment.pending !== 1 ? "s" : ""}
-																			</Badge>
-																		)}
-																	</div>
+																			<div className="flex items-center justify-between mt-4">
+																				<div className="flex items-center gap-4">
+																					<div className="text-sm">
+																						<span className="font-bold text-gray-900">
+																							{assignment.submissions}
+																						</span>
+																						<span className="text-gray-500 ml-1">
+																							{assignment.submissions === 1
+																								? "entrega"
+																								: "entregas"}
+																						</span>
+																					</div>
+																					{assignment.pending > 0 ? (
+																						<Badge variant="warning">
+																							{assignment.pending} por revisar
+																						</Badge>
+																					) : (
+																						<Badge variant="default">
+																							Pendiente de entrega
+																						</Badge>
+																					)}
+																				</div>
 
-																	<button
-																		onClick={() =>
-																			router.push(
-																				`/teacher/assignments/${assignment.id}`,
-																			)
-																		}
-																		className="text-xs font-bold text-electric-500 hover:text-electric-600 transition-colors bg-electric-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-electric-200"
-																	>
-																		Ver detalles{" "}
-																		<FontAwesomeIcon icon={faChevronRight} />
-																	</button>
-																</div>
-															</Card>
-														),
-													)
+																				<button
+																					onClick={() =>
+																						router.push(
+																							`/teacher/assignments/${assignment.id}`,
+																						)
+																					}
+																					className="text-xs font-bold text-electric-500 hover:text-electric-600 transition-colors bg-electric-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-electric-200"
+																				>
+																					Ver detalles{" "}
+																					<FontAwesomeIcon
+																						icon={faChevronRight}
+																					/>
+																				</button>
+																			</div>
+																		</Card>
+																	),
+																)}
+															</div>
+														)}
+
+														{activeAssignmentsList.length > 0 && (
+															<div className="space-y-3">
+																{pendingAssignmentsList.length > 0 && (
+																	<h3 className="text-sm font-black uppercase tracking-wider text-gray-400 pt-2">
+																		Otras tareas activas
+																	</h3>
+																)}
+																{activeAssignmentsList.map(
+																	(assignment: ProcessedTeacherAssignment) => (
+																		<Card
+																			key={assignment.id}
+																			hoverable
+																			className="p-4 bg-white/60 border border-gray-100 group shadow-sm"
+																		>
+																			<div className="flex items-center justify-between mb-3">
+																				<div className="flex-1">
+																					<h3 className="font-bold text-gray-900 group-hover:text-electric-600 transition-colors">
+																						{assignment.title}
+																					</h3>
+																					<div className="flex items-center gap-2 mt-1">
+																						<div className="text-xs font-medium text-gray-500">
+																							Vence:{" "}
+																							{new Date(
+																								assignment.dueDate,
+																							).toLocaleDateString("es-ES", {
+																								day: "numeric",
+																								month: "short",
+																								year: "numeric",
+																							})}
+																						</div>
+																						{assignment.courseName && (
+																							<>
+																								<span className="text-gray-300">
+																									•
+																								</span>
+																								<span className="text-xs text-gray-500">
+																									{assignment.courseName}
+																								</span>
+																							</>
+																						)}
+																					</div>
+																				</div>
+																				<div className="text-right">
+																					<div className="text-lg font-black text-gray-900">
+																						{assignment.average > 0
+																							? assignment.average
+																							: "-"}
+																					</div>
+																					<div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
+																						Promedio
+																					</div>
+																				</div>
+																			</div>
+
+																			<div className="flex items-center justify-between mt-4">
+																				<div className="text-sm">
+																					<span className="font-bold text-gray-900">
+																						{assignment.submissions}
+																					</span>
+																					<span className="text-gray-500 ml-1">
+																						{assignment.submissions === 1
+																							? "entrega"
+																							: "entregas"}
+																					</span>
+																				</div>
+
+																				<button
+																					onClick={() =>
+																						router.push(
+																							`/teacher/assignments/${assignment.id}`,
+																						)
+																					}
+																					className="text-xs font-bold text-electric-500 hover:text-electric-600 transition-colors bg-electric-50 px-3 py-1.5 rounded-lg border border-transparent hover:border-electric-200"
+																				>
+																					Ver detalles{" "}
+																					<FontAwesomeIcon
+																						icon={faChevronRight}
+																					/>
+																				</button>
+																			</div>
+																		</Card>
+																	),
+																)}
+															</div>
+														)}
+													</>
 												)}
 
 												{/* Collapsible Section for Expired Assignments */}
-												{!assignmentsLoading &&
-													expiredAssignmentsList.length > 0 && (
-														<div className="mt-8">
-															<button
-																onClick={() => setShowExpired(!showExpired)}
-																aria-expanded={showExpired}
-																aria-controls="expired-assignments-panel"
-																className="flex items-center gap-2 w-full p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-gray-600 border border-gray-100"
+												{!assignmentsLoading && (
+													<div className="mt-8">
+														<button
+															onClick={() => setShowExpired(!showExpired)}
+															aria-expanded={showExpired}
+															aria-controls="expired-assignments-panel"
+															className="flex items-center gap-2 w-full p-4 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors text-gray-600 border border-gray-100"
+														>
+															<span
+																className={`transform transition-transform ${
+																	showExpired ? "rotate-90" : ""
+																}`}
 															>
-																<span
-																	className={`transform transition-transform ${
-																		showExpired ? "rotate-90" : ""
-																	}`}
-																>
-																	▶
-																</span>
-																<span className="font-bold text-sm uppercase tracking-wider">
-																	Tareas Vencidas (
-																	{expiredAssignmentsList.length})
-																</span>
-															</button>
+																▶
+															</span>
+															<span className="font-bold text-sm uppercase tracking-wider">
+																Tareas vencidas ({expiredAssignmentsList.length})
+															</span>
+														</button>
 
-															{showExpired && (
-																<div
-																	id="expired-assignments-panel"
-																	className="mt-4 space-y-4"
-																>
-																	{expiredAssignmentsList.map(
+														{showExpired && (
+															<div
+																id="expired-assignments-panel"
+																className="mt-4 space-y-4"
+															>
+																{expiredAssignmentsList.length === 0 ? (
+																	<Card className="p-4 bg-gray-50/60 border border-gray-100 text-center">
+																		<p className="text-sm font-medium text-gray-500">
+																			No hay tareas vencidas para este filtro.
+																		</p>
+																	</Card>
+																) : (
+																	expiredAssignmentsList.map(
 																		(
 																			assignment: ProcessedTeacherAssignment,
 																		) => (
 																			<Card
 																				key={assignment.id}
-																				className="p-4 bg-gray-50/50 border border-gray-100 opacity-75 grayscale-[0.5] hover:opacity-100 hover:grayscale-0 transition-all"
+																				className="p-4 bg-gray-50/50 border border-gray-100 hover:bg-white transition-all"
 																			>
-																				{/* Shared item content */}
 																				<div className="flex items-center justify-between mb-3">
 																					<div className="flex-1">
 																						<h3 className="font-bold text-gray-700">
@@ -523,7 +631,7 @@ const TeacherDashboard: React.FC = () => {
 																								variant="default"
 																								className="text-[10px]"
 																							>
-																								VENCIDO
+																								Vencida
 																							</Badge>
 																							<span className="text-[10px] text-gray-400">
 																								Venció el{" "}
@@ -542,8 +650,15 @@ const TeacherDashboard: React.FC = () => {
 																					</div>
 																				</div>
 																				<div className="flex items-center justify-between mt-2">
-																					<div className="text-xs text-gray-500">
-																						{assignment.submissions} entregas
+																					<div className="flex items-center gap-2 text-xs text-gray-500">
+																						<span>
+																							{assignment.submissions} entregas
+																						</span>
+																						{assignment.pending > 0 && (
+																							<Badge variant="warning">
+																								{assignment.pending} por revisar
+																							</Badge>
+																						)}
 																					</div>
 																					<button
 																						onClick={() =>
@@ -551,18 +666,19 @@ const TeacherDashboard: React.FC = () => {
 																								`/teacher/assignments/${assignment.id}`,
 																							)
 																						}
-																						className="text-xs font-bold text-gray-500 hover:text-electric-500 transition-colors"
+																						className="text-xs font-bold text-electric-500 hover:text-electric-600 transition-colors"
 																					>
-																						Ver reporte →
+																						Ver detalles →
 																					</button>
 																				</div>
 																			</Card>
 																		),
-																	)}
-																</div>
-															)}
-														</div>
-													)}
+																	)
+																)}
+															</div>
+														)}
+													</div>
+												)}
 											</div>
 										</Card>
 									</div>
@@ -575,8 +691,12 @@ const TeacherDashboard: React.FC = () => {
 												actions={
 													!activitiesLoading &&
 													activities.length > 0 && (
-														<button 
-															onClick={() => setActivityLimit(prev => prev === 8 ? 50 : 8)}
+														<button
+															onClick={() =>
+																setActivityLimit((prev) =>
+																	prev === 8 ? 50 : 8,
+																)
+															}
 															className="text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors uppercase tracking-widest"
 														>
 															{activityLimit === 8 ? "Ver todo" : "Ver menos"}

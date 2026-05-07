@@ -8,12 +8,16 @@ import {
 	useAssignments,
 } from "./useAssignments";
 import {useAuth} from "./useAuth";
+import {normalizeGrade} from "@/utils/gradeScale";
 
 type ActivitySubmission = AssignmentSubmission & {
 	updatedAt?: string;
 	assignment?: {
 		id: string;
 		title?: string;
+		rubric?: {
+			maxTotalScore?: number;
+		};
 		user?: {
 			id: string;
 		};
@@ -66,7 +70,10 @@ const mapActivity = (submission: ActivitySubmission): ActivityItem => {
 		action = "fue calificado";
 		grade =
 			typeof submission.evaluation?.totalScore === "number"
-				? submission.evaluation.totalScore
+				? normalizeGrade(
+						submission.evaluation.totalScore,
+						submission.assignment?.rubric?.maxTotalScore,
+					)
 				: undefined;
 		type = ActivityType.EVALUATION;
 	} else if (status === "IN_PROGRESS") {
@@ -126,6 +133,9 @@ export const useRecentActivity = (limit: number = 8) => {
 					assignment: {
 						id: assignment.id,
 						title: assignment.title,
+						rubric: {
+							maxTotalScore: assignment.rubric?.maxTotalScore,
+						},
 						user: undefined,
 					},
 				})),

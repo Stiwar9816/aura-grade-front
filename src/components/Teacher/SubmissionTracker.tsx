@@ -2,6 +2,8 @@ import React, {useState} from "react";
 import {Submission} from "@/interface";
 import {useSubmission} from "@/hooks";
 import {STANDARD_GRADE_MAX} from "@/utils/gradeScale";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faInbox} from "@fortawesome/free-solid-svg-icons";
 
 const SubmissionTracker: React.FC = () => {
 	const {submissions: dataSubmissions, loading, error} = useSubmission();
@@ -171,6 +173,9 @@ const SubmissionTracker: React.FC = () => {
 								Estado
 							</th>
 							<th className="text-left py-3 px-4 font-semibold text-gray-700">
+								Reevaluación
+							</th>
+							<th className="text-left py-3 px-4 font-semibold text-gray-700">
 								Calificación
 							</th>
 
@@ -223,6 +228,27 @@ const SubmissionTracker: React.FC = () => {
 										</span>
 									</td>
 									<td className="py-4 px-4">
+										{submission.hasReevaluationRequest ? (
+											<div className="max-w-xs">
+												<div className="text-xs font-black uppercase text-amber-700">
+													Solicitada
+												</div>
+												<div className="text-xs text-gray-500">
+													{submission.reevaluationRequestedAt
+														? getTimeSince(submission.reevaluationRequestedAt)
+														: "Pendiente"}
+												</div>
+												{submission.reevaluationReason && (
+													<div className="text-xs text-gray-600 line-clamp-2 mt-1">
+														{submission.reevaluationReason}
+													</div>
+												)}
+											</div>
+										) : (
+											<span className="text-gray-400">-</span>
+										)}
+									</td>
+									<td className="py-4 px-4">
 										{typeof submission.grade === "number" ? (
 											<div className="flex items-center gap-2">
 												<div
@@ -263,7 +289,7 @@ const SubmissionTracker: React.FC = () => {
 
 											{submission.needsAttention && (
 												<button className="px-3 py-1.5 bg-red-100 text-red-600 text-sm rounded-lg hover:bg-red-200">
-													⚠️
+													Atención
 												</button>
 											)}
 										</div>
@@ -277,15 +303,13 @@ const SubmissionTracker: React.FC = () => {
 
 			{filteredSubmissions.length === 0 && (
 				<div className="text-center py-12">
-					<div className="text-4xl mb-4">📭</div>
+					<div className="text-4xl mb-4">
+						<FontAwesomeIcon icon={faInbox} />
+					</div>
 					<h3 className="text-xl font-bold text-gray-900 mb-2">
 						No se encontraron entregas
 					</h3>
-					<p className="text-gray-600 mb-6">
-						{filter === "all"
-							? "No hay entregas para mostrar"
-							: `No hay entregas con estado "${filter}"`}
-					</p>
+
 					<button
 						onClick={() => {
 							setFilter("all");
@@ -297,26 +321,6 @@ const SubmissionTracker: React.FC = () => {
 					</button>
 				</div>
 			)}
-
-			{/* Bulk Actions */}
-			<div className="flex items-center justify-end mt-6 pt-6 border-t border-gray-200">
-				{/* <div className="flex items-center gap-3">
-					<select className="input-primary text-sm">
-						<option>Acciones en lote</option>
-						<option>Marcar como calificadas</option>
-						<option>Enviar recordatorio</option>
-						<option>Exportar seleccionadas</option>
-					</select>
-					<button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
-						Aplicar
-					</button>
-				</div> */}
-
-				<div className="text-sm text-gray-600">
-					Mostrando {filteredSubmissions.length} de {submissions.length}{" "}
-					entregas
-				</div>
-			</div>
 		</div>
 	);
 };

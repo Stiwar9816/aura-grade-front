@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {RubricsCreateProps} from "@/types";
+import type {RubricsCreateProps} from "@/interface";
 
 export const RubricsCreate: React.FC<RubricsCreateProps> = ({onStart}) => {
 	const [data, setData] = useState({
@@ -68,7 +68,7 @@ export const RubricsCreate: React.FC<RubricsCreateProps> = ({onStart}) => {
 								: "bg-gray-200 text-gray-400 cursor-not-allowed"
 						}`}
 					>
-						{loading ? "Iniciando..." : "Comenzar a Añadir Criterios →"}
+						{loading ? "Iniciando..." : "Comenzar a Añadir Criterios"}
 					</button>
 				</div>
 			</div>

@@ -15,6 +15,7 @@ import {
 } from "@/hooks";
 import {SubmissionDetail, SubmissionStatus, SubmissionsData, UserRole} from "@/interface";
 import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
+import {getReevaluationRequestBySubmissionId} from "@/utils/reevaluationRequests";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faArrowLeft,
@@ -68,24 +69,31 @@ const getStatusConfig = (status?: string): StatusConfig => {
 };
 
 const isPublishedSubmission = (submission: AssignmentSubmission) =>
-	normalizeStatusValue(submission.status) === SubmissionStatus.PUBLISHED ||
-	normalizeStatusValue(submission.evaluation?.status) === "PUBLISHED";
+	!getReevaluationRequestBySubmissionId(submission.id) &&
+	(normalizeStatusValue(submission.status) === SubmissionStatus.PUBLISHED ||
+		normalizeStatusValue(submission.evaluation?.status) === "PUBLISHED");
 
 const isPendingTeacherReview = (submission: AssignmentSubmission) => {
 	const status = normalizeStatusValue(submission.status);
 
 	return (
-		!isPublishedSubmission(submission) &&
+		(Boolean(getReevaluationRequestBySubmissionId(submission.id)) ||
+			!isPublishedSubmission(submission)) &&
 		(status === SubmissionStatus.PENDING ||
 			status === SubmissionStatus.IN_PROGRESS ||
 			status === SubmissionStatus.REVIEW_PENDING ||
 			status === "SUBMITTED" ||
 			status === "GRADED" ||
-			Boolean(submission.evaluation))
+			Boolean(submission.evaluation) ||
+			Boolean(getReevaluationRequestBySubmissionId(submission.id)))
 	);
 };
 
 const getSubmissionStatusConfig = (submission: AssignmentSubmission) => {
+	if (getReevaluationRequestBySubmissionId(submission.id)) {
+		return {label: "Reevaluación solicitada", variant: "warning" as const};
+	}
+
 	if (isPublishedSubmission(submission)) {
 		return getStatusConfig(SubmissionStatus.PUBLISHED);
 	}
@@ -339,6 +347,8 @@ const AssignmentDetailPage: React.FC = () => {
 										<tbody>
 											{submissions.map((submission: AssignmentSubmission) => {
 												const status = getSubmissionStatusConfig(submission);
+												const reevaluationRequest =
+													getReevaluationRequestBySubmissionId(submission.id);
 												const studentName = submission.student
 													? `${submission.student.name} ${
 															submission.student.last_name || ""
@@ -362,6 +372,22 @@ const AssignmentDetailPage: React.FC = () => {
 															<Badge variant={status.variant}>
 																{status.label}
 															</Badge>
+															{reevaluationRequest && (
+																<div className="mt-2 max-w-xs">
+																	<div className="text-[10px] font-black uppercase text-amber-700">
+																		Solicitud del estudiante
+																	</div>
+																	<p className="text-xs text-gray-600 line-clamp-2">
+																		{reevaluationRequest.reason}
+																	</p>
+																	<div className="text-[10px] text-gray-400 mt-1">
+																		{formatDate(
+																			reevaluationRequest.createdAt,
+																			true,
+																		)}
+																	</div>
+																</div>
+															)}
 														</td>
 														<td className="py-4 px-4 text-sm text-gray-600">
 															{formatDate(submission.createdAt, true)}
@@ -397,7 +423,9 @@ const AssignmentDetailPage: React.FC = () => {
 																}
 																className="px-3 py-1.5 bg-electric-500 text-white text-sm rounded-lg hover:bg-electric-600 transition-colors"
 															>
-																{isPublishedSubmission(submission)
+																{reevaluationRequest
+																	? "Reevaluar"
+																	: isPublishedSubmission(submission)
 																	? "Ver"
 																	: submission.evaluation
 																		? "Revisar"

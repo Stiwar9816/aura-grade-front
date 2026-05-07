@@ -2,6 +2,7 @@ import {useAuth} from "@/hooks";
 import {useUserStatsActions} from "@/actions";
 import {UserRole} from "@/interface";
 import {DashboardStats} from "@/types";
+import {averageGrades, normalizeGrade} from "@/utils/gradeScale";
 
 export const useUserStats = () => {
 	const {user: currentUser} = useAuth();
@@ -109,18 +110,21 @@ export const useUserStats = () => {
 		).length;
 
 		// 5. Calcular promedio de notas
-		const publishedEvaluations = allSubmissions
-			.map((s) => s.evaluation)
-			.filter((e) => e && (e.status === "PUBLISHED" || e.status === "GRADED"));
-
-		const totalScore = publishedEvaluations.reduce(
-			(acc: number, e) => acc + (e.totalScore || 0),
-			0,
-		);
-		const averageGrade =
-			publishedEvaluations.length > 0
-				? Number((totalScore / publishedEvaluations.length).toFixed(1))
-				: 0;
+		const publishedGrades = allSubmissions
+			.filter(
+				(s) =>
+					s.evaluation &&
+					(s.evaluation.status === "PUBLISHED" ||
+						s.evaluation.status === "GRADED" ||
+						s.status === "PUBLISHED"),
+			)
+			.map((submission) =>
+				normalizeGrade(
+					submission.evaluation?.totalScore,
+					submission.assignment?.rubric?.maxTotalScore,
+				),
+			);
+		const averageGrade = averageGrades(publishedGrades) || 0;
 
 		// 6. Calcular porcentaje de completitud
 		// Total esperado = estudiantes × tareas activas
