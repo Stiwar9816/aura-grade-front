@@ -6,7 +6,6 @@ import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import Badge from "@/components/Common/Badge";
-import UXToast from "@/components/Common/UXToast";
 import {
 	useAuth,
 	useUserStats,
@@ -14,8 +13,10 @@ import {
 	useRecentActivity,
 	useSubmission,
 } from "@/hooks";
+import {useTeacherSubmissionNotifications} from "@/hooks/useInAppNotifications";
+import {notifyError} from "@/utils/toastNotify";
 import type {ProcessedTeacherAssignment} from "@/hooks";
-import {SubmissionStatus, UserRole} from "@/interface";
+import {UserRole} from "@/interface";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faBell,
@@ -90,87 +91,54 @@ const TeacherDashboard: React.FC = () => {
 
 	const router = useRouter();
 
-	type ToastState = {
-		id: number;
-		message: string;
-		type: "success" | "error" | "info" | "warning";
-	};
-	const [toasts, setToasts] = React.useState<ToastState[]>([]);
-	const toastIdRef = React.useRef(0);
-
-	const addToast = React.useCallback(
-		(
-			message: string,
-			type: "success" | "error" | "info" | "warning" = "info",
-		) => {
-			toastIdRef.current += 1;
-			const id = toastIdRef.current;
-			setToasts((prev) => [...prev, {id, message, type}]);
-		},
-		[],
-	);
-
-	const closeToast = React.useCallback((id: number) => {
-		setToasts((prev) => prev.filter((toast) => toast.id !== id));
-	}, []);
+	useTeacherSubmissionNotifications({
+		userId: user?.id,
+		submissions: teacherSubmissions,
+		loading: submissionsLoading,
+	});
 
 	React.useEffect(() => {
 		if (submissionsError) {
-			addToast(submissionsError.message || "Error al cargar entregas", "error");
+			notifyError(submissionsError.message || "Error al cargar entregas");
 		}
-	}, [submissionsError, addToast]);
+	}, [submissionsError]);
 
 	React.useEffect(() => {
 		if (activitiesError) {
-			addToast(
-				activitiesError.message || "Error al cargar actividad reciente",
-				"error",
-			);
+			notifyError(activitiesError.message || "Error al cargar actividad reciente");
 		}
-	}, [activitiesError, addToast]);
+	}, [activitiesError]);
 
-	// Mostrar mensaje de error si hay problemas críticos
-	if (statsError || assignmentsError) {
-		return (
-			<Layout>
-				<div className="max-w-7xl mx-auto p-4">
-					<Card className="bg-red-50 border-red-200">
-						<p className="text-red-600">
-							Error al cargar datos:{" "}
-							{statsError?.message || assignmentsError?.message}
-						</p>
-					</Card>
-				</div>
-			</Layout>
-		);
-	}
+	const {activeAssignmentsList, expiredAssignmentsList, courses} =
+		React.useMemo(() => {
+			const active: ProcessedTeacherAssignment[] = [];
+			const expired: ProcessedTeacherAssignment[] = [];
+			const courseSet = new Set<string>();
 
-	const {activeAssignmentsList, expiredAssignmentsList, courses} = React.useMemo(() => {
-		const active: ProcessedTeacherAssignment[] = [];
-		const expired: ProcessedTeacherAssignment[] = [];
-		const courseSet = new Set<string>();
+			assignments.forEach((assignment: ProcessedTeacherAssignment) => {
+				if (assignment.courseName) {
+					courseSet.add(assignment.courseName);
+				}
 
-		assignments.forEach((assignment: ProcessedTeacherAssignment) => {
-			if (assignment.courseName) {
-				courseSet.add(assignment.courseName);
-			}
+				if (
+					selectedCourse !== "all" &&
+					assignment.courseName !== selectedCourse
+				) {
+					return;
+				}
 
-			if (selectedCourse !== "all" && assignment.courseName !== selectedCourse) {
-				return;
-			}
-
-			if (assignment.isExpired) {
-				expired.push(assignment);
-			} else {
-				active.push(assignment);
-			}
-		});
-		return {
-			activeAssignmentsList: active,
-			expiredAssignmentsList: expired,
-			courses: Array.from(courseSet).sort()
-		};
-	}, [assignments, selectedCourse]);
+				if (assignment.isExpired) {
+					expired.push(assignment);
+				} else {
+					active.push(assignment);
+				}
+			});
+			return {
+				activeAssignmentsList: active,
+				expiredAssignmentsList: expired,
+				courses: Array.from(courseSet).sort(),
+			};
+		}, [assignments, selectedCourse]);
 
 	const pendingReviewCount = React.useMemo(() => {
 		return assignments.reduce(
@@ -192,6 +160,22 @@ const TeacherDashboard: React.FC = () => {
 			badge: pendingReviewCount,
 		},
 	];
+
+	// Mostrar mensaje de error si hay problemas críticos
+	if (statsError || assignmentsError) {
+		return (
+			<Layout>
+				<div className="max-w-7xl mx-auto p-4">
+					<Card className="bg-red-50 border-red-200">
+						<p className="text-red-600">
+							Error al cargar datos:{" "}
+							{statsError?.message || assignmentsError?.message}
+						</p>
+					</Card>
+				</div>
+			</Layout>
+		);
+	}
 
 	return (
 		<ProtectedRoute requiredRole={UserRole.TEACHER}>
@@ -681,17 +665,6 @@ const TeacherDashboard: React.FC = () => {
 
 						{activeTab === "submissions" && <SubmissionTracker />}
 					</div>
-				</div>
-
-				<div className="fixed bottom-6 right-6 z-50 flex flex-col items-end">
-					{toasts.map((toast) => (
-						<UXToast
-							key={toast.id}
-							message={toast.message}
-							type={toast.type as any}
-							onClose={() => closeToast(toast.id)}
-						/>
-					))}
 				</div>
 			</Layout>
 		</ProtectedRoute>

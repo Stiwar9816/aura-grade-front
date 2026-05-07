@@ -31,6 +31,12 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import {MappedEvaluationData, SubmissionDetail, UserRole} from "@/interface";
 import {STANDARD_GRADE_MAX} from "@/utils/gradeScale";
+import {
+	notifyError,
+	notifyInfo,
+	notifySuccess,
+	notifyWarning,
+} from "@/utils/toastNotify";
 
 const REEVALUATION_REQUESTS_KEY = "auragrade_reevaluation_requests";
 
@@ -235,25 +241,27 @@ const EvaluationPage: React.FC = () => {
 		useMutation(PUBLISH_EVALUATION);
 
 	useEffect(() => {
-		setReportStatus(null);
-		setReevaluationReason("");
-		setReevaluationError(null);
-		setShowReevaluationForm(false);
+		window.requestAnimationFrame(() => {
+			setReportStatus(null);
+			setReevaluationReason("");
+			setReevaluationError(null);
+			setShowReevaluationForm(false);
 
-		if (!submissionId) {
-			setReevaluationStatus(null);
-			return;
-		}
+			if (!submissionId) {
+				setReevaluationStatus(null);
+				return;
+			}
 
-		const existingRequest = getStoredReevaluationRequests().find(
-			(request) => request.submissionId === submissionId,
-		);
+			const existingRequest = getStoredReevaluationRequests().find(
+				(request) => request.submissionId === submissionId,
+			);
 
-		setReevaluationStatus(
-			existingRequest
-				? `Solicitud enviada el ${formatDateTime(existingRequest.createdAt)}.`
-				: null,
-		);
+			setReevaluationStatus(
+				existingRequest
+					? `Solicitud enviada el ${formatDateTime(existingRequest.createdAt)}.`
+					: null,
+			);
+		});
 	}, [submissionId]);
 
 	if (!submissionId) {
@@ -515,10 +523,11 @@ const EvaluationPage: React.FC = () => {
 	const handlePublishEvaluation = async () => {
 		if (!submissionId) return;
 		if (!submissionDetail?.evaluation?.id) {
-			setPublishError(
-				"Esta entrega aún no tiene evaluación de IA para publicar.",
-			);
+			const message =
+				"Esta entrega aún no tiene evaluación de IA para publicar.";
+			setPublishError(message);
 			setPublishSuccess(null);
+			notifyWarning(message);
 			return;
 		}
 
@@ -530,14 +539,18 @@ const EvaluationPage: React.FC = () => {
 			parsedScore < 0 ||
 			parsedScore > maxScore
 		) {
-			setPublishError(`La nota final debe estar entre 0 y ${maxScore}.`);
+			const message = `La nota final debe estar entre 0 y ${maxScore}.`;
+			setPublishError(message);
 			setPublishSuccess(null);
+			notifyWarning(message);
 			return;
 		}
 
 		if (!feedbackToPublish) {
-			setPublishError("La retroalimentación final es obligatoria.");
+			const message = "La retroalimentación final es obligatoria.";
+			setPublishError(message);
 			setPublishSuccess(null);
+			notifyWarning(message);
 			return;
 		}
 
@@ -560,12 +573,14 @@ const EvaluationPage: React.FC = () => {
 				awaitRefetchQueries: true,
 			});
 			setPublishSuccess("Nota final publicada para el estudiante.");
+			notifySuccess("Nota final publicada para el estudiante.");
 		} catch (error) {
-			setPublishError(
+			const message =
 				error instanceof Error
 					? error.message
-					: "No se pudo publicar la evaluación.",
-			);
+					: "No se pudo publicar la evaluación.";
+			setPublishError(message);
+			notifyError(message);
 		}
 	};
 
@@ -599,17 +614,20 @@ const EvaluationPage: React.FC = () => {
 					text: "Reporte final de evaluación publicado por el docente.",
 				});
 				setReportStatus("Reporte enviado correctamente.");
+				notifySuccess("Reporte enviado correctamente.");
 				return;
 			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") {
 				setReportStatus("Envío del reporte cancelado.");
+				notifyInfo("Envío del reporte cancelado.");
 				return;
 			}
 		}
 
 		downloadTextReport(filename, reportContent);
 		setReportStatus("Reporte generado y descargado.");
+		notifySuccess("Reporte generado y descargado.");
 	};
 
 	const handleSubmitReevaluation = () => {
@@ -617,9 +635,10 @@ const EvaluationPage: React.FC = () => {
 
 		const reason = reevaluationReason.trim();
 		if (reason.length < 20) {
-			setReevaluationError(
-				"Describe el motivo de la solicitud con al menos 20 caracteres.",
-			);
+			const message =
+				"Describe el motivo de la solicitud con al menos 20 caracteres.";
+			setReevaluationError(message);
+			notifyWarning(message);
 			return;
 		}
 
@@ -634,6 +653,7 @@ const EvaluationPage: React.FC = () => {
 			setReevaluationStatus(
 				`Solicitud enviada el ${formatDateTime(existingRequest.createdAt)}.`,
 			);
+			notifyInfo("Ya existe una solicitud de reevaluación para esta entrega.");
 			return;
 		}
 
@@ -654,6 +674,7 @@ const EvaluationPage: React.FC = () => {
 		setReevaluationError(null);
 		setShowReevaluationForm(false);
 		setReevaluationStatus(`Solicitud enviada el ${formatDateTime(createdAt)}.`);
+		notifySuccess("Solicitud de reevaluación enviada.");
 	};
 
 	if (!canViewDraft && !isPublishedEvaluation) {

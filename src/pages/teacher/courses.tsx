@@ -16,6 +16,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import SectionHeader from "@/components/Common/SectionHeader";
+import {notifyError, notifyInfo, notifySuccess, notifyWarning} from "@/utils/toastNotify";
 
 type CourseStudent = {
 	id: string;
@@ -81,8 +82,13 @@ const CourseManagement: React.FC = () => {
 	const handleSubmitCourse = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		const formData = new FormData(e.currentTarget);
-		const name = formData.get("name") as string;
-		const code = formData.get("code") as string;
+		const name = String(formData.get("name") || "").trim();
+		const code = String(formData.get("code") || "").trim();
+
+		if (!name || !code) {
+			notifyWarning("Nombre y código del curso son obligatorios.");
+			return;
+		}
 
 		try {
 			await saveCourse(
@@ -91,8 +97,16 @@ const CourseManagement: React.FC = () => {
 				isEditing && selectedCourse ? selectedCourse.id : undefined,
 			);
 			setShowModal(false);
+			notifySuccess(
+				isEditing
+					? `Curso "${name}" actualizado correctamente.`
+					: `Curso "${name}" creado correctamente.`,
+			);
 		} catch (error) {
 			console.error(error);
+			notifyError(
+				error instanceof Error ? error.message : "No se pudo guardar el curso.",
+			);
 		}
 	};
 
@@ -106,9 +120,57 @@ const CourseManagement: React.FC = () => {
 			try {
 				await deleteCourse(selectedCourse.id);
 				setSelectedCourseId(null);
+				notifySuccess(`Curso "${selectedCourse.course_name}" eliminado.`);
 			} catch (error) {
 				console.error("Error deleting course", error);
+				notifyError(
+					error instanceof Error
+						? error.message
+						: "No se pudo eliminar el curso.",
+				);
 			}
+		}
+	};
+
+	const handleAddStudentToCourse = async (student: StudentOption) => {
+		if (!selectedCourse) return;
+
+		try {
+			await addStudentToCourse(selectedCourse.id, student.id, currentStudentIds);
+			notifySuccess(
+				`${student.name} ${student.last_name || ""}`.trim() +
+					` fue asignado a ${selectedCourse.course_name}.`,
+			);
+		} catch (error) {
+			console.error("Error assigning student", error);
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "No se pudo asignar el estudiante.",
+			);
+		}
+	};
+
+	const handleRemoveStudentFromCourse = async (student: CourseStudent) => {
+		if (!selectedCourse) return;
+
+		try {
+			await removeStudentFromCourse(
+				selectedCourse.id,
+				student.id,
+				currentStudentIds,
+			);
+			notifyInfo(
+				`${student.name} ${student.last_name || ""}`.trim() +
+					` fue removido de ${selectedCourse.course_name}.`,
+			);
+		} catch (error) {
+			console.error("Error removing student", error);
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "No se pudo remover el estudiante.",
+			);
 		}
 	};
 
@@ -247,11 +309,7 @@ const CourseManagement: React.FC = () => {
 															</div>
 															<button
 																onClick={() =>
-																	removeStudentFromCourse(
-																		selectedCourse.id,
-																		student.id,
-																		currentStudentIds,
-																	)
+																	handleRemoveStudentFromCourse(student)
 																}
 																className="shrink-0 rounded-xl p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 dark:text-slate-500 dark:hover:bg-red-950/60 dark:hover:text-red-200 dark:focus:ring-red-800"
 																title="Eliminar del curso"
@@ -410,13 +468,7 @@ const CourseManagement: React.FC = () => {
 											</div>
 											<button
 												disabled={currentStudentIds.includes(s.id)}
-												onClick={() =>
-													addStudentToCourse(
-														selectedCourse.id,
-														s.id,
-														currentStudentIds,
-													)
-												}
+												onClick={() => handleAddStudentToCourse(s)}
 												className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
 													currentStudentIds.includes(s.id)
 														? "bg-slate-100 text-slate-500 cursor-not-allowed dark:bg-slate-800 dark:text-slate-400"

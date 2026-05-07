@@ -12,6 +12,7 @@ import {
 	useAuth,
 	useStudentAcademicData,
 } from "@/hooks";
+import {useStudentGradeNotifications} from "@/hooks/useInAppNotifications";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faBookOpen,
@@ -37,6 +38,11 @@ const StudentDashboard: React.FC = () => {
 		loading,
 		error,
 	} = useStudentAcademicData();
+	useStudentGradeNotifications({
+		userId: user?.id,
+		assignments,
+		loading,
+	});
 
 	const handleSelectAssignment = (assignment: StudentAssignmentCardData) => {
 		if (assignment.status === "pending" || assignment.status === "overdue") {

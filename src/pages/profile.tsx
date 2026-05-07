@@ -7,6 +7,7 @@ import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import {UpdateUserInput, User, UserRole} from "@/interface";
 import {UPDATE_USER} from "@/gql/User";
+import {notifyError, notifySuccess, notifyWarning} from "@/utils/toastNotify";
 
 const getRoleLabel = (role?: UserRole) => {
 	if (role === UserRole.STUDENT) return "Estudiante";
@@ -20,10 +21,6 @@ const ProfilePage: React.FC = () => {
 		updateUser: User;
 	}>(UPDATE_USER);
 	const [isEditing, setIsEditing] = useState(false);
-	const [statusMessage, setStatusMessage] = useState<{
-		type: "success" | "error";
-		text: string;
-	} | null>(null);
 	const [formData, setFormData] = useState({
 		firstName: "",
 		lastName: "",
@@ -33,11 +30,13 @@ const ProfilePage: React.FC = () => {
 
 	useEffect(() => {
 		if (user) {
-			setFormData({
-				firstName: user.name || "",
-				lastName: user.last_name || "",
-				email: user.email,
-				phone: user.phone?.toString() || "",
+			window.requestAnimationFrame(() => {
+				setFormData({
+					firstName: user.name || "",
+					lastName: user.last_name || "",
+					email: user.email,
+					phone: user.phone?.toString() || "",
+				});
 			});
 		}
 	}, [user]);
@@ -51,15 +50,12 @@ const ProfilePage: React.FC = () => {
 			email: user.email,
 			phone: user.phone?.toString() || "",
 		});
-		setStatusMessage(null);
 	};
 
 	const handleSave = async () => {
 		if (!user?.id) {
-			setStatusMessage({
-				type: "error",
-				text: "No hay una sesión activa para actualizar.",
-			});
+			const message = "No hay una sesión activa para actualizar.";
+			notifyError(message);
 			return;
 		}
 
@@ -68,18 +64,14 @@ const ProfilePage: React.FC = () => {
 		const cleanPhone = formData.phone.replace(/\s+/g, "");
 
 		if (!firstName || !lastName) {
-			setStatusMessage({
-				type: "error",
-				text: "Nombre y apellido son obligatorios.",
-			});
+			const message = "Nombre y apellido son obligatorios.";
+			notifyWarning(message);
 			return;
 		}
 
-		if (cleanPhone && !/^\+?\d{7,15}$/.test(cleanPhone)) {
-			setStatusMessage({
-				type: "error",
-				text: "Ingresa un teléfono válido entre 7 y 15 dígitos.",
-			});
+		if (cleanPhone && !/^\+?\d{7,10}$/.test(cleanPhone)) {
+			const message = "Ingresa un teléfono válido entre 7 y 10 dígitos.";
+			notifyWarning(message);
 			return;
 		}
 
@@ -99,10 +91,8 @@ const ProfilePage: React.FC = () => {
 			const updatedUser = data?.updateUser;
 
 			if (!updatedUser) {
-				setStatusMessage({
-					type: "error",
-					text: "El servidor no retornó el usuario actualizado.",
-				});
+				const message = "El servidor no retornó el usuario actualizado.";
+				notifyError(message);
 				return;
 			}
 
@@ -113,28 +103,22 @@ const ProfilePage: React.FC = () => {
 			});
 
 			if (!result?.success) {
-				setStatusMessage({
-					type: "error",
-					text: result?.error || "No se pudo actualizar la sesión local.",
-				});
+				const message =
+					result?.error || "No se pudo actualizar la sesión local.";
+				notifyError(message);
 				return;
 			}
 		} catch (error) {
-			setStatusMessage({
-				type: "error",
-				text:
-					error instanceof Error
-						? error.message
-						: "No se pudo guardar el perfil.",
-			});
+			const message =
+				error instanceof Error
+					? error.message
+					: "No se pudo guardar el perfil.";
+			notifyError(message);
 			return;
 		}
 
 		setIsEditing(false);
-		setStatusMessage({
-			type: "success",
-			text: "Perfil actualizado correctamente.",
-		});
+		notifySuccess("Perfil actualizado correctamente.");
 	};
 
 	return (
@@ -180,18 +164,6 @@ const ProfilePage: React.FC = () => {
 
 					<Card>
 						<SectionHeader title="Información Personal" className="mb-6" />
-
-						{statusMessage && (
-							<div
-								className={`mb-6 rounded-xl border px-4 py-3 text-sm font-semibold ${
-									statusMessage.type === "success"
-										? "bg-green-50 border-green-100 text-green-700"
-										: "bg-red-50 border-red-100 text-red-700"
-								}`}
-							>
-								{statusMessage.text}
-							</div>
-						)}
 
 						<div className="space-y-6">
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">

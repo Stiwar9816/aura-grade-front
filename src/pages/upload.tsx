@@ -1,9 +1,8 @@
-import React, {useMemo, useRef, useState} from "react";
+import React, {useMemo, useState} from "react";
 import {useRouter} from "next/router";
 import Layout from "@/components/Layout";
 import UploadZone from "@/components/Upload/UploadZone";
 import UploadStepper from "@/components/Upload/UploadStepper";
-import Toast from "@/components/Common/Toast";
 import Card from "@/components/Common/Card";
 import Badge from "@/components/Common/Badge";
 import SectionHeader from "@/components/Common/SectionHeader";
@@ -14,6 +13,12 @@ import {
 	useAuth,
 	useStudentAcademicData,
 } from "@/hooks";
+import {
+	notifyError,
+	notifyInfo,
+	notifySuccess,
+	notifyWarning,
+} from "@/utils/toastNotify";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faBookOpen,
@@ -26,12 +31,6 @@ import {
 	faRobot,
 	faSearch,
 } from "@fortawesome/free-solid-svg-icons";
-
-type ToastState = {
-	id: number;
-	message: string;
-	type: "success" | "error" | "info" | "warning";
-};
 
 type CreatedSubmission = {
 	id: string;
@@ -278,8 +277,6 @@ const UploadPage: React.FC = () => {
 	const [createdSubmission, setCreatedSubmission] =
 		useState<CreatedSubmission | null>(null);
 	const [processError, setProcessError] = useState<string | null>(null);
-	const [toasts, setToasts] = useState<ToastState[]>([]);
-	const toastIdRef = useRef(0);
 
 	const queryAssignmentId =
 		typeof router.query.assignment === "string" ? router.query.assignment : "";
@@ -335,19 +332,6 @@ const UploadPage: React.FC = () => {
 		},
 	];
 
-	const addToast = (
-		message: string,
-		type: "success" | "error" | "info" | "warning",
-	) => {
-		toastIdRef.current += 1;
-		const id = toastIdRef.current;
-		setToasts([{id, message, type}]);
-	};
-
-	const closeToast = (id: number) => {
-		setToasts((prev) => prev.filter((toast) => toast.id !== id));
-	};
-
 	const updateGradingProgress = (progress: number) => {
 		const boundedProgress = Math.min(100, Math.max(0, progress));
 		const stage = getStageByProgress(boundedProgress);
@@ -391,6 +375,7 @@ const UploadPage: React.FC = () => {
 	const handleUploadStart = async (selectedFile: File) => {
 		if (!selectedAssignment || !user?.id) {
 			setProcessError("Selecciona una tarea antes de subir el archivo.");
+			notifyWarning("Selecciona una tarea antes de subir el archivo.");
 			return;
 		}
 
@@ -398,6 +383,7 @@ const UploadPage: React.FC = () => {
 			setProcessError(
 				"La fecha límite de esta tarea ya pasó. No es posible enviar la entrega.",
 			);
+			notifyWarning("La fecha límite ya pasó. No se puede enviar la entrega.");
 			return;
 		}
 
@@ -405,6 +391,7 @@ const UploadPage: React.FC = () => {
 			setProcessError(
 				"Esta tarea ya fue calificada. No es posible enviar nuevas versiones.",
 			);
+			notifyInfo("Esta tarea ya fue calificada y no acepta nuevas versiones.");
 			return;
 		}
 
@@ -413,6 +400,7 @@ const UploadPage: React.FC = () => {
 			setCreatedSubmission(null);
 			setProcessError(null);
 			updateGradingProgress(10);
+			notifyInfo(`Enviando "${selectedFile.name}" para evaluación.`);
 
 			const submission = await createSubmissionWithFile(
 				selectedFile,
@@ -433,9 +421,8 @@ const UploadPage: React.FC = () => {
 
 			if (finalSubmission?.evaluation) {
 				updateGradingProgress(100);
-				addToast(
+				notifySuccess(
 					"Tu entrega fue registrada y quedó pendiente de revisión docente.",
-					"success",
 				);
 			}
 		} catch (error) {
@@ -445,7 +432,7 @@ const UploadPage: React.FC = () => {
 					: "No se pudo registrar la entrega.";
 			setProcessError(message);
 			setCurrentStep(0);
-			addToast(message, "error");
+			notifyError(message);
 		}
 	};
 
@@ -463,18 +450,6 @@ const UploadPage: React.FC = () => {
 		<ProtectedRoute requiredRole={UserRole.STUDENT}>
 			<Layout title="Centro de Entregas" hideHeader>
 				<div className="max-w-6xl mx-auto space-y-2">
-					<div className="fixed bottom-4 right-4 z-50 max-w-sm">
-						{toasts.map((toast) => (
-							<Toast
-								key={toast.id}
-								message={toast.message}
-								type={toast.type}
-								duration={3500}
-								onClose={() => closeToast(toast.id)}
-							/>
-						))}
-					</div>
-
 					<SectionHeader
 						title="Centro de entregas"
 						description="Selecciona una tarea, revisa su rúbrica y sube el archivo correspondiente."

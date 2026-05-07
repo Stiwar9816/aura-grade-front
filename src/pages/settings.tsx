@@ -16,6 +16,12 @@ import {
 	getSettingsKey,
 	notifySettingsUpdated,
 } from "@/utils/theme";
+import {
+	notifyError,
+	notifyInfo,
+	notifySuccess,
+	notifyWarning,
+} from "@/utils/toastNotify";
 
 type NotificationSettings = {
 	email: boolean;
@@ -62,7 +68,6 @@ const SettingsPage: React.FC = () => {
 		defaultSettings.privacy,
 	);
 	const [theme, setTheme] = useState<ThemeSetting>(defaultSettings.theme);
-	const [statusMessage, setStatusMessage] = useState<string | null>(null);
 	const [deleteConfirmation, setDeleteConfirmation] = useState("");
 
 	useEffect(() => {
@@ -96,7 +101,8 @@ const SettingsPage: React.FC = () => {
 			});
 		} catch {
 			window.requestAnimationFrame(() => {
-				setStatusMessage("No se pudieron cargar tus preferencias guardadas.");
+				const message = "No se pudieron cargar tus preferencias guardadas.";
+				notifyError(message);
 			});
 		}
 	}, [settingsKey]);
@@ -107,14 +113,17 @@ const SettingsPage: React.FC = () => {
 		window.localStorage.setItem(settingsKey, JSON.stringify(settingsToSave));
 		applyTheme(settingsToSave.theme);
 		notifySettingsUpdated();
-		setStatusMessage("Configuración guardada correctamente.");
+		notifySuccess("Configuración guardada correctamente.");
 	};
 
 	const resetSettings = () => {
 		setNotifications(defaultSettings.notifications);
 		setPrivacy(defaultSettings.privacy);
 		setTheme(defaultSettings.theme);
-		saveSettings(defaultSettings);
+		window.localStorage.setItem(settingsKey, JSON.stringify(defaultSettings));
+		applyTheme(defaultSettings.theme);
+		notifySettingsUpdated();
+		notifyInfo("Configuración restaurada a los valores predeterminados.");
 	};
 
 	const handleThemeChange = (nextTheme: ThemeSetting) => {
@@ -127,23 +136,31 @@ const SettingsPage: React.FC = () => {
 			const permission = await Notification.requestPermission();
 
 			if (permission !== "granted") {
-				setStatusMessage("No se activaron las notificaciones push.");
+				const message = "No se activaron las notificaciones push.";
+				notifyWarning(message);
 				setNotifications((current) => ({...current, push: false}));
 				return;
 			}
 		}
 
 		setNotifications((current) => ({...current, push: checked}));
+		notifyInfo(
+			checked
+				? "Notificaciones push activadas. Guarda la configuración para conservar el cambio."
+				: "Notificaciones push desactivadas. Guarda la configuración para conservar el cambio.",
+		);
 	};
 
 	const handleDeleteAccount = async () => {
 		if (deleteConfirmation !== "ELIMINAR") {
-			setStatusMessage('Escribe "ELIMINAR" para confirmar.');
+			const message = 'Escribe "ELIMINAR" para confirmar.';
+			notifyWarning(message);
 			return;
 		}
 
 		if (!user?.id) {
-			setStatusMessage("No hay una sesión activa para desactivar.");
+			const message = "No hay una sesión activa para desactivar.";
+			notifyError(message);
 			return;
 		}
 
@@ -157,16 +174,17 @@ const SettingsPage: React.FC = () => {
 			await updateUserMutation({
 				variables: {updateUserInput},
 			});
+			notifySuccess("Cuenta desactivada correctamente.");
 			window.localStorage.removeItem(settingsKey);
 			window.localStorage.removeItem("auraGrade_user");
 			logout();
 			window.location.href = "/login";
 		} catch (error) {
-			setStatusMessage(
+			const message =
 				error instanceof Error
 					? error.message
-					: "No se pudo desactivar la cuenta.",
-			);
+					: "No se pudo desactivar la cuenta.";
+			notifyError(message);
 		}
 	};
 
@@ -180,12 +198,6 @@ const SettingsPage: React.FC = () => {
 							description="Gestiona cómo y cuándo recibes notificaciones"
 							className="mb-6"
 						/>
-
-						{statusMessage && (
-							<div className="mb-6 rounded-xl border border-electric-100 bg-electric-50 px-4 py-3 text-sm font-semibold text-electric-700">
-								{statusMessage}
-							</div>
-						)}
 
 						<div className="space-y-4">
 							<div className="flex items-center justify-between py-3 border-b border-gray-100">

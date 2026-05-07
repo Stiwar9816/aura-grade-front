@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import {AIEvaluation} from "@/types";
 import {TeacherOverride} from "@/interface";
+import {notifyInfo, notifySuccess, notifyWarning} from "@/utils/toastNotify";
 
 const SplitScreenEvaluation: React.FC = () => {
 	const [aiEvaluation] = useState<AIEvaluation>({
@@ -70,7 +71,10 @@ Sin embargo, es crucial considerar los aspectos éticos de esta transformación 
 En conclusión, mientras la IA ofrece oportunidades sin precedentes para la personalización educativa, su implementación requiere un equilibrio cuidadoso entre innovación y consideraciones éticas.`;
 
 	const handleOverrideSubmit = (criterionId: string, criterionName: string) => {
-		if (!newOverride.newScore || !newOverride.reason) return;
+		if (!newOverride.newScore || !newOverride.reason) {
+			notifyWarning("Ingresa la nueva nota y el motivo del cambio.");
+			return;
+		}
 
 		const criterion = aiEvaluation.criteria.find(
 			(c) => c.name === criterionName
@@ -87,6 +91,7 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 		setTeacherOverrides([...teacherOverrides, override]);
 		setShowOverrideForm(null);
 		setNewOverride({newScore: 0, reason: "", comments: ""});
+		notifySuccess(`Cambio aplicado en "${criterionName}".`);
 	};
 
 	const calculateFinalScore = () => {
@@ -504,13 +509,19 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 					</div>
 
 					<div className="flex gap-3">
-						<button className="btn-ghost">
+						<button
+							className="btn-ghost"
+							onClick={() => notifyInfo("Borrador de evaluación guardado.")}
+						>
 							<span className="flex items-center gap-2">
 								<span>💾</span>
 								<span>Guardar borrador</span>
 							</span>
 						</button>
-						<button className="btn-primary">
+						<button
+							className="btn-primary"
+							onClick={() => notifySuccess("Evaluación publicada para el estudiante.")}
+						>
 							<span className="flex items-center gap-2">
 								<span>📤</span>
 								<span>Publicar evaluación</span>
@@ -545,7 +556,7 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 												</div>
 												{override.comments && (
 													<div className="text-sm text-gray-700 mt-1">
-														"{override.comments}"
+														&ldquo;{override.comments}&rdquo;
 													</div>
 												)}
 											</div>
