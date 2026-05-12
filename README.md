@@ -1,3 +1,7 @@
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://res.cloudinary.com/dwtf5ftav/image/upload/v1778560040/1_ujpdg5.png" width="500" alt="AuraGrade Logo" /></a>
+</p>
+
 # 🚀Aura Grade - (Clasificación asistida por IA)
 
 Una plataforma progresiva para la gestión educativa eficiente y escalable, potenciada por IA. Diseñada para agilizar el proceso de evaluación y proporcionar información profunda sobre el rendimiento de los estudiantes.
@@ -14,6 +18,8 @@ Aura Grade tiene como objetivo cerrar la brecha entre la evaluación tradicional
 - **Constructor de Rúbricas**: Crea y gestiona criterios de evaluación complejos con facilidad.
 - **Análisis de Rendimiento**: Visualiza tendencias de la clase, distribución de calificaciones y el progreso individual de los estudiantes mediante mapas de calor y gráficos.
 - **Evaluación en Pantalla Dividida**: Revisa las entregas de manera eficiente junto con las herramientas de evaluación.
+- **Gestión Avanzada de Tareas**: Vista detallada para cada tarea, con seguimiento de entregas y flujos de evaluación mejorados.
+- **Historial de Calificaciones y Reportes**: Visualiza una lista exhaustiva de las entregas evaluadas, filtradas por estudiante, curso o tarea. Permite la exportación de datos a formato CSV/Excel para reportes.
 
 ### 🎓 Para Estudiantes
 
