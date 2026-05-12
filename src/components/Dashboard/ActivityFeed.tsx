@@ -6,97 +6,90 @@ interface ActivityFeedProps {
 	autoRefresh?: boolean;
 }
 
+const sampleActivities: Activity[] = [
+	{
+		id: "1",
+		type: "upload",
+		user: "María González",
+		time: "Hace 2 min",
+		task: "Ensayo de Filosofía Moderna",
+		score: undefined,
+		message: undefined,
+	},
+	{
+		id: "2",
+		type: "graded",
+		user: "Carlos Ruiz",
+		time: "Hace 15 min",
+		task: "Análisis de Mercado",
+		score: 8.7,
+		message: undefined,
+	},
+	{
+		id: "3",
+		type: "ai_processing",
+		user: "Sistema IA",
+		time: "Hace 30 min",
+		task: "12 documentos",
+		score: undefined,
+		message: "Procesamiento batch completado",
+	},
+	{
+		id: "4",
+		type: "rubric_updated",
+		user: "Prof. Rodríguez",
+		time: "Hace 1 hora",
+		task: "Rúbrica de Ensayos",
+		score: undefined,
+		message: "Criterios de originalidad actualizados",
+	},
+	{
+		id: "5",
+		type: "alert",
+		user: "Sistema",
+		time: "Hace 2 horas",
+		task: undefined,
+		score: undefined,
+		message: "3 entregas atrasadas detectadas",
+	},
+	{
+		id: "6",
+		type: "upload",
+		user: "Ana Martínez",
+		time: "Hace 3 horas",
+		task: "Proyecto Final de IA",
+		score: undefined,
+		message: undefined,
+	},
+	{
+		id: "7",
+		type: "graded",
+		user: "Luis Fernández",
+		time: "Hace 4 horas",
+		task: "Reflexión Ética",
+		score: 9.2,
+		message: undefined,
+	},
+	{
+		id: "8",
+		type: "ai_processing",
+		user: "Sistema IA",
+		time: "Hace 5 horas",
+		task: "Corrección automática",
+		score: undefined,
+		message: "Modelo de evaluación optimizado",
+	},
+];
+
 const ActivityFeed: React.FC<ActivityFeedProps> = ({
 	activities: initialActivities,
 	autoRefresh = true,
 }) => {
-	const [activities, setActivities] = useState<Activity[]>([]);
+	const [activities, setActivities] = useState<Activity[]>(
+		() => initialActivities ?? sampleActivities.slice(0, 6),
+	);
 	const [filter, setFilter] = useState<string>("all");
 	const [isPaused, setIsPaused] = useState<boolean>(false);
-
-	// Datos de ejemplo si no se proporcionan
-	const sampleActivities: Activity[] = [
-		{
-			id: "1",
-			type: "upload",
-			user: "María González",
-			time: "Hace 2 min",
-			task: "Ensayo de Filosofía Moderna",
-			score: undefined,
-			message: undefined,
-		},
-		{
-			id: "2",
-			type: "graded",
-			user: "Carlos Ruiz",
-			time: "Hace 15 min",
-			task: "Análisis de Mercado",
-			score: 8.7,
-			message: undefined,
-		},
-		{
-			id: "3",
-			type: "ai_processing",
-			user: "Sistema IA",
-			time: "Hace 30 min",
-			task: "12 documentos",
-			score: undefined,
-			message: "Procesamiento batch completado",
-		},
-		{
-			id: "4",
-			type: "rubric_updated",
-			user: "Prof. Rodríguez",
-			time: "Hace 1 hora",
-			task: "Rúbrica de Ensayos",
-			score: undefined,
-			message: "Criterios de originalidad actualizados",
-		},
-		{
-			id: "5",
-			type: "alert",
-			user: "Sistema",
-			time: "Hace 2 horas",
-			task: undefined,
-			score: undefined,
-			message: "3 entregas atrasadas detectadas",
-		},
-		{
-			id: "6",
-			type: "upload",
-			user: "Ana Martínez",
-			time: "Hace 3 horas",
-			task: "Proyecto Final de IA",
-			score: undefined,
-			message: undefined,
-		},
-		{
-			id: "7",
-			type: "graded",
-			user: "Luis Fernández",
-			time: "Hace 4 horas",
-			task: "Reflexión Ética",
-			score: 9.2,
-			message: undefined,
-		},
-		{
-			id: "8",
-			type: "ai_processing",
-			user: "Sistema IA",
-			time: "Hace 5 horas",
-			task: "Corrección automática",
-			score: undefined,
-			message: "Modelo de evaluación optimizado",
-		},
-	];
-
-	useEffect(() => {
-		if (initialActivities) {
-			setActivities(initialActivities);
-		} else {
-			setActivities(sampleActivities.slice(0, 6));
-		}
-	}, [initialActivities]);
 
 	useEffect(() => {
 		if (!autoRefresh || isPaused) return;

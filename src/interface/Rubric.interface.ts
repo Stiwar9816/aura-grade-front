@@ -53,7 +53,7 @@ export interface RubricTemplate {
 export interface RubricLibraryProps {
 	templates: RubricTemplate[];
 	loading?: boolean;
-	error?: any;
+	error?: unknown;
 	onSelectTemplate: (template: RubricTemplate) => void;
 	onDeleteTemplate: (id: string) => void;
 	onCreateNew: () => void;

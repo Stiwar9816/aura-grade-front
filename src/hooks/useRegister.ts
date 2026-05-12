@@ -160,7 +160,10 @@ export const useRegister = () => {
 		}));
 	};
 
-	const handleTypeChange = (name: string, value: any) => {
+	const handleTypeChange = (
+		name: keyof RegisterFormData,
+		value: RegisterFormData[keyof RegisterFormData],
+	) => {
 		setFormData((prev) => ({
 			...prev,
 			[name]: value,

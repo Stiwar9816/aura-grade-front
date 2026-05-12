@@ -1,5 +1,14 @@
-import {SubmissionDetail, MappedEvaluationData} from "@/interface";
+import {
+	SubmissionDetail,
+	MappedEvaluationData,
+	EvaluationCriterionFeedback,
+} from "@/interface";
 import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
+
+const isFeedbackRecord = (
+	value: unknown,
+): value is Record<string, EvaluationCriterionFeedback> =>
+	typeof value === "object" && value !== null && !Array.isArray(value);
 
 export const mapSubmissionToEvaluation = (
 	submission: SubmissionDetail,
@@ -24,10 +33,15 @@ export const mapSubmissionToEvaluation = (
 		evaluationDate: submission.evaluation?.createdAt,
 		criteria:
 			submission.assignment?.rubric?.criteria?.map((c) => {
-				let criterionFeedback = {score: 0, feedback: "", suggestion: ""};
+				let criterionFeedback: EvaluationCriterionFeedback = {
+					score: 0,
+					feedback: "",
+					suggestion: "",
+				};
 				try {
 					if (submission.evaluation?.detailedFeedback) {
-						let parsedFeedback: any = submission.evaluation.detailedFeedback;
+						let parsedFeedback: unknown =
+							submission.evaluation.detailedFeedback;
 
 						if (typeof parsedFeedback === "string") {
 							try {
@@ -40,13 +54,11 @@ export const mapSubmissionToEvaluation = (
 
 						if (Array.isArray(parsedFeedback)) {
 							const match = parsedFeedback.find(
-								(f: any) => f.criteriaId === c.id || f.name === c.title,
+								(f: EvaluationCriterionFeedback) =>
+									f.criteriaId === c.id || f.name === c.title,
 							);
 							if (match) criterionFeedback = match;
-						} else if (
-							typeof parsedFeedback === "object" &&
-							parsedFeedback !== null
-						) {
+						} else if (isFeedbackRecord(parsedFeedback)) {
 							const match = parsedFeedback[c.id] || parsedFeedback[c.title];
 							if (match) criterionFeedback = match;
 						}

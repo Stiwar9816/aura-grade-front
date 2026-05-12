@@ -38,10 +38,8 @@ import {
 	faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import {
-	MappedEvaluationData,
 	ReEvaluationRequest,
 	ReEvaluationRequestStatus,
-	SubmissionDetail,
 	UserRole,
 } from "@/interface";
 import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
@@ -55,15 +53,6 @@ import {
 	isPendingReEvaluationRequest,
 	normalizeReEvaluationStatus,
 } from "@/utils/reevaluationRequests";
-
-type ShareNavigator = Navigator & {
-	canShare?: (data: {files?: File[]}) => boolean;
-	share?: (data: {
-		files?: File[];
-		title?: string;
-		text?: string;
-	}) => Promise<void>;
-};
 
 const getResultStatus = (assignment: StudentAssignmentCardData) => {
 	if (assignment.status === "graded") {
@@ -141,69 +130,6 @@ const getReEvaluationStatusContent = (request?: ReEvaluationRequest | null) => {
 		variant: "warning" as const,
 		message: `Solicitud enviada el ${formatDateTime(request?.createdAt)}.`,
 	};
-};
-
-const getSafeFileName = (value: string) =>
-	value
-		.toLowerCase()
-		.normalize("NFD")
-		.replace(/[\u0300-\u036f]/g, "")
-		.replace(/[^a-z0-9]+/g, "-")
-		.replace(/(^-|-$)/g, "");
-
-const buildEvaluationReport = (
-	submissionDetail: SubmissionDetail,
-	evaluationData: MappedEvaluationData["evaluationData"],
-	studentName: string,
-) => {
-	const criteriaLines = evaluationData.criteria.length
-		? evaluationData.criteria.map(
-				(criterion: {
-					name: string;
-					score: number;
-					maxScore: number;
-					feedback: string;
-				}) =>
-					[
-						`- ${criterion.name}`,
-						`  Puntaje: ${criterion.score}/${criterion.maxScore}`,
-						`  Retroalimentación: ${criterion.feedback}`,
-					].join("\n"),
-			)
-		: ["Sin desglose por criterios disponible."];
-
-	return [
-		"Reporte de evaluación AuraGrade",
-		"",
-		`Estudiante: ${studentName}`,
-		`Tarea: ${submissionDetail.assignment?.title || "Sin tarea"}`,
-		`Curso: ${submissionDetail.assignment?.course?.course_name || "Sin curso"}`,
-		`Fecha de entrega: ${formatDateTime(submissionDetail.createdAt)}`,
-		`Fecha de evaluación: ${formatDateTime(evaluationData.evaluationDate)}`,
-		"",
-		"Resultado final",
-		`Nota obtenida: ${evaluationData.overallScore}/${evaluationData.maxScore}`,
-		"",
-		"Retroalimentación final",
-		evaluationData.generalFeedback || "Sin retroalimentación final.",
-		"",
-		"Desglose por rúbrica",
-		...criteriaLines,
-	].join("\n");
-};
-
-const downloadTextReport = (filename: string, content: string) => {
-	const blob = new Blob([content], {type: "text/plain;charset=utf-8"});
-	const url = URL.createObjectURL(blob);
-	const link = document.createElement("a");
-
-	link.href = url;
-	link.download = filename;
-	link.style.display = "none";
-	document.body.appendChild(link);
-	link.click();
-	document.body.removeChild(link);
-	URL.revokeObjectURL(url);
 };
 
 const EvaluationPage: React.FC = () => {

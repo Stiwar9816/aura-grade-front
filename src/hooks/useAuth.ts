@@ -129,9 +129,9 @@ export const useAuth = () => {
 			setAuthState((prev) => ({
 				...prev,
 				isLoading: false,
-				error: "Error inesperado al iniciar sesión",
+				error: error as string,
 			}));
-			return {success: false, error: "Error inesperado"};
+			return {success: false, error};
 		}
 	};
 
@@ -158,9 +158,9 @@ export const useAuth = () => {
 			setAuthState((prev) => ({
 				...prev,
 				isLoading: false,
-				error: "Error inesperado al registrarse",
+				error: error as string,
 			}));
-			return {success: false, error: "Error inesperado"};
+			return {success: false, error};
 		}
 	};
 

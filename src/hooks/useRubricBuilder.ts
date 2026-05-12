@@ -39,7 +39,7 @@ const useRubricBuilder = ({
 		setShowAddForm(false);
 	};
 
-	const handleSave = (id: string) => {
+	const handleSave = () => {
 		setEditingId(null);
 	};
 

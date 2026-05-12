@@ -89,7 +89,7 @@ export interface User {
 	document_type?: string | null;
 	document_num?: number | null;
 	courses?: {id: string}[];
-	assignments?: {id: string}[];
+	assignments?: {id: string; title?: string; isActive?: boolean; dueDate?: string}[];
 }
 
 export interface UpdateUserInput {
@@ -121,11 +121,17 @@ export interface UsersStats {
 				status: string;
 				totalScore: number;
 			};
+			assignment?: {
+				rubric?: {
+					maxTotalScore?: number;
+				};
+			};
 		}[];
 		assignments: {
 			id: string;
 			title: string;
 			isActive: boolean;
+			dueDate: string;
 		}[];
 		courses: {
 			id: string;

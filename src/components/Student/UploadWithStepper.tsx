@@ -43,6 +43,7 @@ const UploadWithStepper: React.FC = () => {
 	]);
 
 	const simulateUploadProcess = (file: File) => {
+		void file;
 		setCurrentStep(1);
 		updateStepStatus(1, "active", "Preparando todo para tu archivo...");
 
@@ -109,17 +110,6 @@ const UploadWithStepper: React.FC = () => {
 				return "⏳";
 			default:
 				return "🔘";
-		}
-	};
-
-	const getStepColor = (status: Step["status"]) => {
-		switch (status) {
-			case "completed":
-				return "text-green-600 bg-green-100";
-			case "active":
-				return "text-electric-600 bg-electric-100 animate-pulse";
-			default:
-				return "text-gray-400 bg-gray-100";
 		}
 	};
 
