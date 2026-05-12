@@ -111,7 +111,7 @@ export const StudentPerformance: React.FC<StudentPerformanceProps> = ({
 							</div>
 							<div className="text-right">
 								<div className="text-2xl font-black text-gray-900 leading-none">
-									{student.grade.toFixed(1)}
+									{Number(student.grade).toFixed(2)}
 								</div>
 								<div className="text-[10px] font-bold text-gray-400 uppercase mt-1">
 									Puntuación Total

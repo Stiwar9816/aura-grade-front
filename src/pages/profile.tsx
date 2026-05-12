@@ -6,7 +6,7 @@ import {useAuth} from "@/hooks";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import {UpdateUserInput, User, UserRole} from "@/interface";
-import {UPDATE_USER} from "@/gql/User";
+import {RESET_PASSWORD_AUTH, UPDATE_USER} from "@/gql/User";
 import {notifyError, notifySuccess, notifyWarning} from "@/utils/toastNotify";
 
 const getRoleLabel = (role?: UserRole) => {
@@ -20,12 +20,20 @@ const ProfilePage: React.FC = () => {
 	const [updateUserMutation, {loading: savingProfile}] = useMutation<{
 		updateUser: User;
 	}>(UPDATE_USER);
+	const [resetPasswordAuthMutation, {loading: savingPassword}] = useMutation<
+		{resetPasswordAuth: User},
+		{newPassword: string}
+	>(RESET_PASSWORD_AUTH);
 	const [isEditing, setIsEditing] = useState(false);
 	const [formData, setFormData] = useState({
 		firstName: "",
 		lastName: "",
 		email: "",
 		phone: "",
+	});
+	const [passwordData, setPasswordData] = useState({
+		newPassword: "",
+		confirmPassword: "",
 	});
 
 	useEffect(() => {
@@ -119,6 +127,47 @@ const ProfilePage: React.FC = () => {
 
 		setIsEditing(false);
 		notifySuccess("Perfil actualizado correctamente.");
+	};
+
+	const handlePasswordSave = async (event?: React.FormEvent) => {
+		event?.preventDefault();
+		const newPassword = String(passwordData.newPassword || "").trim();
+		const confirmPassword = String(passwordData.confirmPassword || "").trim();
+
+		if (!newPassword || !confirmPassword) {
+			notifyWarning("Ingresa y confirma la nueva contraseña.");
+			return;
+		}
+
+		if (newPassword.length < 8) {
+			notifyWarning("La contraseña debe tener al menos 8 caracteres.");
+			return;
+		}
+
+		if (newPassword !== confirmPassword) {
+			notifyWarning("Las contraseñas no coinciden.");
+			return;
+		}
+
+		try {
+			const {data} = await resetPasswordAuthMutation({
+				variables: {newPassword},
+			});
+
+			if (!data?.resetPasswordAuth) {
+				notifyError("El servidor no confirmó el cambio de contraseña.");
+				return;
+			}
+
+			setPasswordData({newPassword: "", confirmPassword: ""});
+			notifySuccess("Contraseña actualizada correctamente.");
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "No se pudo actualizar la contraseña.";
+			notifyError(message);
+		}
 	};
 
 	return (
@@ -276,6 +325,72 @@ const ProfilePage: React.FC = () => {
 								</div>
 							)}
 						</div>
+					</Card>
+
+					<Card className="mt-6">
+						<SectionHeader title="Seguridad" className="mb-6" />
+
+						<form onSubmit={handlePasswordSave} className="space-y-6">
+							<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-2">
+										Nueva contraseña
+									</label>
+									<input
+										type="password"
+										value={passwordData.newPassword}
+										onChange={(event) =>
+											setPasswordData({
+												...passwordData,
+												newPassword: event.currentTarget.value,
+											})
+										}
+										className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-electric-500 focus:border-electric-500"
+										placeholder="Mínimo 8 caracteres"
+										autoComplete="new-password"
+									/>
+								</div>
+
+								<div>
+									<label className="block text-sm font-medium text-gray-700 mb-2">
+										Confirmar contraseña
+									</label>
+									<input
+										type="password"
+										value={passwordData.confirmPassword}
+										onChange={(event) =>
+											setPasswordData({
+												...passwordData,
+												confirmPassword: event.currentTarget.value,
+											})
+										}
+										className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-electric-500 focus:border-electric-500"
+										placeholder="Repite la nueva contraseña"
+										autoComplete="new-password"
+									/>
+								</div>
+							</div>
+
+							<div className="flex justify-end gap-3 pt-4 border-t">
+								<button
+									type="button"
+									onClick={() =>
+										setPasswordData({newPassword: "", confirmPassword: ""})
+									}
+									disabled={savingPassword}
+									className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
+								>
+									Limpiar
+								</button>
+								<button
+									type="submit"
+									disabled={savingPassword}
+									className="btn-primary disabled:bg-gray-200 disabled:text-gray-400"
+								>
+									{savingPassword ? "Actualizando..." : "Actualizar contraseña"}
+								</button>
+							</div>
+						</form>
 					</Card>
 				</div>
 			</Layout>

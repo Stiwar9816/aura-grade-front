@@ -44,3 +44,15 @@ export const UPDATE_USER: DocumentNode = gql`
 		}
 	}
 `;
+
+export const RESET_PASSWORD_AUTH: DocumentNode = gql`
+	mutation ResetPasswordAuth($newPassword: String!) {
+		resetPasswordAuth(newPassword: $newPassword) {
+			id
+			name
+			last_name
+			email
+			role
+		}
+	}
+`;

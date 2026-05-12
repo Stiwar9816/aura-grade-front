@@ -11,6 +11,7 @@ export interface Submission {
 	courseName?: string;
 	rubricName?: string;
 	hasReevaluationRequest?: boolean;
+	reevaluationStatus?: string;
 	reevaluationReason?: string;
 	reevaluationRequestedAt?: string;
 }

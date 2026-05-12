@@ -1,75 +1,55 @@
-export const REEVALUATION_REQUESTS_KEY = "auragrade_reevaluation_requests";
+import {
+	ReEvaluationRequest,
+	ReEvaluationRequestStatus,
+} from "@/interface/ReEvaluationRequest.interface";
 
-export interface ReevaluationRequest {
-	id: string;
-	submissionId: string;
-	assignmentId?: string;
-	studentId?: string;
-	studentName: string;
-	reason: string;
-	status: "pending";
-	createdAt: string;
-}
+export const normalizeReEvaluationStatus = (status?: string | null) =>
+	status?.toUpperCase().replace(/[-\s]+/g, "_") || "";
 
-export const getStoredReevaluationRequests = (): ReevaluationRequest[] => {
-	if (typeof window === "undefined") return [];
+export const isPendingReEvaluationRequest = (
+	request?: Pick<ReEvaluationRequest, "status"> | null,
+) =>
+	normalizeReEvaluationStatus(request?.status) ===
+	ReEvaluationRequestStatus.PENDING;
 
-	try {
-		const rawRequests = window.localStorage.getItem(REEVALUATION_REQUESTS_KEY);
-		if (!rawRequests) return [];
-
-		const requests = JSON.parse(rawRequests);
-		return Array.isArray(requests)
-			? requests.filter((request) => request?.status === "pending")
-			: [];
-	} catch {
-		return [];
-	}
-};
-
-export const saveStoredReevaluationRequests = (
-	requests: ReevaluationRequest[],
-): void => {
-	if (typeof window === "undefined") return;
-
-	window.localStorage.setItem(
-		REEVALUATION_REQUESTS_KEY,
-		JSON.stringify(requests),
-	);
-};
-
-export const getReevaluationRequestBySubmissionId = (
+export const findReEvaluationRequestBySubmissionId = (
+	requests: ReEvaluationRequest[],
 	submissionId?: string,
-): ReevaluationRequest | null => {
+	pendingOnly = true,
+): ReEvaluationRequest | null => {
 	if (!submissionId) return null;
 
 	return (
-		getStoredReevaluationRequests().find(
-			(request) => request.submissionId === submissionId,
+		requests.find(
+			(request) =>
+				request.evaluation?.submission?.id === submissionId &&
+				(!pendingOnly || isPendingReEvaluationRequest(request)),
 		) || null
 	);
 };
 
-export const getPendingReevaluationSubmissionIds = (): Set<string> =>
+export const findReEvaluationRequestByEvaluationId = (
+	requests: ReEvaluationRequest[],
+	evaluationId?: string,
+	pendingOnly = true,
+): ReEvaluationRequest | null => {
+	if (!evaluationId) return null;
+
+	return (
+		requests.find(
+			(request) =>
+				request.evaluation?.id === evaluationId &&
+				(!pendingOnly || isPendingReEvaluationRequest(request)),
+		) || null
+	);
+};
+
+export const getPendingReEvaluationSubmissionIds = (
+	requests: ReEvaluationRequest[],
+): Set<string> =>
 	new Set(
-		getStoredReevaluationRequests().map((request) => request.submissionId),
+		requests
+			.filter(isPendingReEvaluationRequest)
+			.map((request) => request.evaluation?.submission?.id)
+			.filter((submissionId): submissionId is string => Boolean(submissionId)),
 	);
-
-export const resolveStoredReevaluationRequest = (
-	submissionId?: string,
-): void => {
-	if (!submissionId) return;
-
-	const requests = getStoredReevaluationRequests().filter(
-		(request) => request.submissionId !== submissionId,
-	);
-	saveStoredReevaluationRequests(requests);
-};
-
-export const getReevaluationRequestId = () => {
-	if (typeof window !== "undefined" && window.crypto?.randomUUID) {
-		return window.crypto.randomUUID();
-	}
-
-	return `reevaluation-${Date.now()}`;
-};

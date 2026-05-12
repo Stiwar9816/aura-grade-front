@@ -12,10 +12,15 @@ import {
 	AssignmentSubmission,
 	ProcessedTeacherAssignment,
 	useAssignments,
+	useReEvaluationRequests,
 } from "@/hooks";
-import {SubmissionDetail, SubmissionStatus, SubmissionsData, UserRole} from "@/interface";
+import {
+	SubmissionDetail,
+	SubmissionStatus,
+	SubmissionsData,
+	UserRole,
+} from "@/interface";
 import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
-import {getReevaluationRequestBySubmissionId} from "@/utils/reevaluationRequests";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faArrowLeft,
@@ -68,33 +73,42 @@ const getStatusConfig = (status?: string): StatusConfig => {
 	);
 };
 
-const isPublishedSubmission = (submission: AssignmentSubmission) =>
-	!getReevaluationRequestBySubmissionId(submission.id) &&
+const isPublishedSubmission = (
+	submission: AssignmentSubmission,
+	reevaluationSubmissionIds: Set<string>,
+) =>
+	!reevaluationSubmissionIds.has(submission.id) &&
 	(normalizeStatusValue(submission.status) === SubmissionStatus.PUBLISHED ||
 		normalizeStatusValue(submission.evaluation?.status) === "PUBLISHED");
 
-const isPendingTeacherReview = (submission: AssignmentSubmission) => {
+const isPendingTeacherReview = (
+	submission: AssignmentSubmission,
+	reevaluationSubmissionIds: Set<string>,
+) => {
 	const status = normalizeStatusValue(submission.status);
 
 	return (
-		(Boolean(getReevaluationRequestBySubmissionId(submission.id)) ||
-			!isPublishedSubmission(submission)) &&
+		(reevaluationSubmissionIds.has(submission.id) ||
+			!isPublishedSubmission(submission, reevaluationSubmissionIds)) &&
 		(status === SubmissionStatus.PENDING ||
 			status === SubmissionStatus.IN_PROGRESS ||
 			status === SubmissionStatus.REVIEW_PENDING ||
 			status === "SUBMITTED" ||
 			status === "GRADED" ||
 			Boolean(submission.evaluation) ||
-			Boolean(getReevaluationRequestBySubmissionId(submission.id)))
+			reevaluationSubmissionIds.has(submission.id))
 	);
 };
 
-const getSubmissionStatusConfig = (submission: AssignmentSubmission) => {
-	if (getReevaluationRequestBySubmissionId(submission.id)) {
+const getSubmissionStatusConfig = (
+	submission: AssignmentSubmission,
+	reevaluationSubmissionIds: Set<string>,
+) => {
+	if (reevaluationSubmissionIds.has(submission.id)) {
 		return {label: "Reevaluación solicitada", variant: "warning" as const};
 	}
 
-	if (isPublishedSubmission(submission)) {
+	if (isPublishedSubmission(submission, reevaluationSubmissionIds)) {
 		return getStatusConfig(SubmissionStatus.PUBLISHED);
 	}
 
@@ -151,6 +165,11 @@ const AssignmentDetailPage: React.FC = () => {
 	const assignmentId =
 		typeof router.query.id === "string" ? router.query.id : undefined;
 	const {assignments, loading, error} = useAssignments();
+	const {
+		getRequestBySubmissionId,
+		pendingSubmissionIds: reevaluationSubmissionIds,
+		loading: reevaluationLoading,
+	} = useReEvaluationRequests();
 	const {data: teacherSubmissionsData, loading: submissionsLoading} =
 		useQuery<SubmissionsData>(GET_TEACHER_SUBMISSIONS, {
 			skip: !assignmentId,
@@ -161,7 +180,7 @@ const AssignmentDetailPage: React.FC = () => {
 		(item: ProcessedTeacherAssignment) => item.id === assignmentId,
 	);
 
-	if (loading) {
+	if (loading || reevaluationLoading) {
 		return (
 			<ProtectedRoute requiredRole={UserRole.TEACHER}>
 				<Layout title="Detalle de tarea" hideHeader>
@@ -211,9 +230,16 @@ const AssignmentDetailPage: React.FC = () => {
 		teacherSubmissionsData?.submissions
 			?.filter((submission) => submission.assignment?.id === assignment.id)
 			.map(mapSubmissionDetailToAssignmentSubmission) || [];
-	const submissions = mergeSubmissions(assignmentSubmissions, fallbackSubmissions);
-	const gradedSubmissions = submissions.filter(isPublishedSubmission);
-	const pendingSubmissions = submissions.filter(isPendingTeacherReview);
+	const submissions = mergeSubmissions(
+		assignmentSubmissions,
+		fallbackSubmissions,
+	);
+	const gradedSubmissions = submissions.filter((submission) =>
+		isPublishedSubmission(submission, reevaluationSubmissionIds),
+	);
+	const pendingSubmissions = submissions.filter((submission) =>
+		isPendingTeacherReview(submission, reevaluationSubmissionIds),
+	);
 	const completionRate =
 		submissions.length > 0
 			? Math.round((gradedSubmissions.length / submissions.length) * 100)
@@ -264,7 +290,9 @@ const AssignmentDetailPage: React.FC = () => {
 						</Card>
 						<Card className="bg-white/70 border border-gray-100">
 							<div className="flex items-center justify-between mb-3">
-								<div className="text-sm font-bold text-gray-500">Pendientes</div>
+								<div className="text-sm font-bold text-gray-500">
+									Pendientes
+								</div>
 								<FontAwesomeIcon
 									icon={faClipboardList}
 									className="text-yellow-500"
@@ -283,12 +311,14 @@ const AssignmentDetailPage: React.FC = () => {
 								/>
 							</div>
 							<div className="text-3xl font-black text-green-600">
-								{assignment.average > 0 ? assignment.average : "-"}
+								{assignment.average > 0 ? assignment.average.toFixed(2) : "-"}
 							</div>
 						</Card>
 						<Card className="bg-white/70 border border-gray-100">
 							<div className="flex items-center justify-between mb-3">
-								<div className="text-sm font-bold text-gray-500">Finalizadas</div>
+								<div className="text-sm font-bold text-gray-500">
+									Finalizadas
+								</div>
 								<FontAwesomeIcon
 									icon={faChartLine}
 									className="text-electric-500"
@@ -346,9 +376,13 @@ const AssignmentDetailPage: React.FC = () => {
 										</thead>
 										<tbody>
 											{submissions.map((submission: AssignmentSubmission) => {
-												const status = getSubmissionStatusConfig(submission);
-												const reevaluationRequest =
-													getReevaluationRequestBySubmissionId(submission.id);
+												const status = getSubmissionStatusConfig(
+													submission,
+													reevaluationSubmissionIds,
+												);
+												const reevaluationRequest = getRequestBySubmissionId(
+													submission.id,
+												);
 												const studentName = submission.student
 													? `${submission.student.name} ${
 															submission.student.last_name || ""
@@ -399,16 +433,20 @@ const AssignmentDetailPage: React.FC = () => {
 																	{normalizeGrade(
 																		submission.evaluation.totalScore,
 																		assignment.rubric?.maxTotalScore,
-																	)?.toFixed(1)}
+																	)?.toFixed(2)}
 																	<span className="text-xs font-bold text-gray-400">
-																		{" "}/ {STANDARD_GRADE_MAX}
+																		{" "}
+																		/ {STANDARD_GRADE_MAX}
 																	</span>
 																</div>
 															) : (
 																<span className="text-gray-400">-</span>
 															)}
 															{submission.evaluation &&
-																!isPublishedSubmission(submission) && (
+																!isPublishedSubmission(
+																	submission,
+																	reevaluationSubmissionIds,
+																) && (
 																	<div className="text-[10px] font-bold uppercase text-amber-600 mt-1">
 																		Sugerencia IA
 																	</div>
@@ -425,11 +463,14 @@ const AssignmentDetailPage: React.FC = () => {
 															>
 																{reevaluationRequest
 																	? "Reevaluar"
-																	: isPublishedSubmission(submission)
-																	? "Ver"
-																	: submission.evaluation
-																		? "Revisar"
-																		: "Evaluar"}
+																	: isPublishedSubmission(
+																				submission,
+																				reevaluationSubmissionIds,
+																		  )
+																		? "Ver"
+																		: submission.evaluation
+																			? "Revisar"
+																			: "Evaluar"}
 															</button>
 														</td>
 													</tr>
@@ -493,24 +534,24 @@ const AssignmentDetailPage: React.FC = () => {
 									<div className="space-y-3">
 										{rubricCriteria.map(
 											(criterion: AssignmentRubricCriterion) => (
-											<div
-												key={criterion.id}
-												className="p-3 rounded-xl bg-gray-50 border border-gray-100"
-											>
-												<div className="flex items-start justify-between gap-3">
-													<div className="font-bold text-gray-900 text-sm">
-														{criterion.title}
+												<div
+													key={criterion.id}
+													className="p-3 rounded-xl bg-gray-50 border border-gray-100"
+												>
+													<div className="flex items-start justify-between gap-3">
+														<div className="font-bold text-gray-900 text-sm">
+															{criterion.title}
+														</div>
+														<Badge variant="default">
+															{criterion.maxPoints} pts
+														</Badge>
 													</div>
-													<Badge variant="default">
-														{criterion.maxPoints} pts
-													</Badge>
+													{Boolean(criterion.levels?.length) && (
+														<div className="mt-2 text-xs text-gray-500">
+															{criterion.levels?.length} niveles de desempeño
+														</div>
+													)}
 												</div>
-												{Boolean(criterion.levels?.length) && (
-													<div className="mt-2 text-xs text-gray-500">
-														{criterion.levels?.length} niveles de desempeño
-													</div>
-												)}
-											</div>
 											),
 										)}
 									</div>

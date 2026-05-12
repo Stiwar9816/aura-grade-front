@@ -2,6 +2,7 @@ import React, {useState} from "react";
 import {useRouter} from "next/router";
 import Layout from "@/components/Layout";
 import SubmissionTracker from "@/components/Teacher/SubmissionTracker";
+import GradeHistory from "@/components/Teacher/GradeHistory";
 import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
@@ -27,10 +28,11 @@ import {
 	faHouse,
 	faRobot,
 	faUser,
+	faChartLine,
 } from "@fortawesome/free-solid-svg-icons";
 
 type TeacherDashboardTab = {
-	id: "overview" | "submissions";
+	id: "overview" | "submissions" | "history";
 	label: string;
 	icon: React.ReactNode;
 	badge?: number;
@@ -65,9 +67,9 @@ const ActivitySkeleton = () => (
 
 const TeacherDashboard: React.FC = () => {
 	const {user} = useAuth();
-	const [activeTab, setActiveTab] = useState<"overview" | "submissions">(
-		"overview",
-	);
+	const [activeTab, setActiveTab] = useState<
+		"overview" | "submissions" | "history"
+	>("overview");
 	const [showExpired, setShowExpired] = useState(true);
 	const [activityLimit, setActivityLimit] = useState(8);
 	const [selectedCourse, setSelectedCourse] = useState<string>("all");
@@ -168,6 +170,11 @@ const TeacherDashboard: React.FC = () => {
 			label: "Entregas",
 			icon: <FontAwesomeIcon icon={faCloudArrowUp} />,
 			badge: pendingReviewCount,
+		},
+		{
+			id: "history",
+			label: "Histórico",
+			icon: <FontAwesomeIcon icon={faChartLine} />,
 		},
 	];
 
@@ -537,7 +544,9 @@ const TeacherDashboard: React.FC = () => {
 																				<div className="text-right">
 																					<div className="text-lg font-black text-gray-900">
 																						{assignment.average > 0
-																							? assignment.average
+																							? Number(
+																									assignment.average,
+																								).toFixed(2)
 																							: "-"}
 																					</div>
 																					<div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
@@ -597,7 +606,8 @@ const TeacherDashboard: React.FC = () => {
 																▶
 															</span>
 															<span className="font-bold text-sm uppercase tracking-wider">
-																Tareas vencidas ({expiredAssignmentsList.length})
+																Tareas vencidas ({expiredAssignmentsList.length}
+																)
 															</span>
 														</button>
 
@@ -668,7 +678,10 @@ const TeacherDashboard: React.FC = () => {
 																						}
 																						className="text-xs font-bold text-electric-500 hover:text-electric-600 transition-colors"
 																					>
-																						Ver detalles →
+																						Ver detalles{" "}
+																						<FontAwesomeIcon
+																							icon={faChevronRight}
+																						/>
 																					</button>
 																				</div>
 																			</Card>
@@ -768,7 +781,7 @@ const TeacherDashboard: React.FC = () => {
 																			variant="success"
 																			className="text-[10px] font-black italic"
 																		>
-																			★ {activity.grade}
+																			{activity.grade.toFixed(2)}
 																		</Badge>
 																	)}
 																</div>
@@ -784,6 +797,7 @@ const TeacherDashboard: React.FC = () => {
 						)}
 
 						{activeTab === "submissions" && <SubmissionTracker />}
+						{activeTab === "history" && <GradeHistory />}
 					</div>
 				</div>
 			</Layout>

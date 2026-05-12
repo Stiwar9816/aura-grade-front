@@ -15,6 +15,7 @@ export type {
 } from "./useAssignments";
 export {useRecentActivity} from "./useActivity";
 export {useEvaluationDetail} from "./useEvaluationDetail";
+export {useReEvaluationRequests} from "./useReEvaluationRequests";
 export {useAnalyticsData} from "./useAnalyticsData";
 export {useStudentAcademicData} from "./useStudentAcademicData";
 export type {

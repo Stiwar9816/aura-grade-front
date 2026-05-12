@@ -4,10 +4,17 @@ import {useMutation} from "@apollo/client/react";
 import {
 	StudentAssignmentCardData,
 	useAuth,
+	useAssignments,
 	useEvaluationDetail,
+	useReEvaluationRequests,
 	useStudentAcademicData,
 } from "@/hooks";
 import {GET_SUBMISSION_BY_ID, PUBLISH_EVALUATION} from "@/gql/Submission";
+import {
+	CREATE_RE_EVALUATION_REQUEST,
+	GET_RE_EVALUATION_REQUESTS,
+	RESOLVE_RE_EVALUATION_REQUEST,
+} from "@/gql/ReEvaluationRequest";
 import Layout from "@/components/Layout";
 import {
 	EvaluationSummary,
@@ -28,9 +35,16 @@ import {
 	faGraduationCap,
 	faPaperPlane,
 	faRotateRight,
+	faXmark,
 } from "@fortawesome/free-solid-svg-icons";
-import {MappedEvaluationData, SubmissionDetail, UserRole} from "@/interface";
-import {STANDARD_GRADE_MAX} from "@/utils/gradeScale";
+import {
+	MappedEvaluationData,
+	ReEvaluationRequest,
+	ReEvaluationRequestStatus,
+	SubmissionDetail,
+	UserRole,
+} from "@/interface";
+import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
 import {
 	notifyError,
 	notifyInfo,
@@ -38,11 +52,8 @@ import {
 	notifyWarning,
 } from "@/utils/toastNotify";
 import {
-	getReevaluationRequestId,
-	getStoredReevaluationRequests,
-	ReevaluationRequest,
-	resolveStoredReevaluationRequest,
-	saveStoredReevaluationRequests,
+	isPendingReEvaluationRequest,
+	normalizeReEvaluationStatus,
 } from "@/utils/reevaluationRequests";
 
 type ShareNavigator = Navigator & {
@@ -94,6 +105,42 @@ const formatDateTime = (date?: string) => {
 		hour: "2-digit",
 		minute: "2-digit",
 	});
+};
+
+const getReEvaluationRequestTime = (request: ReEvaluationRequest) =>
+	request.reviewedAt || request.updatedAt || request.createdAt;
+
+const getReEvaluationStatusContent = (request?: ReEvaluationRequest | null) => {
+	const status = normalizeReEvaluationStatus(request?.status);
+
+	if (status === ReEvaluationRequestStatus.APPROVED) {
+		return {
+			title: "Re-evaluación aprobada",
+			label: "Aprobada",
+			variant: "success" as const,
+			message: `Solicitud aprobada el ${formatDateTime(
+				request ? getReEvaluationRequestTime(request) : undefined,
+			)}.`,
+		};
+	}
+
+	if (status === ReEvaluationRequestStatus.REJECTED) {
+		return {
+			title: "Re-evaluación rechazada",
+			label: "Rechazada",
+			variant: "error" as const,
+			message: `Solicitud rechazada el ${formatDateTime(
+				request ? getReEvaluationRequestTime(request) : undefined,
+			)}.`,
+		};
+	}
+
+	return {
+		title: "Re-evaluación pendiente",
+		label: "Pendiente",
+		variant: "warning" as const,
+		message: `Solicitud enviada el ${formatDateTime(request?.createdAt)}.`,
+	};
 };
 
 const getSafeFileName = (value: string) =>
@@ -172,7 +219,9 @@ const EvaluationPage: React.FC = () => {
 		studentText,
 		aiComments,
 		studentName,
+		refetch: refetchEvaluationDetail,
 	} = useEvaluationDetail(submissionId);
+	const {assignments: teacherAssignments} = useAssignments();
 	const {
 		assignments,
 		loading: resultsLoading,
@@ -183,6 +232,12 @@ const EvaluationPage: React.FC = () => {
 		averageGrade,
 		averagePercentage,
 	} = useStudentAcademicData();
+	const {
+		requests: reEvaluationRequests,
+		loading: reEvaluationLoading,
+		error: reEvaluationQueryError,
+		refetch: refetchReEvaluationRequests,
+	} = useReEvaluationRequests();
 	const [showComparison, setShowComparison] = useState<boolean>(false);
 	const [finalScore, setFinalScore] = useState<string>("");
 	const [finalFeedback, setFinalFeedback] = useState<string>("");
@@ -190,40 +245,53 @@ const EvaluationPage: React.FC = () => {
 	const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
 	const [reportStatus, setReportStatus] = useState<string | null>(null);
 	const [reevaluationReason, setReevaluationReason] = useState<string>("");
-	const [reevaluationStatus, setReevaluationStatus] = useState<string | null>(
-		null,
-	);
 	const [reevaluationError, setReevaluationError] = useState<string | null>(
 		null,
 	);
+	const [teacherResponse, setTeacherResponse] = useState<string>("");
 	const [showReevaluationForm, setShowReevaluationForm] =
 		useState<boolean>(false);
 	const [publishEvaluation, {loading: publishing}] =
 		useMutation(PUBLISH_EVALUATION);
+	const [createReEvaluationRequest, {loading: creatingReevaluationRequest}] =
+		useMutation(CREATE_RE_EVALUATION_REQUEST);
+	const [resolveReEvaluationRequest, {loading: resolvingReevaluationRequest}] =
+		useMutation(RESOLVE_RE_EVALUATION_REQUEST);
 
 	useEffect(() => {
 		window.requestAnimationFrame(() => {
 			setReportStatus(null);
 			setReevaluationReason("");
 			setReevaluationError(null);
+			setTeacherResponse("");
 			setShowReevaluationForm(false);
-
-			if (!submissionId) {
-				setReevaluationStatus(null);
-				return;
-			}
-
-			const existingRequest = getStoredReevaluationRequests().find(
-				(request) => request.submissionId === submissionId,
-			);
-
-			setReevaluationStatus(
-				existingRequest
-					? `Solicitud enviada el ${formatDateTime(existingRequest.createdAt)}.`
-					: null,
-			);
 		});
 	}, [submissionId]);
+
+	const relatedReEvaluationRequests = reEvaluationRequests
+		.filter((request) => {
+			const requestSubmissionId = request.evaluation?.submission?.id;
+			const requestEvaluationId = request.evaluation?.id;
+
+			return (
+				(requestSubmissionId && requestSubmissionId === submissionId) ||
+				(requestEvaluationId &&
+					requestEvaluationId === submissionDetail?.evaluation?.id)
+			);
+		})
+		.sort(
+			(a, b) =>
+				new Date(getReEvaluationRequestTime(b)).getTime() -
+				new Date(getReEvaluationRequestTime(a)).getTime(),
+		);
+	const pendingReEvaluationRequest =
+		relatedReEvaluationRequests.find(isPendingReEvaluationRequest) || null;
+	const latestReEvaluationRequest =
+		pendingReEvaluationRequest || relatedReEvaluationRequests[0] || null;
+	const hasReEvaluationRequest = relatedReEvaluationRequests.length > 0;
+	const reevaluationStatusContent = latestReEvaluationRequest
+		? getReEvaluationStatusContent(latestReEvaluationRequest)
+		: null;
 
 	if (!submissionId) {
 		const deliveredAssignments = assignments.filter((assignment) =>
@@ -460,11 +528,13 @@ const EvaluationPage: React.FC = () => {
 
 	const canViewDraft =
 		user?.role === UserRole.TEACHER || user?.role === UserRole.ADMIN;
-	const hasPendingReevaluationRequest = Boolean(reevaluationStatus);
+	const hasPendingReevaluationRequest = Boolean(pendingReEvaluationRequest);
+	const hasPublishedResult =
+		submissionDetail?.status === "PUBLISHED" ||
+		submissionDetail?.evaluation?.status === "PUBLISHED";
 	const isPublishedEvaluation =
-		!hasPendingReevaluationRequest &&
-		(submissionDetail?.status === "PUBLISHED" ||
-			submissionDetail?.evaluation?.status === "PUBLISHED");
+		!hasPendingReevaluationRequest && hasPublishedResult;
+	const teacherActionLoading = publishing || resolvingReevaluationRequest;
 	const scoreDraft = evaluationData.overallScore;
 	const feedbackDraft = evaluationData.generalFeedback;
 	const maxScore = evaluationData.maxScore || STANDARD_GRADE_MAX;
@@ -474,7 +544,80 @@ const EvaluationPage: React.FC = () => {
 			)
 		: undefined;
 	const submissionHistory = relatedAssignment?.submissionHistory || [];
-	const currentHistoryItem = submissionHistory.find(
+	const relatedTeacherAssignment = submissionDetail?.assignment?.id
+		? teacherAssignments.find(
+				(assignment) => assignment.id === submissionDetail.assignment.id,
+			)
+		: undefined;
+	const teacherSubmissionHistory =
+		relatedTeacherAssignment?.submissionItems
+			.filter(
+				(submission) =>
+					submission.student?.id === submissionDetail?.student?.id ||
+					submission.student?.email === submissionDetail?.student?.email,
+			)
+			.slice()
+			.sort(
+				(a, b) =>
+					new Date(a.createdAt || 0).getTime() -
+					new Date(b.createdAt || 0).getTime(),
+			)
+			.map((submission, index) => {
+				const isPublished =
+					submission.status === "PUBLISHED" ||
+					submission.evaluation?.status === "PUBLISHED";
+
+				return {
+					id: submission.id,
+					fileUrl: submission.fileUrl,
+					status: submission.status,
+					createdAt: submission.createdAt,
+					version: index + 1,
+					score:
+						isPublished && typeof submission.evaluation?.totalScore === "number"
+							? normalizeGrade(
+									submission.evaluation.totalScore,
+									relatedTeacherAssignment.rubric?.maxTotalScore,
+								)
+							: undefined,
+					feedback: isPublished
+						? submission.evaluation?.generalFeedback
+						: undefined,
+					isPublished,
+				};
+			}) || [];
+	const baseSubmissionHistory =
+		submissionHistory.length > 0 ? submissionHistory : teacherSubmissionHistory;
+	const currentSubmissionHistoryItem = submissionDetail
+		? {
+				id: submissionDetail.id,
+				fileUrl: submissionDetail.fileUrl,
+				status: submissionDetail.status,
+				createdAt: submissionDetail.createdAt,
+				version:
+					baseSubmissionHistory.find(
+						(submission) => submission.id === submissionDetail.id,
+					)?.version || baseSubmissionHistory.length + 1,
+				score: hasPublishedResult ? evaluationData.overallScore : undefined,
+				feedback: hasPublishedResult
+					? evaluationData.generalFeedback
+					: undefined,
+				isPublished: hasPublishedResult,
+			}
+		: null;
+	const evaluationSubmissionHistory = Array.from(
+		new Map(
+			[
+				...baseSubmissionHistory,
+				...(currentSubmissionHistoryItem ? [currentSubmissionHistoryItem] : []),
+			].map((submission) => [submission.id, submission]),
+		).values(),
+	).sort(
+		(a, b) =>
+			new Date(a.createdAt || 0).getTime() -
+			new Date(b.createdAt || 0).getTime(),
+	);
+	const currentHistoryItem = evaluationSubmissionHistory.find(
 		(submission) => submission.id === submissionId,
 	);
 	const canSendNewVersion = Boolean(
@@ -517,6 +660,16 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
+		const responseToStudent = teacherResponse.trim();
+		if (pendingReEvaluationRequest && responseToStudent.length < 10) {
+			const message =
+				"Agrega una respuesta para el estudiante antes de resolver la solicitud.";
+			setPublishError(message);
+			setPublishSuccess(null);
+			notifyWarning(message);
+			return;
+		}
+
 		try {
 			setPublishError(null);
 			setPublishSuccess(null);
@@ -535,8 +688,28 @@ const EvaluationPage: React.FC = () => {
 				],
 				awaitRefetchQueries: true,
 			});
-			resolveStoredReevaluationRequest(submissionId);
-			setReevaluationStatus(null);
+			await refetchEvaluationDetail();
+
+			if (pendingReEvaluationRequest) {
+				await resolveReEvaluationRequest({
+					variables: {
+						input: {
+							id: pendingReEvaluationRequest.id,
+							status: ReEvaluationRequestStatus.APPROVED,
+							teacherResponse: responseToStudent,
+						},
+					},
+					refetchQueries: [{query: GET_RE_EVALUATION_REQUESTS}],
+					awaitRefetchQueries: true,
+				});
+				await refetchReEvaluationRequests();
+				await refetchEvaluationDetail();
+				setTeacherResponse("");
+				setPublishSuccess("Solicitud aprobada y nota actualizada.");
+				notifySuccess("Solicitud aprobada y nota actualizada.");
+				return;
+			}
+
 			setPublishSuccess("Nota final publicada para el estudiante.");
 			notifySuccess("Nota final publicada para el estudiante.");
 		} catch (error) {
@@ -549,53 +722,48 @@ const EvaluationPage: React.FC = () => {
 		}
 	};
 
-	const handleSendReport = async () => {
-		if (!submissionDetail || !evaluationData || !submissionId) return;
+	const handleRejectReevaluation = async () => {
+		if (!pendingReEvaluationRequest) return;
 
-		setReportStatus(null);
-
-		const reportContent = buildEvaluationReport(
-			submissionDetail,
-			evaluationData,
-			studentName,
-		);
-		const safeAssignmentName =
-			getSafeFileName(submissionDetail.assignment?.title || "") || submissionId;
-		const filename = `reporte-evaluacion-${safeAssignmentName}.txt`;
-
-		try {
-			const reportFile = new File([reportContent], filename, {
-				type: "text/plain",
-			});
-			const shareNavigator = navigator as ShareNavigator;
-
-			if (
-				shareNavigator.canShare?.({files: [reportFile]}) &&
-				shareNavigator.share
-			) {
-				await shareNavigator.share({
-					files: [reportFile],
-					title: "Reporte de evaluación AuraGrade",
-					text: "Reporte final de evaluación publicado por el docente.",
-				});
-				setReportStatus("Reporte enviado correctamente.");
-				notifySuccess("Reporte enviado correctamente.");
-				return;
-			}
-		} catch (error) {
-			if (error instanceof DOMException && error.name === "AbortError") {
-				setReportStatus("Envío del reporte cancelado.");
-				notifyInfo("Envío del reporte cancelado.");
-				return;
-			}
+		const responseToStudent = teacherResponse.trim();
+		if (responseToStudent.length < 10) {
+			const message =
+				"Agrega una respuesta para el estudiante antes de rechazar la solicitud.";
+			setPublishError(message);
+			setPublishSuccess(null);
+			notifyWarning(message);
+			return;
 		}
 
-		downloadTextReport(filename, reportContent);
-		setReportStatus("Reporte generado y descargado.");
-		notifySuccess("Reporte generado y descargado.");
+		try {
+			setPublishError(null);
+			setPublishSuccess(null);
+			await resolveReEvaluationRequest({
+				variables: {
+					input: {
+						id: pendingReEvaluationRequest.id,
+						status: ReEvaluationRequestStatus.REJECTED,
+						teacherResponse: responseToStudent,
+					},
+				},
+				refetchQueries: [{query: GET_RE_EVALUATION_REQUESTS}],
+				awaitRefetchQueries: true,
+			});
+			await refetchReEvaluationRequests();
+			setTeacherResponse("");
+			setPublishSuccess("Solicitud rechazada y respuesta enviada.");
+			notifySuccess("Solicitud rechazada y respuesta enviada.");
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "No se pudo resolver la solicitud.";
+			setPublishError(message);
+			notifyError(message);
+		}
 	};
 
-	const handleSubmitReevaluation = () => {
+	const handleSubmitReevaluation = async () => {
 		if (!submissionDetail || !submissionId) return;
 
 		const reason = reevaluationReason.trim();
@@ -607,42 +775,48 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
-		const requests = getStoredReevaluationRequests();
-		const existingRequest = requests.find(
-			(request) => request.submissionId === submissionId,
-		);
-
-		if (existingRequest) {
+		if (pendingReEvaluationRequest) {
 			setReevaluationError(null);
 			setShowReevaluationForm(false);
-			setReevaluationStatus(
-				`Solicitud enviada el ${formatDateTime(existingRequest.createdAt)}.`,
-			);
 			notifyInfo("Ya existe una solicitud de reevaluación para esta entrega.");
 			return;
 		}
 
-		const createdAt = new Date().toISOString();
-		const newRequest: ReevaluationRequest = {
-			id: getReevaluationRequestId(),
-			submissionId,
-			assignmentId: submissionDetail.assignment?.id,
-			studentId: submissionDetail.student?.id,
-			studentName,
-			reason,
-			status: "pending",
-			createdAt,
-		};
+		if (!submissionDetail.evaluation?.id) {
+			const message =
+				"No se encontró una evaluación publicada para solicitar revisión.";
+			setReevaluationError(message);
+			notifyWarning(message);
+			return;
+		}
 
-		saveStoredReevaluationRequests([...requests, newRequest]);
-		setReevaluationReason("");
-		setReevaluationError(null);
-		setShowReevaluationForm(false);
-		setReevaluationStatus(`Solicitud enviada el ${formatDateTime(createdAt)}.`);
-		notifySuccess("Solicitud de reevaluación enviada.");
+		try {
+			await createReEvaluationRequest({
+				variables: {
+					input: {
+						evaluationId: submissionDetail.evaluation.id,
+						reason,
+					},
+				},
+				refetchQueries: [{query: GET_RE_EVALUATION_REQUESTS}],
+				awaitRefetchQueries: true,
+			});
+			await refetchReEvaluationRequests();
+			setReevaluationReason("");
+			setReevaluationError(null);
+			setShowReevaluationForm(false);
+			notifySuccess("Solicitud de reevaluación enviada.");
+		} catch (error) {
+			const message =
+				error instanceof Error
+					? error.message
+					: "No se pudo enviar la solicitud de reevaluación.";
+			setReevaluationError(message);
+			notifyError(message);
+		}
 	};
 
-	if (!canViewDraft && !isPublishedEvaluation) {
+	if (!canViewDraft && !hasPublishedResult) {
 		return (
 			<ProtectedRoute>
 				<Layout title="Detalle de entrega" hideHeader>
@@ -688,7 +862,7 @@ const EvaluationPage: React.FC = () => {
 										<div className="text-xl font-black text-gray-900">
 											{currentHistoryItem
 												? currentHistoryItem.version
-												: submissionHistory.length || 1}
+												: evaluationSubmissionHistory.length || 1}
 										</div>
 									</div>
 									<div className="p-3 rounded-xl bg-white/80 border border-amber-100">
@@ -772,13 +946,13 @@ const EvaluationPage: React.FC = () => {
 
 						<Card className="bg-white/80 border border-gray-100">
 							<SectionHeader title="Histórico de entregas" className="mb-6" />
-							{submissionHistory.length === 0 ? (
+							{evaluationSubmissionHistory.length === 0 ? (
 								<p className="text-sm text-gray-500">
 									Esta es la primera entrega registrada para la tarea.
 								</p>
 							) : (
 								<div className="space-y-3">
-									{submissionHistory
+									{evaluationSubmissionHistory
 										.slice()
 										.reverse()
 										.map((submission) => (
@@ -798,6 +972,17 @@ const EvaluationPage: React.FC = () => {
 													<div className="text-sm text-gray-500">
 														{formatDateTime(submission.createdAt)}
 													</div>
+													{submission.score !== undefined && (
+														<div className="mt-2 text-sm font-bold text-electric-700">
+															Nota: {submission.score.toFixed(1)}/
+															{STANDARD_GRADE_MAX}
+														</div>
+													)}
+													{submission.feedback && (
+														<p className="mt-1 text-sm text-gray-600 line-clamp-2">
+															{submission.feedback}
+														</p>
+													)}
 												</div>
 												<div className="flex items-center gap-3">
 													<Badge
@@ -845,9 +1030,11 @@ const EvaluationPage: React.FC = () => {
 							Volver atrás
 						</button>
 						<Badge variant={isPublishedEvaluation ? "success" : "warning"}>
-							{isPublishedEvaluation
-								? "Resultado publicado"
-								: "Borrador interno"}
+							{pendingReEvaluationRequest
+								? "Re-evaluación pendiente"
+								: isPublishedEvaluation
+									? "Resultado publicado"
+									: "Borrador interno"}
 						</Badge>
 					</div>
 
@@ -888,24 +1075,24 @@ const EvaluationPage: React.FC = () => {
 									<div className="font-bold text-gray-900">
 										{currentHistoryItem
 											? currentHistoryItem.version
-											: submissionHistory.length || 1}
+											: evaluationSubmissionHistory.length || 1}
 									</div>
 								</div>
 							</div>
 
-							{submissionHistory.length > 0 && (
+							{evaluationSubmissionHistory.length > 0 && (
 								<div>
 									<div className="text-xs font-bold text-gray-400 uppercase mb-3">
-										Histórico
+										Histórico de entregas y calificaciones
 									</div>
 									<div className="space-y-2">
-										{submissionHistory
+										{evaluationSubmissionHistory
 											.slice()
 											.reverse()
 											.map((submission) => (
 												<div
 													key={submission.id}
-													className="flex items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
+													className="flex flex-col md:flex-row md:items-center justify-between gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
 												>
 													<div>
 														<div className="text-sm font-bold text-gray-900">
@@ -915,16 +1102,29 @@ const EvaluationPage: React.FC = () => {
 														<div className="text-xs text-gray-500">
 															{formatDateTime(submission.createdAt)}
 														</div>
+														{submission.feedback && (
+															<p className="mt-1 text-sm text-gray-600 line-clamp-2">
+																{submission.feedback}
+															</p>
+														)}
 													</div>
-													<Badge
-														variant={
-															submission.isPublished ? "success" : "warning"
-														}
-													>
-														{submission.isPublished
-															? "Calificada"
-															: "En revisión"}
-													</Badge>
+													<div className="flex items-center gap-3">
+														{submission.score !== undefined && (
+															<div className="text-sm font-black text-electric-700">
+																{submission.score.toFixed(1)}/
+																{STANDARD_GRADE_MAX}
+															</div>
+														)}
+														<Badge
+															variant={
+																submission.isPublished ? "success" : "warning"
+															}
+														>
+															{submission.isPublished
+																? "Calificada"
+																: "En revisión"}
+														</Badge>
+													</div>
 												</div>
 											))}
 									</div>
@@ -947,11 +1147,19 @@ const EvaluationPage: React.FC = () => {
 								<div className="flex-1">
 									<div className="flex flex-wrap items-center gap-2 mb-3">
 										<Badge
-											variant={isPublishedEvaluation ? "success" : "warning"}
+											variant={
+												pendingReEvaluationRequest
+													? "warning"
+													: isPublishedEvaluation
+														? "success"
+														: "warning"
+											}
 										>
-											{isPublishedEvaluation
-												? "Publicado"
-												: "Pendiente de publicación docente"}
+											{pendingReEvaluationRequest
+												? "Reevaluación solicitada"
+												: isPublishedEvaluation
+													? "Publicado"
+													: "Pendiente de publicación docente"}
 										</Badge>
 										<Badge variant="info">Sugerencia interna IA</Badge>
 									</div>
@@ -959,9 +1167,30 @@ const EvaluationPage: React.FC = () => {
 										Revisión docente
 									</h2>
 									<p className="text-sm text-gray-600">
-										La nota sugerida por IA no es visible para el estudiante
-										hasta que publiques la nota final.
+										{pendingReEvaluationRequest
+											? "El estudiante pidió una segunda revisión. Si apruebas la solicitud, publica la nota/feedback ajustados y la solicitud quedará resuelta."
+											: "La nota sugerida por IA no es visible para el estudiante hasta que publiques la nota final."}
 									</p>
+									{pendingReEvaluationRequest && (
+										<div className="mt-5 p-4 rounded-xl bg-amber-50 border border-amber-100">
+											<div className="text-xs font-black text-amber-700 uppercase mb-2">
+												Motivo del estudiante
+											</div>
+											<p className="text-sm text-gray-700">
+												{pendingReEvaluationRequest.reason}
+											</p>
+											<div className="text-xs text-gray-500 mt-3">
+												Enviada el{" "}
+												{formatDateTime(pendingReEvaluationRequest.createdAt)}
+											</div>
+										</div>
+									)}
+									{reEvaluationQueryError && (
+										<p className="mt-4 text-sm font-medium text-red-600">
+											No se pudieron cargar las solicitudes de reevaluación:{" "}
+											{reEvaluationQueryError.message}
+										</p>
+									)}
 								</div>
 
 								<div className="w-full lg:w-[420px] space-y-4">
@@ -977,7 +1206,7 @@ const EvaluationPage: React.FC = () => {
 											value={finalScore}
 											onChange={(event) => setFinalScore(event.target.value)}
 											placeholder={`${scoreDraft.toFixed(1)} / ${maxScore}`}
-											disabled={isPublishedEvaluation || publishing}
+											disabled={isPublishedEvaluation || teacherActionLoading}
 											className="input-primary"
 										/>
 									</div>
@@ -990,10 +1219,27 @@ const EvaluationPage: React.FC = () => {
 											value={finalFeedback}
 											onChange={(event) => setFinalFeedback(event.target.value)}
 											placeholder={feedbackDraft}
-											disabled={isPublishedEvaluation || publishing}
+											disabled={isPublishedEvaluation || teacherActionLoading}
 											className="input-primary min-h-32"
 										/>
 									</div>
+
+									{pendingReEvaluationRequest && (
+										<div>
+											<label className="block text-sm font-bold text-gray-700 mb-2">
+												Respuesta al estudiante
+											</label>
+											<textarea
+												value={teacherResponse}
+												onChange={(event) =>
+													setTeacherResponse(event.target.value)
+												}
+												placeholder="Explica la decisión y los cambios aplicados, si corresponde."
+												disabled={teacherActionLoading}
+												className="input-primary min-h-24"
+											/>
+										</div>
+									)}
 
 									{publishError && (
 										<p className="text-sm font-medium text-red-600">
@@ -1008,15 +1254,30 @@ const EvaluationPage: React.FC = () => {
 
 									<button
 										onClick={handlePublishEvaluation}
-										disabled={isPublishedEvaluation || publishing}
+										disabled={isPublishedEvaluation || teacherActionLoading}
 										className="btn-primary w-full disabled:bg-gray-200 disabled:text-gray-400"
 									>
 										{isPublishedEvaluation
 											? "Nota publicada"
-											: publishing
+											: teacherActionLoading
 												? "Publicando..."
-												: "Publicar nota final"}
+												: pendingReEvaluationRequest
+													? "Aprobar y publicar nota"
+													: "Publicar nota final"}
 									</button>
+									{pendingReEvaluationRequest && (
+										<button
+											type="button"
+											onClick={handleRejectReevaluation}
+											disabled={teacherActionLoading}
+											className="w-full px-4 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition-colors disabled:bg-gray-100 disabled:text-gray-400 inline-flex items-center justify-center gap-2"
+										>
+											<FontAwesomeIcon icon={faXmark} />
+											{resolvingReevaluationRequest
+												? "Resolviendo..."
+												: "Rechazar solicitud"}
+										</button>
+									)}
 								</div>
 							</div>
 						</Card>
@@ -1072,29 +1333,27 @@ const EvaluationPage: React.FC = () => {
 					</div>
 
 					{/* Acciones adicionales */}
-					{!canViewDraft && isPublishedEvaluation && (
+					{!canViewDraft && hasPublishedResult && (
 						<div className="mt-8 space-y-4">
 							<div className="flex flex-col sm:flex-row justify-end gap-3">
-								<button
-									type="button"
-									onClick={handleSendReport}
-									className="btn-ghost inline-flex items-center justify-center gap-2"
-								>
-									<FontAwesomeIcon icon={faFileLines} />
-									Enviar Reporte
-								</button>
-								<button
-									type="button"
-									onClick={() => {
-										setReevaluationError(null);
-										setShowReevaluationForm(true);
-									}}
-									disabled={Boolean(reevaluationStatus)}
-									className="btn-primary inline-flex items-center justify-center gap-2 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
-								>
-									<FontAwesomeIcon icon={faRotateRight} />
-									Solicitar Re-evaluación
-								</button>
+								{!hasReEvaluationRequest && (
+									<button
+										type="button"
+										onClick={() => {
+											setReevaluationError(null);
+											setShowReevaluationForm(true);
+										}}
+										disabled={
+											creatingReevaluationRequest || reEvaluationLoading
+										}
+										className="btn-primary inline-flex items-center justify-center gap-2 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+									>
+										<FontAwesomeIcon icon={faRotateRight} />
+										{creatingReevaluationRequest
+											? "Enviando..."
+											: "Solicitar Re-evaluación"}
+									</button>
+								)}
 							</div>
 
 							{reportStatus && (
@@ -1103,27 +1362,58 @@ const EvaluationPage: React.FC = () => {
 								</p>
 							)}
 
-							{reevaluationStatus && (
-								<Card className="bg-amber-50 border-amber-100">
+							{latestReEvaluationRequest && reevaluationStatusContent && (
+								<Card
+									className={`${
+										reevaluationStatusContent.variant === "success"
+											? "bg-green-50 border-green-100"
+											: reevaluationStatusContent.variant === "error"
+												? "bg-red-50 border-red-100"
+												: "bg-amber-50 border-amber-100"
+									}`}
+								>
 									<div className="flex items-start gap-3">
 										<FontAwesomeIcon
 											icon={faClock}
-											className="text-amber-500 mt-1"
+											className={`mt-1 ${
+												reevaluationStatusContent.variant === "success"
+													? "text-green-500"
+													: reevaluationStatusContent.variant === "error"
+														? "text-red-500"
+														: "text-amber-500"
+											}`}
 										/>
 										<div>
-											<h3 className="font-black text-gray-900">
-												Re-evaluación pendiente
-											</h3>
+											<div className="flex flex-wrap items-center gap-2 mb-1">
+												<h3 className="font-black text-gray-900">
+													{reevaluationStatusContent.title}
+												</h3>
+												<Badge variant={reevaluationStatusContent.variant}>
+													{reevaluationStatusContent.label}
+												</Badge>
+											</div>
 											<p className="text-sm text-gray-600">
-												{reevaluationStatus} El docente debe revisar la
-												solicitud antes de modificar una nota publicada.
+												{reevaluationStatusContent.message}{" "}
+												{pendingReEvaluationRequest
+													? "El docente debe revisar la solicitud antes de modificar una nota publicada."
+													: "Puedes revisar la respuesta del docente."}
 											</p>
+											{latestReEvaluationRequest.teacherResponse && (
+												<div className="mt-3 p-3 rounded-xl bg-white/70 border border-white">
+													<div className="text-xs font-black uppercase text-gray-400 mb-1">
+														Respuesta del docente
+													</div>
+													<p className="text-sm text-gray-700">
+														{latestReEvaluationRequest.teacherResponse}
+													</p>
+												</div>
+											)}
 										</div>
 									</div>
 								</Card>
 							)}
 
-							{showReevaluationForm && !reevaluationStatus && (
+							{showReevaluationForm && !hasReEvaluationRequest && (
 								<Card className="bg-white/80 border border-gray-100">
 									<SectionHeader
 										title="Solicitud de re-evaluación"
@@ -1157,10 +1447,13 @@ const EvaluationPage: React.FC = () => {
 										<button
 											type="button"
 											onClick={handleSubmitReevaluation}
-											className="btn-primary inline-flex items-center justify-center gap-2"
+											disabled={creatingReevaluationRequest}
+											className="btn-primary inline-flex items-center justify-center gap-2 disabled:bg-gray-200 disabled:text-gray-400"
 										>
 											<FontAwesomeIcon icon={faPaperPlane} />
-											Enviar solicitud
+											{creatingReevaluationRequest
+												? "Enviando..."
+												: "Enviar solicitud"}
 										</button>
 									</div>
 								</Card>

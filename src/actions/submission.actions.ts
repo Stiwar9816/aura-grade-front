@@ -2,6 +2,7 @@ import {GET_SUBMISSION_BY_ID, GET_TEACHER_SUBMISSIONS} from "@/gql/Submission";
 import {SubmissionDetail, SubmissionsData} from "@/interface";
 import client from "@/lib/apolloClient";
 import {useQuery} from "@apollo/client/react";
+import {useCallback} from "react";
 
 export const SubmissionActions = () => {
 	const {
@@ -14,7 +15,7 @@ export const SubmissionActions = () => {
 		errorPolicy: "all",
 	});
 
-	const getSubmissionById = async (
+	const getSubmissionById = useCallback(async (
 		id: string,
 	): Promise<SubmissionDetail | null> => {
 		try {
@@ -32,7 +33,7 @@ export const SubmissionActions = () => {
 			console.error("Error fetching submission:", error);
 			throw error;
 		}
-	};
+	}, []);
 
 	return {
 		GetTeacherSubmissions,

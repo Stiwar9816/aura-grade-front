@@ -1,11 +1,11 @@
 import {useEffect, useMemo, useState} from "react";
 import {useAssignmentActions} from "@/actions";
 import {useAuth} from "./useAuth";
+import {useReEvaluationRequests} from "./useReEvaluationRequests";
 import {SubmissionStatus, UserRole} from "@/interface";
 import {GET_ASSIGNMENT_BY_ID} from "@/gql/Assignment";
 import client from "@/lib/apolloClient";
 import {normalizeGrade, getScoreTime} from "@/utils/gradeScale";
-import {getPendingReevaluationSubmissionIds} from "@/utils/reevaluationRequests";
 
 export interface AssignmentStudent {
 	id: string;
@@ -204,6 +204,11 @@ export const useAssignments = () => {
 		error,
 		loading,
 	} = useAssignmentActions();
+	const {
+		pendingSubmissionIds: reevaluationSubmissionIds,
+		loading: reevaluationLoading,
+		error: reevaluationError,
+	} = useReEvaluationRequests();
 
 	const filteredAssignments = useMemo(() => {
 		if (!assignments) return [];
@@ -279,8 +284,6 @@ export const useAssignments = () => {
 		if (!filteredAssignments.length) return [];
 
 		const now = new Date();
-		const reevaluationSubmissionIds = getPendingReevaluationSubmissionIds();
-
 		return filteredAssignments.map((assignment: TeacherAssignment) => {
 			const assignmentDetail = assignmentDetailsById[assignment.id];
 			const submissions = mergeSubmissions(
@@ -344,8 +347,8 @@ export const useAssignments = () => {
 
 	return {
 		assignments: processAssignments(),
-		loading: loading || detailsLoading,
-		error,
+		loading: loading || detailsLoading || reevaluationLoading,
+		error: error || reevaluationError,
 		createLoading,
 		createError,
 		createAssignment,

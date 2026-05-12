@@ -85,7 +85,7 @@ const AnalyticsPage: React.FC = () => {
 							{[
 								{
 									label: "Promedio General",
-									value: loading ? "..." : averageGrade,
+									value: loading ? "..." : Number(averageGrade).toFixed(2),
 									color: "green",
 									icon: <FontAwesomeIcon icon={faChartPie} />,
 								},
@@ -129,39 +129,6 @@ const AnalyticsPage: React.FC = () => {
 												<h4 className="text-3xl font-black text-gray-900">
 													{stat.value}
 												</h4>
-											</div>
-											<div className="w-16 h-10">
-												{/* SVG Sparkline placeholder */}
-												<svg viewBox="0 0 100 40" className="overflow-visible">
-													<path
-														d={`M 0 ${Math.random() * 20 + 10} L 20 ${
-															Math.random() * 20 + 10
-														} L 40 ${Math.random() * 20 + 10} L 60 ${
-															Math.random() * 20 + 10
-														} L 80 ${Math.random() * 20 + 10} L 100 ${
-															Math.random() * 20 + 10
-														}`}
-														fill="none"
-														strokeWidth="3"
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														className={`stroke-${stat.color}-500/40`}
-													/>
-													<path
-														d={`M 0 ${Math.random() * 30} C 20 ${
-															Math.random() * 10
-														}, 40 ${Math.random() * 40}, 60 ${
-															Math.random() * 10
-														}, 80 ${Math.random() * 40}, 100 ${
-															Math.random() * 10
-														}`}
-														fill="none"
-														strokeWidth="3"
-														strokeLinecap="round"
-														strokeLinejoin="round"
-														className={`stroke-${stat.color}-500`}
-													/>
-												</svg>
 											</div>
 										</div>
 									</div>

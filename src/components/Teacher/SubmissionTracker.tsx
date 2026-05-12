@@ -4,6 +4,7 @@ import {useSubmission} from "@/hooks";
 import {STANDARD_GRADE_MAX} from "@/utils/gradeScale";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faInbox} from "@fortawesome/free-solid-svg-icons";
+import {normalizeReEvaluationStatus} from "@/utils/reevaluationRequests";
 
 const SubmissionTracker: React.FC = () => {
 	const {submissions: dataSubmissions, loading, error} = useSubmission();
@@ -54,6 +55,26 @@ const SubmissionTracker: React.FC = () => {
 				return {
 					color: "bg-gray-100 text-gray-800",
 					label: "Enviado",
+				};
+		}
+	};
+
+	const getReevaluationConfig = (status?: string) => {
+		switch (normalizeReEvaluationStatus(status)) {
+			case "APPROVED":
+				return {
+					color: "bg-green-100 text-green-800",
+					label: "Aprobada",
+				};
+			case "REJECTED":
+				return {
+					color: "bg-red-100 text-red-800",
+					label: "Rechazada",
+				};
+			default:
+				return {
+					color: "bg-amber-100 text-amber-800",
+					label: "Pendiente",
 				};
 		}
 	};
@@ -187,6 +208,9 @@ const SubmissionTracker: React.FC = () => {
 					<tbody>
 						{filteredSubmissions.map((submission) => {
 							const statusConfig = getStatusConfig(submission.status);
+							const reevaluationConfig = getReevaluationConfig(
+								submission.reevaluationStatus,
+							);
 
 							return (
 								<tr
@@ -230,14 +254,15 @@ const SubmissionTracker: React.FC = () => {
 									<td className="py-4 px-4">
 										{submission.hasReevaluationRequest ? (
 											<div className="max-w-xs">
-												<div className="text-xs font-black uppercase text-amber-700">
-													Solicitada
-												</div>
-												<div className="text-xs text-gray-500">
+												<span
+													className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${reevaluationConfig.color}`}
+												>
+													{reevaluationConfig.label} -{" "}
 													{submission.reevaluationRequestedAt
 														? getTimeSince(submission.reevaluationRequestedAt)
-														: "Pendiente"}
-												</div>
+														: "Sin fecha"}
+												</span>
+
 												{submission.reevaluationReason && (
 													<div className="text-xs text-gray-600 line-clamp-2 mt-1">
 														{submission.reevaluationReason}

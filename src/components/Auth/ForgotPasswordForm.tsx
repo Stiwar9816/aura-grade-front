@@ -1,26 +1,40 @@
+"use client";
+
 import React, {useState} from "react";
 import Link from "next/link";
-import {useRouter} from "next/router";
-import {useAuth} from "@/hooks";
+import {forgotPasswordAction} from "@/actions/auth";
 import {AuthLayout} from "@/components/Auth";
 
-const ForgotPasswordPage: React.FC = () => {
-	const router = useRouter();
-	const {isLoading, error: authError} = useAuth();
+export const ForgotPasswordForm: React.FC = () => {
 	const [email, setEmail] = useState("");
 	const [isSubmitted, setIsSubmitted] = useState(false);
+	const [isLoading, setIsLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const [successMessage, setSuccessMessage] = useState("");
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
-		// const {success} = await resetPassword(email);
+		setError(null);
+		setIsLoading(true);
 
-		if (true) {
+		const normalizedEmail = email.trim();
+		const result = await forgotPasswordAction(normalizedEmail);
+		setIsLoading(false);
+
+		if (result.success) {
+			setEmail(normalizedEmail);
+			setSuccessMessage(
+				result.message ||
+					"Hemos enviado una nueva clave al correo electrónico indicado.",
+			);
 			setIsSubmitted(true);
-			// Redirigir después de 5 segundos
 			setTimeout(() => {
-				router.push("/login");
+				window.location.href = "/login";
 			}, 5000);
+			return;
 		}
+
+		setError(result.error || "No fue posible enviar la nueva clave.");
 	};
 
 	return (
@@ -29,16 +43,16 @@ const ForgotPasswordPage: React.FC = () => {
 			subtitle={
 				isSubmitted
 					? "Revisa tu bandeja de entrada para continuar"
-					: "Ingresa tu email y te enviaremos instrucciones"
+					: "Ingresa tu email y te enviaremos una nueva clave"
 			}
 		>
 			{!isSubmitted ? (
 				<>
-					{authError && (
+					{error && (
 						<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
 							<div className="flex items-center gap-3">
 								<span className="text-red-600">⚠️</span>
-								<span className="text-red-700">{authError}</span>
+								<span className="text-red-700">{error}</span>
 							</div>
 						</div>
 					)}
@@ -105,10 +119,10 @@ const ForgotPasswordPage: React.FC = () => {
 											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 										/>
 									</svg>
-									Enviando instrucciones...
+									Enviando nueva clave...
 								</span>
 							) : (
-								"Enviar instrucciones"
+								"Enviar nueva clave"
 							)}
 						</button>
 					</form>
@@ -126,9 +140,7 @@ const ForgotPasswordPage: React.FC = () => {
 				<div className="text-center">
 					<div className="mb-6">
 						<div className="text-5xl mb-4 text-green-500">✅</div>
-						<p className="text-gray-600 mb-4">
-							Hemos enviado instrucciones para restablecer tu contraseña a:
-						</p>
+						<p className="text-gray-600 mb-4">{successMessage}</p>
 						<div className="font-medium text-electric-500 bg-electric-50 p-3 rounded-xl">
 							{email}
 						</div>
@@ -146,11 +158,11 @@ const ForgotPasswordPage: React.FC = () => {
 							</li>
 							<li className="flex items-start gap-2">
 								<span className="text-blue-500 mt-1">2.</span>
-								<span>Haz clic en el enlace que te enviamos</span>
+								<span>Busca el correo con tu nueva clave</span>
 							</li>
 							<li className="flex items-start gap-2">
 								<span className="text-blue-500 mt-1">3.</span>
-								<span>Crea una nueva contraseña</span>
+								<span>Inicia sesión y cambia la clave desde configuración</span>
 							</li>
 						</ul>
 					</div>
@@ -162,13 +174,18 @@ const ForgotPasswordPage: React.FC = () => {
 
 					<div className="grid grid-cols-2 gap-4">
 						<button
-							onClick={() => router.push("/login")}
+							onClick={() => {
+								window.location.href = "/login";
+							}}
 							className="py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:border-gray-400 transition-colors"
 						>
 							Ir a Login
 						</button>
 						<button
-							onClick={() => setIsSubmitted(false)}
+							onClick={() => {
+								setError(null);
+								setIsSubmitted(false);
+							}}
 							className="py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
 						>
 							Reenviar
@@ -179,5 +196,3 @@ const ForgotPasswordPage: React.FC = () => {
 		</AuthLayout>
 	);
 };
-
-export default ForgotPasswordPage;

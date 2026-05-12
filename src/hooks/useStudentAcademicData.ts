@@ -273,32 +273,27 @@ export const useStudentAcademicData = () => {
 					0,
 				) ||
 				STANDARD_GRADE_MAX;
-			const submissionVersion = latestSubmission
-				? studentSubmissions.findIndex(
-						(submission) => submission.id === latestSubmission.id,
-					) + 1
-				: 0;
-			const submissionHistory = latestSubmission
-				? [
-						{
-							id: latestSubmission.id,
-							fileUrl: latestSubmission.fileUrl,
-							status: latestSubmission.status,
-							createdAt: latestSubmission.createdAt,
-							version: submissionVersion || 1,
-							score: isGradedSubmission(latestSubmission)
-								? normalizeGrade(
-										latestSubmission.evaluation?.totalScore,
-										assignment.rubric?.maxTotalScore,
-									)
-								: undefined,
-							feedback: isGradedSubmission(latestSubmission)
-								? latestSubmission.evaluation?.generalFeedback
-								: undefined,
-							isPublished: isGradedSubmission(latestSubmission),
-						},
-					]
-				: [];
+			const submissionHistory = studentSubmissions.map((submission, index) => {
+				const submissionIsPublished = isGradedSubmission(submission);
+
+				return {
+					id: submission.id,
+					fileUrl: submission.fileUrl,
+					status: submission.status,
+					createdAt: submission.createdAt,
+					version: index + 1,
+					score: submissionIsPublished
+						? normalizeGrade(
+								submission.evaluation?.totalScore,
+								assignment.rubric?.maxTotalScore,
+							)
+						: undefined,
+					feedback: submissionIsPublished
+						? submission.evaluation?.generalFeedback
+						: undefined,
+					isPublished: submissionIsPublished,
+				};
+			});
 
 			return {
 				id: assignment.id,

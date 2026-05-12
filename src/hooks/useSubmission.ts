@@ -5,8 +5,9 @@ import {
 	ProcessedTeacherAssignment,
 	useAssignments,
 } from "./useAssignments";
+import {useReEvaluationRequests} from "./useReEvaluationRequests";
 import {getScoreTime, normalizeGrade} from "@/utils/gradeScale";
-import {getReevaluationRequestBySubmissionId} from "@/utils/reevaluationRequests";
+import {isPendingReEvaluationRequest} from "@/utils/reevaluationRequests";
 
 const normalizeStatusValue = (status?: string | null) =>
 	status?.toUpperCase().replace(/[-\s]+/g, "_") || "";
@@ -46,12 +47,19 @@ export const useSubmission = () => {
 		loading: assignmentsLoading,
 		error: assignmentsError,
 	} = useAssignments();
+	const {
+		getRequestBySubmissionId,
+		loading: reevaluationLoading,
+		error: reevaluationError,
+	} = useReEvaluationRequests();
 
 	const mapSubmission = (
 		s: SubmissionDetail | AssignmentSubmission,
 		assignment?: ProcessedTeacherAssignment,
 	): Submission => {
-		const reevaluationRequest = getReevaluationRequestBySubmissionId(s.id);
+		const reevaluationRequest = getRequestBySubmissionId(s.id, false);
+		const hasPendingReevaluationRequest =
+			isPendingReEvaluationRequest(reevaluationRequest);
 		// Calcular si necesita atención
 		const daysSinceSubmission = s.createdAt
 			? Math.floor(
@@ -62,10 +70,10 @@ export const useSubmission = () => {
 
 		const rawStatus = normalizeStatusValue(s.status);
 		const needsAttention =
-			Boolean(reevaluationRequest) ||
+			hasPendingReevaluationRequest ||
 			(rawStatus === "PENDING" && daysSinceSubmission > 3); // Más de 3 días sin revisar
 
-		const normalizedStatus = reevaluationRequest
+		const normalizedStatus = hasPendingReevaluationRequest
 			? SubmissionStatus.REVIEW_PENDING
 			: getTeacherReviewStatus(s.status, s.evaluation?.status);
 
@@ -100,6 +108,7 @@ export const useSubmission = () => {
 					: undefined,
 			needsAttention,
 			hasReevaluationRequest: Boolean(reevaluationRequest),
+			reevaluationStatus: reevaluationRequest?.status,
 			reevaluationReason: reevaluationRequest?.reason,
 			reevaluationRequestedAt: reevaluationRequest?.createdAt,
 		};
@@ -144,9 +153,12 @@ export const useSubmission = () => {
 			.values(),
 	).sort((a, b) => getScoreTime(b.submittedAt) - getScoreTime(a.submittedAt));
 	const effectiveLoading =
-		submissions.length === 0 && (loading || assignmentsLoading);
+		submissions.length === 0 &&
+		(loading || assignmentsLoading || reevaluationLoading);
 	const effectiveError =
-		submissions.length === 0 ? error || assignmentsError : undefined;
+		submissions.length === 0
+			? error || assignmentsError || reevaluationError
+			: undefined;
 
 	return {
 		submissions,

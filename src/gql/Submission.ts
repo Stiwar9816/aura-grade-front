@@ -148,8 +148,10 @@ export const GET_TEACHER_SUBMISSIONS: DocumentNode = gql`
 	query GetTeacherSubmissions {
 		submissions {
 			id
+			fileUrl
 			status
 			createdAt
+			updatedAt
 			student {
 				id
 				name
@@ -173,6 +175,8 @@ export const GET_TEACHER_SUBMISSIONS: DocumentNode = gql`
 				id
 				status
 				totalScore
+				generalFeedback
+				createdAt
 			}
 		}
 	}
