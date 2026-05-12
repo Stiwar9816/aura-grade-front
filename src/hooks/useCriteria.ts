@@ -25,10 +25,12 @@ export const useCriteria = () => {
 	const [deletedCriteriaIds, setDeletedCriteriaIds] = useState<string[]>([]);
 
 	// Mutation: Create Criterion
-	const [createCriterionMutation] = useMutation(CREATE_CRITERIA);
+	const [createCriterionMutation] =
+		useMutation<CreateCriterionMutationData>(CREATE_CRITERIA);
 
 	// Mutation: Update Criterion
-	const [updateCriterionMutation] = useMutation(UPDATE_CRITERIA);
+	const [updateCriterionMutation] =
+		useMutation<UpdateCriterionMutationData>(UPDATE_CRITERIA);
 
 	// Mutation: Delete Criterion
 	const [deleteCriterionMutation] = useMutation(DELETE_CRITERIA);
@@ -40,7 +42,7 @@ export const useCriteria = () => {
 		payload: CreateCriterionInput,
 	): Promise<RubricCriteria | null> => {
 		try {
-			const result = await createCriterionMutation<CreateCriterionMutationData>({
+			const result = await createCriterionMutation({
 				variables: {createCriterionInput: payload},
 			});
 			return result.data?.createCriterion || null;
@@ -57,7 +59,7 @@ export const useCriteria = () => {
 		payload: UpdateCriterionInput,
 	): Promise<RubricCriteria | null> => {
 		try {
-			const result = await updateCriterionMutation<UpdateCriterionMutationData>({
+			const result = await updateCriterionMutation({
 				variables: {updateCriterionInput: payload},
 			});
 			return result.data?.updateCriterion || null;

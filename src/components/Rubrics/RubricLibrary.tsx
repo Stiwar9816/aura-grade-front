@@ -16,6 +16,12 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
 	onCreateNew,
 }) => {
 	const [search, setSearch] = useState("");
+	const errorMessage =
+		error instanceof Error
+			? error.message
+			: typeof error === "string"
+				? error
+				: "Ocurrió un error inesperado";
 
 	const filteredTemplates = templates.filter((template: RubricTemplate) =>
 		template.title.toLowerCase().includes(search.toLowerCase()),
@@ -75,7 +81,7 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
 			)}
 
 			{/* Error State */}
-			{error && (
+			{Boolean(error) && (
 				<div className="card p-12 text-center bg-red-50 border border-red-200">
 					<div className="text-4xl mb-4">
 						<FontAwesomeIcon icon={faExclamationTriangle} />
@@ -83,9 +89,7 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
 					<h3 className="text-xl font-bold text-red-900 mb-2">
 						Error al cargar rúbricas
 					</h3>
-					<p className="text-red-600 mb-4">
-						{error.message || "Ocurrió un error inesperado"}
-					</p>
+					<p className="text-red-600 mb-4">{errorMessage}</p>
 				</div>
 			)}
 

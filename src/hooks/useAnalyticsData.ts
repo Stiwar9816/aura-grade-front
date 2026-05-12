@@ -46,6 +46,12 @@ type AnalyticsSubmission = {
 	studentName?: string;
 };
 
+type AnalyticsScoredSubmission = AnalyticsSubmission & {
+	evaluation: NonNullable<AnalyticsSubmission["evaluation"]> & {
+		totalScore: number;
+	};
+};
+
 type AnalyticsStudent = {
 	id: string;
 	name: string;
@@ -97,6 +103,11 @@ const parseFeedbackList = (
 
 	return Array.isArray(feedback) ? feedback : [];
 };
+
+const hasEvaluationScore = (
+	submission: AnalyticsSubmission,
+): submission is AnalyticsScoredSubmission =>
+	typeof submission.evaluation?.totalScore === "number";
 
 export const useAnalyticsData = (
 	timeRange: "Semana" | "Mes" | "Semestre" = "Semestre",
@@ -316,7 +327,7 @@ export const useAnalyticsData = (
 	const studentsData = students
 		.map((student): StudentPerformanceDatum | null => {
 			const latestStudentSubs = (student.submissions || [])
-				.filter((s) => s.evaluation?.totalScore !== undefined)
+				.filter(hasEvaluationScore)
 				.reduce((latestByAssignment, submission) => {
 					const key = submission.assignment?.id || submission.id;
 					const current = latestByAssignment.get(key);
@@ -330,11 +341,11 @@ export const useAnalyticsData = (
 					}
 
 					return latestByAssignment;
-				}, new Map<string, AnalyticsSubmission>());
+				}, new Map<string, AnalyticsScoredSubmission>());
 			const studentSubs = Array.from(latestStudentSubs.values())
 				.sort(
 					(a, b) =>
-						new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
+						getScoreTime(a.updatedAt) - getScoreTime(b.updatedAt),
 				);
 
 			if (studentSubs.length === 0) return null;

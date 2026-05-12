@@ -6,7 +6,7 @@ interface Step {
 	id: number;
 	title: string;
 	description: string;
-	icon?: string;
+	icon?: React.ReactNode;
 }
 
 interface UploadStepperProps {
@@ -35,7 +35,7 @@ const UploadStepper: React.FC<UploadStepperProps> = ({
 		return "pending";
 	};
 
-	const getStepIcon = (stepId: number, stepIcon?: string) => {
+	const getStepIcon = (stepId: number, stepIcon?: React.ReactNode) => {
 		const status = getStepStatus(stepId);
 
 		if (status === "completed") {
