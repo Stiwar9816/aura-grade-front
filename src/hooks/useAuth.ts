@@ -3,6 +3,13 @@ import {AuthState, LoginCredentials, RegisterData, User} from "@/interface";
 import {loginAction, registerAction} from "@/actions/auth";
 import {isTokenExpired} from "@/utils/authUtils";
 
+const getErrorMessage = (error: unknown, fallback: string) =>
+	error instanceof Error
+		? error.message
+		: typeof error === "string"
+			? error
+			: fallback;
+
 export const useAuth = () => {
 	const [authState, setAuthState] = useState<AuthState>({
 		user: null,
@@ -126,12 +133,13 @@ export const useAuth = () => {
 
 			return {success: true, user};
 		} catch (error) {
+			const message = getErrorMessage(error, "Error inesperado al iniciar sesión");
 			setAuthState((prev) => ({
 				...prev,
 				isLoading: false,
-				error: error as string,
+				error: message,
 			}));
-			return {success: false, error};
+			return {success: false, error: message};
 		}
 	};
 
@@ -155,12 +163,13 @@ export const useAuth = () => {
 
 			return {success: true, user};
 		} catch (error) {
+			const message = getErrorMessage(error, "Error inesperado al registrarse");
 			setAuthState((prev) => ({
 				...prev,
 				isLoading: false,
-				error: error as string,
+				error: message,
 			}));
-			return {success: false, error};
+			return {success: false, error: message};
 		}
 	};
 

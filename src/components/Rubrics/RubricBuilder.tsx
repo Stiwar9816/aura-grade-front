@@ -1,6 +1,5 @@
 import React from "react";
-import {RubricBuilderProps} from "@/types";
-import type {RubricCriteria} from "@/interface";
+import type {RubricBuilderProps, RubricCriteria} from "@/interface";
 import useRubricBuilder from "@/hooks/useRubricBuilder";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
@@ -369,7 +368,7 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 											Cancelar
 										</button>
 										<button
-											onClick={() => handleSave(criteria.id)}
+											onClick={handleSave}
 											className="px-4 py-2 bg-electric-500 text-white rounded-lg hover:bg-electric-600"
 										>
 											Guardar

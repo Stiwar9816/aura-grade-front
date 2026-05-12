@@ -1,4 +1,5 @@
-import {SubmissionDetail} from ".";
+import type {Criteria} from "./Criteria.interface";
+import type {SubmissionDetail} from "./Submission.interface";
 
 export interface EvaluationCriterionFeedback {
 	id?: string;
@@ -31,14 +32,14 @@ export interface MappedEvaluationData {
 		maxScore: number;
 		generalFeedback: string;
 		evaluationDate?: string;
-		criteria: EvaluationCriterionFeedback[];
+		criteria: Criteria[];
 	};
 }
 
 export interface ComparisonViewProps {
 	studentText: string;
 	aiComments: string;
-	criteria?: EvaluationCriterionFeedback[];
+	criteria?: Criteria[];
 	studentName?: string;
 }
 
