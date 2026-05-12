@@ -22,7 +22,7 @@ export default function HomePage() {
 			} else {
 				router.push("/student");
 			}
-		} catch (e) {
+		} catch {
 			router.push("/login");
 		}
 	}, [router]);

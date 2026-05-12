@@ -7,8 +7,14 @@ import {STANDARD_GRADE_MAX} from "@/utils/gradeScale";
 export const StudentPerformance: React.FC<StudentPerformanceProps> = ({
 	students = [],
 }) => {
-	const [filter, setFilter] = useState<"all" | "risk" | "improving">("all");
+	type StudentFilter = "all" | "risk" | "improving";
+	const [filter, setFilter] = useState<StudentFilter>("all");
 	const [searchQuery, setSearchQuery] = useState("");
+	const filterButtons: {id: StudentFilter; label: string; color: string}[] = [
+		{id: "all", label: "Todos", color: "electric"},
+		{id: "risk", label: "Foco Rojo", color: "red"},
+		{id: "improving", label: "Mejorando", color: "green"},
+	];
 
 	const filteredStudents = students.filter((student) => {
 		const matchesSearch = student.name
@@ -52,14 +58,10 @@ export const StudentPerformance: React.FC<StudentPerformanceProps> = ({
 
 					{/* Filters students */}
 					<div className="flex gap-2 p-1 bg-gray-100 rounded-2xl w-fit">
-						{[
-							{id: "all", label: "Todos", color: "electric"},
-							{id: "risk", label: "Foco Rojo", color: "red"},
-							{id: "improving", label: "Mejorando", color: "green"},
-						].map((btn) => (
+						{filterButtons.map((btn) => (
 							<button
 								key={btn.id}
-								onClick={() => setFilter(btn.id as any)}
+								onClick={() => setFilter(btn.id)}
 								className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 ${
 									filter === btn.id
 										? "bg-white shadow-md text-gray-900 scale-[1.05]"

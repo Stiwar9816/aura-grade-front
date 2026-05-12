@@ -19,7 +19,6 @@ const LoginPage: React.FC = () => {
 		handleChange,
 		handleTogglePassword,
 		handleSubmit,
-		handleSocialLogin,
 	} = useLogin();
 
 	const features = [

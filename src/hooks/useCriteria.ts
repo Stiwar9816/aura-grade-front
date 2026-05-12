@@ -13,6 +13,14 @@ import type {
 	RubricCriteria,
 } from "@/interface";
 
+type CreateCriterionMutationData = {
+	createCriterion?: RubricCriteria | null;
+};
+
+type UpdateCriterionMutationData = {
+	updateCriterion?: RubricCriteria | null;
+};
+
 export const useCriteria = () => {
 	const [deletedCriteriaIds, setDeletedCriteriaIds] = useState<string[]>([]);
 
@@ -32,7 +40,7 @@ export const useCriteria = () => {
 		payload: CreateCriterionInput,
 	): Promise<RubricCriteria | null> => {
 		try {
-			const result: any = await createCriterionMutation({
+			const result = await createCriterionMutation<CreateCriterionMutationData>({
 				variables: {createCriterionInput: payload},
 			});
 			return result.data?.createCriterion || null;
@@ -49,7 +57,7 @@ export const useCriteria = () => {
 		payload: UpdateCriterionInput,
 	): Promise<RubricCriteria | null> => {
 		try {
-			const result: any = await updateCriterionMutation({
+			const result = await updateCriterionMutation<UpdateCriterionMutationData>({
 				variables: {updateCriterionInput: payload},
 			});
 			return result.data?.updateCriterion || null;

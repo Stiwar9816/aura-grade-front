@@ -1,9 +1,7 @@
 import React from "react";
 import {KPI} from "@/types";
 
-interface KPIWidgetProps extends KPI {}
-
-const KPIWidget: React.FC<KPIWidgetProps> = ({
+const KPIWidget: React.FC<KPI> = ({
 	title,
 	value,
 	change,

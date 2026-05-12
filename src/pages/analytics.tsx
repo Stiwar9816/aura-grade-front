@@ -12,10 +12,18 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import SectionHeader from "@/components/Common/SectionHeader";
 
+type TimeRange = "Semana" | "Mes" | "Semestre";
+type CourseOption = {
+	id: string;
+	name?: string;
+	course_name?: string;
+};
+type StudentPerformanceItem = {
+	criteria?: unknown[];
+};
+
 const AnalyticsPage: React.FC = () => {
-	const [timeRange, setTimeRange] = useState<"Semana" | "Mes" | "Semestre">(
-		"Mes",
-	);
+	const [timeRange, setTimeRange] = useState<TimeRange>("Mes");
 	const [selectedCourse, setSelectedCourse] = useState<string>("all");
 	const {
 		distributionData,
@@ -26,10 +34,11 @@ const AnalyticsPage: React.FC = () => {
 		courses,
 	} = useAnalyticsData(timeRange, selectedCourse);
 
-	const allCourses = [
+	const allCourses: CourseOption[] = [
 		{id: "all", name: "Todos los cursos"},
 		...(courses || []),
 	];
+	const timeRanges: TimeRange[] = ["Semana", "Mes", "Semestre"];
 
 	return (
 		<ProtectedRoute requiredRole={UserRole.TEACHER}>
@@ -49,7 +58,7 @@ const AnalyticsPage: React.FC = () => {
 									onChange={(e) => setSelectedCourse(e.target.value)}
 									className="bg-transparent border-none focus:ring-0 text-sm font-bold text-gray-700 px-2 cursor-pointer"
 								>
-									{allCourses.map((course: any) => (
+									{allCourses.map((course) => (
 										<option key={course.id} value={course.id}>
 											{course.name || course.course_name}
 										</option>
@@ -59,10 +68,10 @@ const AnalyticsPage: React.FC = () => {
 								<div className="h-6 w-px bg-gray-200 mx-2 hidden md:block"></div>
 
 								<div className="flex bg-gray-100/80 rounded-2xl p-1">
-									{["Semana", "Mes", "Semestre"].map((range) => (
+									{timeRanges.map((range) => (
 										<button
 											key={range}
-											onClick={() => setTimeRange(range as any)}
+											onClick={() => setTimeRange(range)}
 											className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all duration-300 ${
 												timeRange === range
 													? "bg-white text-electric-600 shadow-md"
@@ -102,7 +111,7 @@ const AnalyticsPage: React.FC = () => {
 										: String(
 												studentsData
 													? studentsData.reduce(
-															(acc: number, s: any) =>
+															(acc: number, s: StudentPerformanceItem) =>
 																acc + (s.criteria ? s.criteria.length : 0),
 															0,
 														)

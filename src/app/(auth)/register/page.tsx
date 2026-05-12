@@ -8,7 +8,6 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faArrowLeft,
 	faArrowRight,
-	faChalkboard,
 	faChalkboardTeacher,
 	faExclamationTriangle,
 	faUserGraduate,

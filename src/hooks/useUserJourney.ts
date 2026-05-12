@@ -1,4 +1,4 @@
-import {useState, useEffect} from "react";
+import {useState, useCallback} from "react";
 
 interface UserJourneyStep {
 	id: string;
@@ -20,6 +20,126 @@ interface UseUserJourneyProps {
 	onError?: (error: string) => void;
 }
 
+const getJourneyStepsFor = (
+	role: UseUserJourneyProps["role"],
+	journeyType: UseUserJourneyProps["journeyType"],
+): UserJourneyStep[] => {
+	if (role === "student") {
+		switch (journeyType) {
+			case "upload":
+				return [
+					{
+						id: "discovery",
+						title: "Descubrimiento",
+						description: "Revisando los criterios de evaluación antes de comenzar",
+						status: "pending",
+						estimatedTime: 5,
+					},
+					{
+						id: "preparation",
+						title: "Preparación",
+						description: "Preparando tu archivo para la entrega",
+						status: "pending",
+						estimatedTime: 10,
+					},
+					{
+						id: "action",
+						title: "Acción",
+						description: "Subiendo tu trabajo de forma segura",
+						status: "pending",
+						estimatedTime: 15,
+					},
+					{
+						id: "active_wait",
+						title: "Espera Activa",
+						description: "Nuestra IA está leyendo y evaluando tu contenido",
+						status: "pending",
+						estimatedTime: 30,
+					},
+					{
+						id: "closure",
+						title: "Cierre",
+						description: "¡Tu evaluación está lista!",
+						status: "pending",
+						estimatedTime: 2,
+					},
+				];
+			case "evaluation":
+				return [
+					{
+						id: "review",
+						title: "Revisión",
+						description: "Analizando los comentarios de la IA",
+						status: "pending",
+					},
+					{
+						id: "reflection",
+						title: "Reflexión",
+						description: "Identificando áreas de mejora",
+						status: "pending",
+					},
+					{
+						id: "action_plan",
+						title: "Plan de Acción",
+						description: "Creando tu plan de mejora",
+						status: "pending",
+					},
+				];
+		}
+	} else {
+		switch (journeyType) {
+			case "creation":
+				return [
+					{
+						id: "planning",
+						title: "Planificación",
+						description: "Definiendo objetivos y criterios de evaluación",
+						status: "pending",
+					},
+					{
+						id: "rubric_building",
+						title: "Construcción de Rúbrica",
+						description: "Configurando los criterios de evaluación",
+						status: "pending",
+					},
+					{
+						id: "publishing",
+						title: "Publicación",
+						description: "Compartiendo la tarea con estudiantes",
+						status: "pending",
+					},
+				];
+			case "review":
+				return [
+					{
+						id: "monitoring",
+						title: "Monitoreo",
+						description: "Revisando entregas y progreso general",
+						status: "pending",
+					},
+					{
+						id: "validation",
+						title: "Validación",
+						description: "Comparando evaluación IA vs tu criterio",
+						status: "pending",
+					},
+					{
+						id: "analysis",
+						title: "Análisis",
+						description: "Extrayendo insights para decisiones pedagógicas",
+						status: "pending",
+					},
+				];
+		}
+	}
+	return [];
+};
+
+const activateFirstStep = (steps: UserJourneyStep[]): UserJourneyStep[] =>
+	steps.map((step, index) =>
+		index === 0 ? {...step, status: "active"} : step,
+	);
+
 export const useUserJourney = ({
 	role,
 	journeyType,
@@ -27,143 +147,22 @@ export const useUserJourney = ({
 	onError,
 }: UseUserJourneyProps) => {
 	const [currentStep, setCurrentStep] = useState<number>(0);
-	const [steps, setSteps] = useState<UserJourneyStep[]>([]);
+	const [steps, setSteps] = useState<UserJourneyStep[]>(() =>
+		activateFirstStep(getJourneyStepsFor(role, journeyType)),
+	);
 	const [isComplete, setIsComplete] = useState<boolean>(false);
 	const [error, setError] = useState<string | null>(null);
 
-	// Define journeys based on role and type
-	const getJourneySteps = (): UserJourneyStep[] => {
-		if (role === "student") {
-			switch (journeyType) {
-				case "upload":
-					return [
-						{
-							id: "discovery",
-							title: "Descubrimiento",
-							description:
-								"Revisando los criterios de evaluación antes de comenzar",
-							status: "pending",
-							estimatedTime: 5,
-						},
-						{
-							id: "preparation",
-							title: "Preparación",
-							description: "Preparando tu archivo para la entrega",
-							status: "pending",
-							estimatedTime: 10,
-						},
-						{
-							id: "action",
-							title: "Acción",
-							description: "Subiendo tu trabajo de forma segura",
-							status: "pending",
-							estimatedTime: 15,
-						},
-						{
-							id: "active_wait",
-							title: "Espera Activa",
-							description: "Nuestra IA está leyendo y evaluando tu contenido",
-							status: "pending",
-							estimatedTime: 30,
-						},
-						{
-							id: "closure",
-							title: "Cierre",
-							description: "¡Tu evaluación está lista!",
-							status: "pending",
-							estimatedTime: 2,
-						},
-					];
-				case "evaluation":
-					return [
-						{
-							id: "review",
-							title: "Revisión",
-							description: "Analizando los comentarios de la IA",
-							status: "pending",
-						},
-						{
-							id: "reflection",
-							title: "Reflexión",
-							description: "Identificando áreas de mejora",
-							status: "pending",
-						},
-						{
-							id: "action_plan",
-							title: "Plan de Acción",
-							description: "Creando tu plan de mejora",
-							status: "pending",
-						},
-					];
-			}
-		} else {
-			// teacher
-			switch (journeyType) {
-				case "creation":
-					return [
-						{
-							id: "planning",
-							title: "Planificación",
-							description: "Definiendo objetivos y criterios de evaluación",
-							status: "pending",
-						},
-						{
-							id: "rubric_building",
-							title: "Construcción de Rúbrica",
-							description: "Configurando los criterios de evaluación",
-							status: "pending",
-						},
-						{
-							id: "publishing",
-							title: "Publicación",
-							description: "Compartiendo la tarea con estudiantes",
-							status: "pending",
-						},
-					];
-				case "review":
-					return [
-						{
-							id: "monitoring",
-							title: "Monitoreo",
-							description: "Revisando entregas y progreso general",
-							status: "pending",
-						},
-						{
-							id: "validation",
-							title: "Validación",
-							description: "Comparando evaluación IA vs tu criterio",
-							status: "pending",
-						},
-						{
-							id: "analysis",
-							title: "Análisis",
-							description: "Extrayendo insights para decisiones pedagógicas",
-							status: "pending",
-						},
-					];
-			}
-		}
-		return [];
-	};
-
-	// Initialize steps
-	useEffect(() => {
-		const journeySteps = getJourneySteps();
-		setSteps(journeySteps);
-		if (journeySteps.length > 0) {
-			setCurrentStep(0);
-			updateStepStatus(0, "active");
-		}
-	}, [role, journeyType]);
-
-	const updateStepStatus = (
-		stepIndex: number,
-		status: UserJourneyStep["status"],
-	) => {
-		setSteps((prev) =>
-			prev.map((step, idx) => (idx === stepIndex ? {...step, status} : step)),
-		);
-	};
+	const updateStepStatus = useCallback(
+		(stepIndex: number, status: UserJourneyStep["status"]) => {
+			setSteps((prev) =>
+				prev.map((step, idx) =>
+					idx === stepIndex ? {...step, status} : step,
+				),
+			);
+		},
+		[],
+	);
 
 	const nextStep = () => {
 		if (currentStep < steps.length - 1) {
@@ -192,14 +191,11 @@ export const useUserJourney = ({
 	};
 
 	const resetJourney = () => {
-		const journeySteps = getJourneySteps();
+		const journeySteps = activateFirstStep(getJourneyStepsFor(role, journeyType));
 		setSteps(journeySteps);
 		setCurrentStep(0);
 		setIsComplete(false);
 		setError(null);
-		if (journeySteps.length > 0) {
-			updateStepStatus(0, "active");
-		}
 	};
 
 	const getEstimatedTotalTime = () => {

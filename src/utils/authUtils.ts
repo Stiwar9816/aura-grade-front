@@ -18,7 +18,7 @@ export const isTokenExpired = (token: string): boolean => {
 
 		// exp is in seconds, Date.now() in milliseconds
 		return Date.now() >= exp * 1000;
-	} catch (e) {
+	} catch {
 		return true;
 	}
 };

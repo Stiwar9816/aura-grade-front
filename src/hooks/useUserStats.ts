@@ -4,6 +4,13 @@ import {UserRole} from "@/interface";
 import {DashboardStats} from "@/types";
 import {averageGrades, normalizeGrade} from "@/utils/gradeScale";
 
+type ActiveAssignment = {
+	id: string;
+	title?: string;
+	isActive?: boolean;
+	dueDate?: string;
+};
+
 export const useUserStats = () => {
 	const {user: currentUser} = useAuth();
 	const {userStats, loading, error} = useUserStatsActions(currentUser);
@@ -29,9 +36,9 @@ export const useUserStats = () => {
 
 		// Si es docente, filtrar solo estudiantes de sus cursos
 		if (isTeacher) {
-			const teacherCourseIds = currentUser.courses?.map((c: any) => c.id) || [];
+			const teacherCourseIds = currentUser.courses?.map((c) => c.id) || [];
 			students = students.filter((student) =>
-				student.courses?.some((c: any) => teacherCourseIds.includes(c.id)),
+				student.courses?.some((c) => teacherCourseIds.includes(c.id)),
 			);
 		}
 
@@ -39,7 +46,7 @@ export const useUserStats = () => {
 
 		// 2. Obtener tareas activas según el rol
 		let activeAssignments = 0;
-		let relevantAssignments: any[] = [];
+		let relevantAssignments: ActiveAssignment[] = [];
 
 		const now = new Date();
 		// Para que las tareas que vencen HOY sigan apareciendo como activas,
@@ -58,7 +65,7 @@ export const useUserStats = () => {
 			relevantAssignments = allTeachers.flatMap(
 				(teacher) =>
 					teacher.assignments?.filter(
-						(a: any) => a.isActive && new Date(a.dueDate) >= startOfToday,
+						(a) => a.isActive && new Date(a.dueDate) >= startOfToday,
 					) || [],
 			);
 			activeAssignments = relevantAssignments.length;
@@ -73,12 +80,12 @@ export const useUserStats = () => {
 				teacherData.assignments.length > 0
 			) {
 				relevantAssignments = teacherData.assignments.filter(
-					(a: any) => a.isActive && new Date(a.dueDate) >= startOfToday,
+					(a) => a.isActive && new Date(a.dueDate) >= startOfToday,
 				);
 			} else {
 				// Fallback 1: currentUser assignments
 				relevantAssignments = (currentUser.assignments || []).filter(
-					(a: any) => a.isActive && new Date(a.dueDate) >= startOfToday,
+					(a) => a.isActive && a.dueDate && new Date(a.dueDate) >= startOfToday,
 				);
 
 				// Fallback 2: Colectar todas las tareas únicas de todos los usuarios
@@ -86,8 +93,8 @@ export const useUserStats = () => {
 					const allAssignments = userStats.users.flatMap(
 						(u) => u.assignments || [],
 					);
-					const uniqueMap = new Map();
-					allAssignments.forEach((a: any) => {
+					const uniqueMap = new Map<string, ActiveAssignment>();
+					allAssignments.forEach((a) => {
 						if (a && !uniqueMap.has(a.id)) {
 							if (a.isActive && new Date(a.dueDate) >= startOfToday) {
 								uniqueMap.set(a.id, a);

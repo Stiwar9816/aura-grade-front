@@ -8,6 +8,10 @@ import {
 import {CoursesData} from "@/interface";
 import {useAuth} from "./useAuth";
 
+type CourseUpdateData = Partial<Pick<CoursesData["courses"][number], "course_name" | "code_course">> & {
+	studentsIds?: string[];
+};
+
 export const useCourse = () => {
 	const {user} = useAuth();
 	const {data, loading, error, refetch} =
@@ -37,7 +41,7 @@ export const useCourse = () => {
 		}
 	};
 
-	const updateCourse = async (id: string, data: any) => {
+	const updateCourse = async (id: string, data: CourseUpdateData) => {
 		try {
 			await updateCourseMutation({
 				variables: {

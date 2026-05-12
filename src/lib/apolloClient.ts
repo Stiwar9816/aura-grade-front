@@ -7,12 +7,16 @@ import {
 import {ErrorLink} from "@apollo/client/link/error";
 import {SetContextLink} from "@apollo/client/link/context";
 
+type StoredUser = {
+	token?: string;
+};
+
 const httpLink = new HttpLink({
 	uri:
 		process.env.NEXT_PUBLIC_GRAPHQL_API_URL || "http://localhost:3000/graphql",
 });
 
-const authLink = new SetContextLink((_, context: any) => {
+const authLink = new SetContextLink((_, context: {headers?: Record<string, string>}) => {
 	const {headers} = context;
 	// get the authentication token from local storage if it exists
 	let token: string = "";
@@ -20,10 +24,13 @@ const authLink = new SetContextLink((_, context: any) => {
 		const storedUser = localStorage.getItem("auraGrade_user");
 		if (storedUser) {
 			try {
-				const user = JSON.parse(storedUser);
+				const user = JSON.parse(storedUser) as StoredUser;
 				token = user.token || "";
-			} catch (e: any) {
-				console.error("Error parsing user from local storage", e.message);
+			} catch (e) {
+				console.error(
+					"Error parsing user from local storage",
+					e instanceof Error ? e.message : e,
+				);
 			}
 		}
 	}
@@ -37,10 +44,10 @@ const authLink = new SetContextLink((_, context: any) => {
 	};
 });
 
-const errorLink = new ErrorLink((error: any) => {
+const errorLink = new ErrorLink((error) => {
 	const {graphQLErrors, networkError} = error;
 	if (graphQLErrors) {
-		graphQLErrors.forEach(({message, locations, path, extensions}: any) => {
+		graphQLErrors.forEach(({message, locations, path, extensions}) => {
 			console.log(
 				`[GraphQL error]: Message: ${message}, Location: ${locations}, Path: ${path}`,
 			);
@@ -65,10 +72,12 @@ const errorLink = new ErrorLink((error: any) => {
 	}
 	if (networkError) {
 		console.log(`[Network error]: ${networkError}`);
+		const statusCode =
+			networkError && "statusCode" in networkError
+				? networkError.statusCode
+				: undefined;
 		if (
-			"statusCode" in networkError &&
-			// @ts-ignore
-			(networkError.statusCode === 401 || networkError.statusCode === 403)
+			statusCode === 401 || statusCode === 403
 		) {
 			if (typeof window !== "undefined") {
 				localStorage.removeItem("auraGrade_user");
