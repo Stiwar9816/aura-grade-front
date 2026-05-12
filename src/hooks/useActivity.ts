@@ -1,76 +1,162 @@
-import {useAuth} from "@/hooks";
 import {useActivityActions} from "@/actions";
 import {ActivityItem, ActivityType} from "@/interface";
 import {formatDistanceToNow} from "date-fns";
 import {es} from "date-fns/locale";
+import {
+	AssignmentSubmission,
+	ProcessedTeacherAssignment,
+	useAssignments,
+} from "./useAssignments";
+import {useAuth} from "./useAuth";
+import {normalizeGrade} from "@/utils/gradeScale";
+
+type ActivitySubmission = AssignmentSubmission & {
+	updatedAt?: string;
+	assignment?: {
+		id: string;
+		title?: string;
+		rubric?: {
+			maxTotalScore?: number;
+		};
+		user?: {
+			id: string;
+		};
+	};
+};
+
+const normalizeStatusValue = (status?: string | null) =>
+	status?.toUpperCase().replace(/[-\s]+/g, "_") || "";
+
+const isTeacherOwnedSubmission = (
+	submission: ActivitySubmission,
+	teacherId?: string,
+) => !teacherId || !submission.assignment?.user?.id || submission.assignment.user.id === teacherId;
+
+const mergeActivitySubmissions = (...sources: ActivitySubmission[][]) => {
+	const merged = new Map<string, ActivitySubmission>();
+
+	sources.flat().forEach((submission) => {
+		if (!submission?.id) return;
+
+		const current = merged.get(submission.id);
+		merged.set(submission.id, {
+			...current,
+			...submission,
+			student: submission.student || current?.student,
+			assignment: submission.assignment || current?.assignment,
+			evaluation: submission.evaluation || current?.evaluation,
+		});
+	});
+
+	return Array.from(merged.values());
+};
+
+const mapActivity = (submission: ActivitySubmission): ActivityItem => {
+	const status = normalizeStatusValue(submission.status);
+	const evaluationStatus = normalizeStatusValue(submission.evaluation?.status);
+	const studentName = submission.student
+		? `${submission.student.name} ${submission.student.last_name || ""}`.trim()
+		: "Estudiante desconocido";
+	const assignmentTitle = submission.assignment?.title || "Tarea desconocida";
+
+	let action = "actualizó";
+	let grade: number | undefined;
+	let type: ActivityType = ActivityType.SUBMISSION;
+
+	const isPublished =
+		status === "PUBLISHED" || evaluationStatus === "PUBLISHED";
+
+	if (isPublished) {
+		action = "fue calificado";
+		grade =
+			typeof submission.evaluation?.totalScore === "number"
+				? normalizeGrade(
+						submission.evaluation.totalScore,
+						submission.assignment?.rubric?.maxTotalScore,
+					)
+				: undefined;
+		type = ActivityType.EVALUATION;
+	} else if (status === "IN_PROGRESS") {
+		action = "está siendo evaluado con IA";
+		type = ActivityType.SYSTEM;
+	} else if (
+		status === "REVIEW_PENDING" ||
+		status === "GRADED" ||
+		Boolean(submission.evaluation)
+	) {
+		action = "queda pendiente de revisión";
+	} else if (status === "PENDING" || status === "SUBMITTED") {
+		action = "entregó";
+	}
+
+	const date = submission.updatedAt || submission.createdAt;
+	const time = date
+		? formatDistanceToNow(new Date(date), {
+				addSuffix: true,
+				locale: es,
+			})
+		: "Sin fecha";
+
+	return {
+		id: submission.id,
+		student: type === ActivityType.SYSTEM && !isPublished ? "Sistema IA" : studentName,
+		action,
+		assignment: assignmentTitle,
+		time,
+		grade,
+		type,
+	};
+};
 
 export const useRecentActivity = (limit: number = 8) => {
 	const {user} = useAuth();
 	const {data, loading, error} = useActivityActions();
+	const {
+		assignments,
+		loading: assignmentsLoading,
+		error: assignmentsError,
+	} = useAssignments();
 
 	const processActivity = (): ActivityItem[] => {
-		if (!data?.submissions) return [];
+		const directSubmissions = (data?.submissions || []) as ActivitySubmission[];
+		const directOwnedSubmissions = directSubmissions.filter((submission) =>
+			isTeacherOwnedSubmission(submission, user?.id),
+		);
+		const scopedDirectSubmissions =
+			directOwnedSubmissions.length > 0
+				? directOwnedSubmissions
+				: directSubmissions;
+		const assignmentSubmissions = assignments.flatMap(
+			(assignment: ProcessedTeacherAssignment) =>
+				assignment.submissionItems.map((submission) => ({
+					...submission,
+					assignment: {
+						id: assignment.id,
+						title: assignment.title,
+						rubric: {
+							maxTotalScore: assignment.rubric?.maxTotalScore,
+						},
+						user: undefined,
+					},
+				})),
+		);
 
-		return [...data.submissions]
-			.filter((s: any) => s.assignment?.user?.id === user?.id)
-			.sort(
-				(a: any, b: any) =>
-					new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime(),
-			)
+		return mergeActivitySubmissions(
+			scopedDirectSubmissions,
+			assignmentSubmissions,
+		)
+			.sort((a, b) => {
+				const bDate = b.updatedAt || b.createdAt || "";
+				const aDate = a.updatedAt || a.createdAt || "";
+				return new Date(bDate).getTime() - new Date(aDate).getTime();
+			})
 			.slice(0, limit)
-			.map((submission: any) => {
-				const studentName = submission.student
-					? `${submission.student.name} ${submission.student.last_name}`
-					: "Estudiante desconocido";
-				const assignmentTitle =
-					submission.assignment?.title || "Tarea desconocida";
-
-				// Determinar la acción y tipo
-				let action = "";
-				let grade = undefined;
-				let type: ActivityType = ActivityType.SUBMISSION;
-
-				const isGraded =
-					submission.evaluation?.status === "PUBLISHED" ||
-					submission.evaluation?.status === "GRADED";
-
-				if (isGraded) {
-					action = "fue calificado";
-					grade = submission.evaluation.totalScore;
-					type = ActivityType.EVALUATION;
-				} else if (submission.status === "IN_PROGRESS") {
-					action = "está siendo evaluado con IA";
-					type = ActivityType.SYSTEM;
-				} else if (submission.status === "SUBMITTED") {
-					action = "entregó";
-				} else {
-					action = "actualizó";
-				}
-
-				// Calcular tiempo relativo
-				const time = formatDistanceToNow(new Date(submission.updatedAt), {
-					addSuffix: true,
-					locale: es,
-				});
-
-				return {
-					id: submission.id,
-					student:
-						type === ActivityType.SYSTEM && !isGraded
-							? "Sistema IA"
-							: studentName,
-					action,
-					assignment: assignmentTitle,
-					time,
-					grade,
-					type,
-				};
-			});
+			.map(mapActivity);
 	};
 
 	return {
 		activities: processActivity(),
-		loading,
-		error,
+		loading: loading || assignmentsLoading,
+		error: error || assignmentsError,
 	};
 };

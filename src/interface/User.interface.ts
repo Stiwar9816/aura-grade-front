@@ -85,8 +85,23 @@ export interface User {
 	role: UserRole;
 	token?: string;
 	phone: number;
+	isActive?: boolean;
+	document_type?: string | null;
+	document_num?: number | null;
 	courses?: {id: string}[];
 	assignments?: {id: string}[];
+}
+
+export interface UpdateUserInput {
+	id: string;
+	password?: string | null;
+	role?: UserRole | null;
+	isActive?: boolean | null;
+	document_num?: number | null;
+	document_type?: string | null;
+	last_name?: string | null;
+	name?: string | null;
+	phone?: number | null;
 }
 
 export interface UsersStats {
@@ -96,6 +111,8 @@ export interface UsersStats {
 		last_name: string;
 		role: string;
 		isActive: boolean;
+		email?: string | null;
+		phone?: number | string | null;
 		submissions: {
 			id: string;
 			status: string;

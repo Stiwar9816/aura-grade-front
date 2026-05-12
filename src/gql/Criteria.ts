@@ -5,11 +5,6 @@ const CRITERION_FIELDS = gql`
 		id
 		title
 		maxPoints
-		levels {
-			description
-			score
-		}
-		maxPoints
 		rubric {
 			id
 		}

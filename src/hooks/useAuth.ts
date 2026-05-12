@@ -1,5 +1,5 @@
 import {useState, useEffect} from "react";
-import {AuthState, LoginCredentials, RegisterData} from "@/interface";
+import {AuthState, LoginCredentials, RegisterData, User} from "@/interface";
 import {loginAction, registerAction} from "@/actions/auth";
 import {isTokenExpired} from "@/utils/authUtils";
 
@@ -10,6 +10,17 @@ export const useAuth = () => {
 		isLoading: true,
 		error: null,
 	});
+
+	const setAuthenticatedUser = (user: User) => {
+		localStorage.setItem("auraGrade_user", JSON.stringify(user));
+		window.dispatchEvent(new CustomEvent("auraGrade_user_updated"));
+		setAuthState({
+			user,
+			isAuthenticated: true,
+			isLoading: false,
+			error: null,
+		});
+	};
 
 	// Check authentication on mount using localStorage
 	useEffect(() => {
@@ -59,6 +70,13 @@ export const useAuth = () => {
 
 		checkAuth();
 
+		const handleUserUpdated = () => {
+			checkAuth();
+		};
+
+		window.addEventListener("auraGrade_user_updated", handleUserUpdated);
+		window.addEventListener("storage", handleUserUpdated);
+
 		// Optional: Periodic check
 		const interval = setInterval(() => {
 			const storedUser = localStorage.getItem("auraGrade_user");
@@ -79,7 +97,11 @@ export const useAuth = () => {
 			}
 		}, 60000); // Check every minute
 
-		return () => clearInterval(interval);
+		return () => {
+			clearInterval(interval);
+			window.removeEventListener("auraGrade_user_updated", handleUserUpdated);
+			window.removeEventListener("storage", handleUserUpdated);
+		};
 	}, []);
 
 	const login = async (
@@ -100,14 +122,7 @@ export const useAuth = () => {
 			}
 
 			const user = result.user!;
-			localStorage.setItem("auraGrade_user", JSON.stringify(user));
-
-			setAuthState({
-				user,
-				isAuthenticated: true,
-				isLoading: false,
-				error: null,
-			});
+			setAuthenticatedUser(user);
 
 			return {success: true, user};
 		} catch (error) {
@@ -136,14 +151,7 @@ export const useAuth = () => {
 			}
 
 			const user = result.user!;
-			localStorage.setItem("auraGrade_user", JSON.stringify(user));
-
-			setAuthState({
-				user,
-				isAuthenticated: true,
-				isLoading: false,
-				error: null,
-			});
+			setAuthenticatedUser(user);
 
 			return {success: true, user};
 		} catch (error) {
@@ -158,6 +166,7 @@ export const useAuth = () => {
 
 	const logout = () => {
 		localStorage.removeItem("auraGrade_user");
+		window.dispatchEvent(new CustomEvent("auraGrade_user_updated"));
 		setAuthState({
 			user: null,
 			isAuthenticated: false,
@@ -166,10 +175,23 @@ export const useAuth = () => {
 		});
 	};
 
+	const updateUser = (updates: Partial<User>) => {
+		if (!authState.user) return {success: false, error: "No hay sesión activa"};
+
+		const updatedUser = {
+			...authState.user,
+			...updates,
+		};
+
+		setAuthenticatedUser(updatedUser);
+		return {success: true, user: updatedUser};
+	};
+
 	return {
 		...authState,
 		login,
 		register,
 		logout,
+		updateUser,
 	};
 };

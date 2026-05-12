@@ -1,4 +1,4 @@
-import {useEffect} from "react";
+import {useEffect, type ReactNode} from "react";
 import Layout from "@/components/Layout";
 import {
 	RubricBuilder,
@@ -9,10 +9,10 @@ import {ProtectedRoute} from "@/components/Auth";
 import {useRubrics} from "@/hooks";
 import {exportToPDF, exportToCSV} from "@/utils";
 import {UserRole} from "@/interface";
+import {notifyError, notifySuccess} from "@/utils/toastNotify";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faBook,
-	faChartBar,
 	faChartLine,
 	faFileCsv,
 	faFilePdf,
@@ -39,6 +39,28 @@ export const RubricsPage = () => {
 		handleDeleteRubric,
 	} = useRubrics();
 
+	const handleExportCSV = () => {
+		try {
+			exportToCSV(currentRubric);
+			notifySuccess("Rúbrica exportada en CSV.");
+		} catch (error) {
+			notifyError(
+				error instanceof Error ? error.message : "No se pudo exportar el CSV.",
+			);
+		}
+	};
+
+	const handleExportPDF = () => {
+		try {
+			exportToPDF(currentRubric);
+			notifySuccess("Rúbrica exportada en PDF.");
+		} catch (error) {
+			notifyError(
+				error instanceof Error ? error.message : "No se pudo exportar el PDF.",
+			);
+		}
+	};
+
 	// Redirect if on builder without rubric
 	useEffect(() => {
 		if (
@@ -48,6 +70,28 @@ export const RubricsPage = () => {
 			setActiveTab("library");
 		}
 	}, [activeTab, currentRubric.id, setActiveTab]);
+
+	const tabs: {
+		id: "create" | "library" | "builder";
+		label: string;
+		icon: ReactNode;
+	}[] = [
+		{
+			id: "create",
+			label: "Crear Rúbrica",
+			icon: <FontAwesomeIcon icon={faFileText} />,
+		},
+		{
+			id: "library",
+			label: "Biblioteca",
+			icon: <FontAwesomeIcon icon={faBook} />,
+		},
+		{
+			id: "builder",
+			label: "Constructor",
+			icon: <FontAwesomeIcon icon={faGears} />,
+		},
+	];
 
 	return (
 		<ProtectedRoute requiredRole={UserRole.TEACHER}>
@@ -59,14 +103,14 @@ export const RubricsPage = () => {
 								<div className="flex gap-3">
 									<>
 										<button
-											onClick={() => exportToCSV(currentRubric)}
+											onClick={handleExportCSV}
 											className="p-2 text-xl text-gray-500 hover:text-blue-600 hover:bg-electric-50 rounded-lg transition-all"
 											title="Exportar CSV"
 										>
 											<FontAwesomeIcon icon={faFileCsv} />
 										</button>
 										<button
-											onClick={() => exportToPDF(currentRubric)}
+											onClick={handleExportPDF}
 											className="p-2 text-xl text-gray-500 hover:text-blue-600 hover:bg-electric-50 rounded-lg transition-all"
 											title="Exportar PDF"
 										>
@@ -86,23 +130,7 @@ export const RubricsPage = () => {
 
 						<div className="border-b border-gray-200">
 							<nav className="flex space-x-8">
-								{[
-									{
-										id: "create",
-										label: "Crear Rúbrica",
-										icon: <FontAwesomeIcon icon={faFileText} />,
-									},
-									{
-										id: "library",
-										label: "Biblioteca",
-										icon: <FontAwesomeIcon icon={faBook} />,
-									},
-									{
-										id: "builder",
-										label: "Constructor",
-										icon: <FontAwesomeIcon icon={faGears} />,
-									},
-								]
+								{tabs
 									.filter(
 										(tab) =>
 											tab.id !== "builder" ||
@@ -111,7 +139,7 @@ export const RubricsPage = () => {
 									.map((tab) => (
 										<button
 											key={tab.id}
-											onClick={() => setActiveTab(tab.id as any)}
+											onClick={() => setActiveTab(tab.id)}
 											className={`flex items-center gap-2 py-4 px-1 font-medium text-sm border-b-2 transition-colors ${
 												activeTab === tab.id
 													? "border-electric-500 text-electric-600"
@@ -172,7 +200,8 @@ export const RubricsPage = () => {
 									<div>
 										<div className="text-2xl font-bold text-gray-900">
 											{currentRubric.criteria.reduce(
-												(acc: any, c: any) => acc + c.maxPoints,
+												(acc: number, c: {maxPoints: number}) =>
+													acc + c.maxPoints,
 												0,
 											)}
 										</div>

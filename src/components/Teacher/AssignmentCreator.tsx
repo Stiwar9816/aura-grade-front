@@ -1,8 +1,15 @@
-import React, {useState, useEffect} from "react";
+import React, {useState} from "react";
 import {useAuth, useAssignments, useCourse, useRubrics} from "@/hooks";
 import Card from "@/components/Common/Card";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faPlus, faTriangleExclamation} from "@fortawesome/free-solid-svg-icons";
+import {faTriangleExclamation} from "@fortawesome/free-solid-svg-icons";
+import {notifyError, notifySuccess, notifyWarning} from "@/utils/toastNotify";
+import type {CoursesData, RubricTemplate} from "@/interface";
+
+type CourseOption = CoursesData["courses"][number];
+
+const getErrorMessage = (error: unknown, fallback: string) =>
+	error instanceof Error ? error.message : fallback;
 
 const AssignmentCreator: React.FC = () => {
 	const {user} = useAuth();
@@ -27,6 +34,7 @@ const AssignmentCreator: React.FC = () => {
 
 		if (!form.title || !form.dueDate || !form.courseId || !form.rubricId) {
 			setError("Por favor completa todos los campos obligatorios.");
+			notifyWarning("Completa los campos obligatorios antes de publicar.");
 			return;
 		}
 
@@ -41,8 +49,13 @@ const AssignmentCreator: React.FC = () => {
 				isActive: true,
 			});
 			setIsSubmitted(true);
-		} catch (err: any) {
-			setError(err.message || "Error al crear la tarea.");
+			notifySuccess(
+				`Tarea "${form.title}" publicada. Los estudiantes ya pueden verla.`,
+			);
+		} catch (err: unknown) {
+			const message = getErrorMessage(err, "Error al crear la tarea.");
+			setError(message);
+			notifyError(message);
 		}
 	};
 
@@ -144,7 +157,7 @@ const AssignmentCreator: React.FC = () => {
 								className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-electric-500 focus:border-transparent outline-none transition-all appearance-none bg-white"
 							>
 								<option value="">Selecciona un curso</option>
-								{courses.map((course: any) => (
+								{courses.map((course: CourseOption) => (
 									<option key={course.id} value={course.id}>
 										{course.course_name}
 									</option>
@@ -163,7 +176,7 @@ const AssignmentCreator: React.FC = () => {
 								Rúbrica de Evaluación *
 							</label>
 							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
-								{rubrics.map((rubric: any) => (
+								{rubrics.map((rubric: RubricTemplate) => (
 									<div
 										key={rubric.id}
 										onClick={() => setForm({...form, rubricId: rubric.id})}

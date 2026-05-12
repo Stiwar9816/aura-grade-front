@@ -16,6 +16,25 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import SectionHeader from "@/components/Common/SectionHeader";
+import {notifyError, notifyInfo, notifySuccess, notifyWarning} from "@/utils/toastNotify";
+
+type CourseStudent = {
+	id: string;
+	name: string;
+	last_name?: string | null;
+	role?: string;
+	email?: string | null;
+	phone?: number | string | null;
+};
+
+type CourseSummary = {
+	id: string;
+	course_name: string;
+	code_course: string;
+	users?: CourseStudent[];
+};
+
+type StudentOption = UsersStats["users"][number];
 
 const CourseManagement: React.FC = () => {
 	const {
@@ -27,8 +46,7 @@ const CourseManagement: React.FC = () => {
 		removeStudentFromCourse,
 	} = useCourse();
 
-	const {data: studentsData, loading: studentsLoading} =
-		useQuery<UsersStats>(USER_ROLE_STUDENTS);
+	const {data: studentsData} = useQuery<UsersStats>(USER_ROLE_STUDENTS);
 
 	const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 	const [showModal, setShowModal] = useState(false);
@@ -36,12 +54,13 @@ const CourseManagement: React.FC = () => {
 	const [isEditing, setIsEditing] = useState(false);
 	const [searchTerm, setSearchTerm] = useState("");
 
-	const selectedCourse = courses.find((c: any) => c.id === selectedCourseId);
+	const courseList = courses as CourseSummary[];
+	const selectedCourse = courseList.find((c) => c.id === selectedCourseId);
 	const allStudents = studentsData?.users || [];
 
 	// Filter students based on search - Fixed crash with safe navigation
 	const filteredStudents = allStudents.filter(
-		(s: any) =>
+		(s: StudentOption) =>
 			s.isActive &&
 			s.role === UserRole.STUDENT &&
 			((s.name?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
@@ -63,8 +82,13 @@ const CourseManagement: React.FC = () => {
 	const handleSubmitCourse = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
 		const formData = new FormData(e.currentTarget);
-		const name = formData.get("name") as string;
-		const code = formData.get("code") as string;
+		const name = String(formData.get("name") || "").trim();
+		const code = String(formData.get("code") || "").trim();
+
+		if (!name || !code) {
+			notifyWarning("Nombre y código del curso son obligatorios.");
+			return;
+		}
 
 		try {
 			await saveCourse(
@@ -73,8 +97,16 @@ const CourseManagement: React.FC = () => {
 				isEditing && selectedCourse ? selectedCourse.id : undefined,
 			);
 			setShowModal(false);
+			notifySuccess(
+				isEditing
+					? `Curso "${name}" actualizado correctamente.`
+					: `Curso "${name}" creado correctamente.`,
+			);
 		} catch (error) {
 			console.error(error);
+			notifyError(
+				error instanceof Error ? error.message : "No se pudo guardar el curso.",
+			);
 		}
 	};
 
@@ -88,13 +120,61 @@ const CourseManagement: React.FC = () => {
 			try {
 				await deleteCourse(selectedCourse.id);
 				setSelectedCourseId(null);
+				notifySuccess(`Curso "${selectedCourse.course_name}" eliminado.`);
 			} catch (error) {
 				console.error("Error deleting course", error);
+				notifyError(
+					error instanceof Error
+						? error.message
+						: "No se pudo eliminar el curso.",
+				);
 			}
 		}
 	};
 
-	const currentStudentIds = selectedCourse?.users?.map((u: any) => u.id) || [];
+	const handleAddStudentToCourse = async (student: StudentOption) => {
+		if (!selectedCourse) return;
+
+		try {
+			await addStudentToCourse(selectedCourse.id, student.id, currentStudentIds);
+			notifySuccess(
+				`${student.name} ${student.last_name || ""}`.trim() +
+					` fue asignado a ${selectedCourse.course_name}.`,
+			);
+		} catch (error) {
+			console.error("Error assigning student", error);
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "No se pudo asignar el estudiante.",
+			);
+		}
+	};
+
+	const handleRemoveStudentFromCourse = async (student: CourseStudent) => {
+		if (!selectedCourse) return;
+
+		try {
+			await removeStudentFromCourse(
+				selectedCourse.id,
+				student.id,
+				currentStudentIds,
+			);
+			notifyInfo(
+				`${student.name} ${student.last_name || ""}`.trim() +
+					` fue removido de ${selectedCourse.course_name}.`,
+			);
+		} catch (error) {
+			console.error("Error removing student", error);
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "No se pudo remover el estudiante.",
+			);
+		}
+	};
+
+	const currentStudentIds = selectedCourse?.users?.map((u) => u.id) || [];
 
 	return (
 		<ProtectedRoute requiredRole={UserRole.TEACHER}>
@@ -123,7 +203,7 @@ const CourseManagement: React.FC = () => {
 								<h3 className="text-lg font-bold text-gray-900 border-b pb-2">
 									Lista de Cursos
 								</h3>
-								{courses.map((course: any) => (
+								{courseList.map((course) => (
 									<Card
 										key={course.id}
 										hoverable
@@ -155,13 +235,13 @@ const CourseManagement: React.FC = () => {
 							<div className="lg:col-span-2">
 								{selectedCourse ? (
 									<div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-										<Card className="bg-gradient-to-br from-white to-gray-50/50">
+										<Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-700 dark:bg-slate-900">
 											<div className="flex justify-between items-center mb-6">
 												<div>
-													<h2 className="text-xl font-black text-gray-900">
+													<h2 className="text-xl font-black text-slate-900 dark:text-slate-50">
 														{selectedCourse.course_name}
 													</h2>
-													<p className="text-gray-500 font-normal">
+													<p className="text-slate-600 font-normal dark:text-slate-300">
 														Código: {selectedCourse.code_course}
 													</p>
 												</div>
@@ -180,14 +260,14 @@ const CourseManagement: React.FC = () => {
 													<div className="flex gap-4">
 														<button
 															onClick={handleOpenEditModal}
-															className="p-2 text-gray-400 hover:text-electric-600 hover:bg-electric-50 rounded-xl transition-all"
+															className="p-2 text-slate-500 hover:text-electric-700 hover:bg-electric-50 rounded-xl transition-all dark:text-slate-400 dark:hover:text-blue-200 dark:hover:bg-blue-950/60"
 															title="Editar Curso"
 														>
 															<FontAwesomeIcon icon={faEdit} />
 														</button>
 														<button
 															onClick={handleDeleteCourse}
-															className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+															className="p-2 text-slate-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all dark:text-slate-400 dark:hover:text-red-200 dark:hover:bg-red-950/60"
 															title="Eliminar Curso"
 														>
 															<FontAwesomeIcon icon={faTrash} />
@@ -198,43 +278,40 @@ const CourseManagement: React.FC = () => {
 
 											{/* Current Students List */}
 											<div className="space-y-4">
-												<h4 className="text-sm font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+												<h4 className="text-sm font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 dark:text-slate-300">
 													Estudiantes en este curso (
 													{selectedCourse.users?.length || 0})
 												</h4>
 												<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-													{selectedCourse.users?.map((student: any) => (
+													{selectedCourse.users?.map((student) => (
 														<div
 															key={student.id}
-															className="flex items-center justify-between p-3 bg-white border border-gray-300 rounded-2xl shadow-sm hover:shadow-md transition-shadow group"
+															className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-slate-200 bg-slate-50/90 shadow-sm transition-all hover:border-electric-200 hover:bg-white hover:shadow-md dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-blue-500/60 dark:hover:bg-slate-800"
 														>
-															<div className="flex items-center gap-3">
-																<div className="w-10 h-10 rounded-full bg-gradient-to-br from-electric-400 to-cyan-400 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-electric-500/10">
+															<div className="flex min-w-0 items-center gap-3">
+																<div className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-electric-500 to-cyan-500 flex items-center justify-center text-white font-black text-sm shadow-md shadow-electric-500/20 ring-2 ring-white dark:ring-slate-900">
 																	{student.name[0] +
 																		(student.last_name
 																			? student.last_name[0]
 																			: "")}
 																</div>
-																<div>
-																	<p className="font-bold text-sm text-gray-900">
+																<div className="min-w-0">
+																	<p className="truncate font-bold text-sm text-slate-900 dark:text-slate-50">
 																		{student.name} {student.last_name}
 																	</p>
-																	<p className="text-[12px] text-gray-500 font-medium">
+																	<p className="truncate text-[12px] text-slate-600 font-medium dark:text-slate-300">
 																		{student.email}
-																		<br />
-																		{student.phone}
+																	</p>
+																	<p className="text-[12px] text-slate-500 font-medium dark:text-slate-400">
+																		{student.phone || "Sin teléfono"}
 																	</p>
 																</div>
 															</div>
 															<button
 																onClick={() =>
-																	removeStudentFromCourse(
-																		selectedCourse.id,
-																		student.id,
-																		currentStudentIds,
-																	)
+																	handleRemoveStudentFromCourse(student)
 																}
-																className="text-gray-300 hover:text-red-500 transition-colors p-2"
+																className="shrink-0 rounded-xl p-2 text-slate-400 transition-colors hover:bg-red-50 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-200 dark:text-slate-500 dark:hover:bg-red-950/60 dark:hover:text-red-200 dark:focus:ring-red-800"
 																title="Eliminar del curso"
 															>
 																<FontAwesomeIcon icon={faRemove} />
@@ -243,13 +320,13 @@ const CourseManagement: React.FC = () => {
 													))}
 													{(!selectedCourse.users ||
 														selectedCourse.users.length === 0) && (
-														<div className="col-span-full py-12 text-center bg-gray-50/50 rounded-[2rem] border-2 border-dashed border-gray-200">
+														<div className="col-span-full py-12 text-center bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 dark:bg-slate-900/70 dark:border-slate-700">
 															<p className="text-4xl mb-2">🎈</p>
-															<p className="text-gray-500 font-medium">
+															<p className="text-slate-600 font-medium dark:text-slate-300">
 																Aún no hay estudiantes en este curso.
 															</p>
-															<p className="text-md text-gray-400 mt-1">
-																Usa el botón "Alumnos" para agregar.
+															<p className="text-md text-slate-500 mt-1 dark:text-slate-400">
+																Usa el botón &quot;Alumnos&quot; para agregar.
 															</p>
 														</div>
 													)}
@@ -258,14 +335,14 @@ const CourseManagement: React.FC = () => {
 										</Card>
 									</div>
 								) : (
-									<div className="h-full flex flex-col items-center justify-center py-20 bg-white/40 rounded-[3rem] border-2 border-dashed border-gray-200 backdrop-blur-sm">
-										<div className="text-6xl mb-6">
+									<div className="h-full flex flex-col items-center justify-center py-20 bg-slate-50/80 rounded-[3rem] border-2 border-dashed border-slate-200 backdrop-blur-sm dark:bg-slate-900/60 dark:border-slate-700">
+										<div className="text-6xl mb-6 text-slate-300 dark:text-slate-600">
 											<FontAwesomeIcon icon={faGraduationCap} />
 										</div>
-										<h3 className="text-xl font-black text-gray-900 mb-2">
+										<h3 className="text-xl font-black text-slate-900 mb-2 dark:text-slate-50">
 											Selecciona un curso
 										</h3>
-										<p className="text-gray-500 font-medium max-w-xs text-center px-6">
+										<p className="text-slate-600 font-medium max-w-xs text-center px-6 dark:text-slate-300">
 											Elige un curso de la izquierda para ver su detalle y
 											gestionar los estudiantes.
 										</p>
@@ -371,34 +448,30 @@ const CourseManagement: React.FC = () => {
 
 							<div className="overflow-y-auto pr-2 space-y-2 flex-1">
 								{filteredStudents.length > 0 ? (
-									filteredStudents.map((s: any) => (
+									filteredStudents.map((s) => (
 										<div
 											key={s.id}
-											className="flex items-center justify-between p-3 hover:bg-gray-50 border border-gray-100 rounded-xl transition-colors"
+											className="flex items-center justify-between gap-3 p-3 hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors dark:border-slate-700 dark:hover:bg-slate-800"
 										>
-											<div className="flex items-center gap-3">
-												<div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 font-bold text-sm">
+											<div className="flex min-w-0 items-center gap-3">
+												<div className="w-10 h-10 shrink-0 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-sm dark:bg-slate-800 dark:text-slate-300">
 													{s.name[0] + (s.last_name ? s.last_name[0] : "")}
 												</div>
-												<div>
-													<p className="font-bold text-sm text-gray-900">
+												<div className="min-w-0">
+													<p className="truncate font-bold text-sm text-slate-900 dark:text-slate-50">
 														{s.name} {s.last_name}
 													</p>
-													<p className="text-xs text-gray-500">{s.email}</p>
+													<p className="truncate text-xs text-slate-600 dark:text-slate-300">
+														{s.email}
+													</p>
 												</div>
 											</div>
 											<button
 												disabled={currentStudentIds.includes(s.id)}
-												onClick={() =>
-													addStudentToCourse(
-														selectedCourse.id,
-														s.id,
-														currentStudentIds,
-													)
-												}
+												onClick={() => handleAddStudentToCourse(s)}
 												className={`text-xs font-bold px-4 py-2 rounded-lg transition-all ${
 													currentStudentIds.includes(s.id)
-														? "bg-gray-100 text-gray-400 cursor-not-allowed"
+														? "bg-slate-100 text-slate-500 cursor-not-allowed dark:bg-slate-800 dark:text-slate-400"
 														: "bg-electric-500 text-white hover:bg-electric-600 shadow-lg shadow-electric-500/20"
 												}`}
 											>

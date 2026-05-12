@@ -1,5 +1,5 @@
 import Image from "next/image";
-import {AuthLayoutProps} from "@/types";
+import {AuthLayoutProps} from "@/interface";
 
 export const AuthLayout: React.FC<AuthLayoutProps> = ({
 	children,

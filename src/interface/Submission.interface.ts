@@ -10,6 +10,10 @@ export interface Submission {
 	needsAttention: boolean;
 	courseName?: string;
 	rubricName?: string;
+	hasReevaluationRequest?: boolean;
+	reevaluationStatus?: string;
+	reevaluationReason?: string;
+	reevaluationRequestedAt?: string;
 }
 
 export interface SubmissionDetail {
@@ -67,6 +71,7 @@ export enum SubmissionStatus {
 	PENDING = "PENDING",
 	IN_PROGRESS = "IN_PROGRESS",
 	REVIEW_PENDING = "REVIEW_PENDING",
+	GRADED = "GRADED",
 	PUBLISHED = "PUBLISHED",
 	FAILED = "FAILED",
 }

@@ -2,6 +2,13 @@ import {useAnalyticsDataActions} from "@/actions";
 import {UserRole} from "@/interface";
 import {format, subMonths, isAfter} from "date-fns";
 import {es} from "date-fns/locale";
+import {
+	PASSING_GRADE,
+	STANDARD_GRADE_MAX,
+	gradeToPercentage,
+	getScoreTime,
+	normalizeGrade,
+} from "@/utils/gradeScale";
 
 export const useAnalyticsData = (
 	timeRange: "Semana" | "Mes" | "Semestre" = "Semestre",
@@ -41,6 +48,7 @@ export const useAnalyticsData = (
 		.flatMap((s: any) =>
 			(s.submissions || []).map((sub: any) => ({
 				...sub,
+				studentId: s.id,
 				studentName: `${s.name} ${s.last_name}`,
 			})),
 		)
@@ -56,11 +64,29 @@ export const useAnalyticsData = (
 
 			return isAfter(new Date(s.assignment.dueDate), startDate);
 		});
+	const latestSubmissions = Array.from(
+		allSubmissions
+			.reduce((latestByStudentAssignment: Map<string, any>, submission: any) => {
+				const key = `${submission.assignment?.id || "assignment"}|${submission.studentId || submission.studentName}`;
+				const current = latestByStudentAssignment.get(key);
+
+				if (
+					!current ||
+					getScoreTime(submission.createdAt || submission.updatedAt) >=
+						getScoreTime(current.createdAt || current.updatedAt)
+				) {
+					latestByStudentAssignment.set(key, submission);
+				}
+
+				return latestByStudentAssignment;
+			}, new Map<string, any>())
+			.values(),
+	);
 
 	// --- 2. Heatmap Data (Criteria Scores over Time) ---
 	// Agrupar entregas por tarea (orden cronológico)
 	const assignmentsMap = new Map();
-	allSubmissions.forEach((s: any) => {
+	latestSubmissions.forEach((s: any) => {
 		if (!assignmentsMap.has(s.assignment.id)) {
 			assignmentsMap.set(s.assignment.id, {
 				id: s.assignment.id,
@@ -154,10 +180,8 @@ export const useAnalyticsData = (
 					}
 
 					const data = criteriaDataRaw.get(name)!;
-					// Normalizar score a 0-100
-					let score = c.score || 0;
-					const max = c.maxPoints || 20; // Default max?
-					const normalizedScore = Math.round((score / max) * 100);
+					const grade = normalizeGrade(c.score || 0, c.maxPoints || c.maxScore);
+					const normalizedScore = gradeToPercentage(grade) || 0;
 
 					data[idx].sum += normalizedScore;
 					data[idx].count += 1;
@@ -178,46 +202,37 @@ export const useAnalyticsData = (
 	// --- 3. Grade Distribution ---
 	const distributionData = [
 		{
-			range: "9-10",
+			range: "4.5-5.0",
 			label: "MB (Muy Bueno)",
-			min: 9,
-			max: 10,
+			min: 4.5,
+			max: STANDARD_GRADE_MAX,
 			color: "from-green-400 to-green-600",
 			light: "bg-green-50",
 			count: 0,
 		},
 		{
-			range: "8-8.9",
+			range: "4.0-4.5",
 			label: "B (Bueno)",
-			min: 8,
-			max: 8.99,
+			min: 4,
+			max: 4.49,
 			color: "from-blue-400 to-blue-600",
 			light: "bg-blue-50",
 			count: 0,
 		},
 		{
-			range: "7-7.9",
+			range: "3.0-3.9",
 			label: "R (Regular)",
-			min: 7,
-			max: 7.99,
+			min: 3,
+			max: 3.99,
 			color: "from-yellow-400 to-yellow-600",
 			light: "bg-yellow-50",
 			count: 0,
 		},
 		{
-			range: "6-6.9",
-			label: "D (Deficiente)",
-			min: 6,
-			max: 6.99,
-			color: "from-orange-400 to-orange-600",
-			light: "bg-orange-50",
-			count: 0,
-		},
-		{
-			range: "0-5.9",
+			range: "0.0-2.9",
 			label: "MD (Muy Deficiente)",
 			min: 0,
-			max: 5.99,
+			max: 2.99,
 			color: "from-red-400 to-red-600",
 			light: "bg-red-50",
 			count: 0,
@@ -227,18 +242,17 @@ export const useAnalyticsData = (
 	let passingCount = 0;
 	let totalCount = 0;
 
-	allSubmissions.forEach((s: any) => {
+	latestSubmissions.forEach((s: any) => {
 		if (s.evaluation?.totalScore !== undefined) {
-			const maxScore = s.assignment?.rubric?.maxTotalScore || 100;
-			// Normalize to 0-10
-			const grade = (s.evaluation.totalScore / maxScore) * 10;
+			const maxScore = s.assignment?.rubric?.maxTotalScore;
+			const grade = normalizeGrade(s.evaluation.totalScore, maxScore) || 0;
 
-			if (grade >= 6.0) passingCount++;
+			if (grade >= PASSING_GRADE) passingCount++;
 			totalCount++;
 
 			const bucket =
 				distributionData.find((d) => grade >= d.min && grade <= d.max) ||
-				distributionData[4]; // Fallback to F
+				distributionData[3]; // Fallback to lowest range
 			bucket.count += 1;
 		}
 	});
@@ -246,7 +260,7 @@ export const useAnalyticsData = (
 	const approvalRate =
 		totalCount > 0 ? Math.round((passingCount / totalCount) * 100) : 0;
 
-	const totalGrades = allSubmissions.length;
+	const totalGrades = totalCount;
 	const finalDistribution = distributionData.map((d) => ({
 		...d,
 		percentage: totalGrades > 0 ? Math.round((d.count / totalGrades) * 100) : 0,
@@ -255,8 +269,23 @@ export const useAnalyticsData = (
 	// --- 4. Student Performance ---
 	const studentsData = students
 		.map((student: any) => {
-			const studentSubs = (student.submissions || [])
+			const latestStudentSubs = (student.submissions || [])
 				.filter((s: any) => s.evaluation?.totalScore !== undefined)
+				.reduce((latestByAssignment: Map<string, any>, submission: any) => {
+					const key = submission.assignment?.id || submission.id;
+					const current = latestByAssignment.get(key);
+
+					if (
+						!current ||
+						getScoreTime(submission.createdAt || submission.updatedAt) >=
+							getScoreTime(current.createdAt || current.updatedAt)
+					) {
+						latestByAssignment.set(key, submission);
+					}
+
+					return latestByAssignment;
+				}, new Map<string, any>());
+			const studentSubs = Array.from<any>(latestStudentSubs.values())
 				.sort(
 					(a: any, b: any) =>
 						new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(),
@@ -266,8 +295,8 @@ export const useAnalyticsData = (
 
 			// Average Grade
 			const sum = studentSubs.reduce((acc: number, s: any) => {
-				const max = s.assignment?.rubric?.maxTotalScore || 100;
-				return acc + (s.evaluation.totalScore / max) * 10;
+				const max = s.assignment?.rubric?.maxTotalScore;
+				return acc + (normalizeGrade(s.evaluation.totalScore, max) || 0);
 			}, 0);
 			const avg = sum / studentSubs.length;
 
@@ -277,13 +306,15 @@ export const useAnalyticsData = (
 				const last = studentSubs[studentSubs.length - 1];
 				const prev = studentSubs[studentSubs.length - 2];
 				const lastGrade =
-					(last.evaluation.totalScore /
-						(last.assignment?.rubric?.maxTotalScore || 100)) *
-					10;
+					normalizeGrade(
+						last.evaluation.totalScore,
+						last.assignment?.rubric?.maxTotalScore,
+					) || 0;
 				const prevGrade =
-					(prev.evaluation.totalScore /
-						(prev.assignment?.rubric?.maxTotalScore || 100)) *
-					10;
+					normalizeGrade(
+						prev.evaluation.totalScore,
+						prev.assignment?.rubric?.maxTotalScore,
+					) || 0;
 
 				if (lastGrade > prevGrade + 0.5) trend = "up";
 				else if (lastGrade < prevGrade - 0.5) trend = "down";
@@ -291,8 +322,8 @@ export const useAnalyticsData = (
 
 			// Risk Level
 			let riskLevel: "low" | "medium" | "high" = "low";
-			if (avg < 6) riskLevel = "high";
-			else if (avg < 8) riskLevel = "medium";
+			if (avg < PASSING_GRADE) riskLevel = "high";
+			else if (avg < 4) riskLevel = "medium";
 
 			// Extract criteria summary from last submission
 			const lastSub = studentSubs[studentSubs.length - 1];
@@ -305,8 +336,8 @@ export const useAnalyticsData = (
 						.slice(0, 3)
 						.map((c: any) => ({
 							name: c.name || c.title,
-							score: c.score || 0,
-							maxScore: c.maxPoints || 20,
+							score: normalizeGrade(c.score || 0, c.maxPoints || c.maxScore) || 0,
+							maxScore: STANDARD_GRADE_MAX,
 						}));
 				} catch {}
 			}

@@ -2,23 +2,33 @@ import {useAuth} from "@/hooks";
 import {useMutation, useQuery} from "@apollo/client/react";
 import {GET_TASK_TEACHER, CREATE_ASSIGNMENT} from "@/gql/Assignment";
 
+type CreateAssignmentPayload = Record<string, unknown>;
+
+type CreateAssignmentResponse = {
+	createAssignment: CreateAssignmentPayload & {id: string};
+};
+
 export const useAssignmentActions = () => {
 	const {user} = useAuth();
 
-	const {data, loading, error} = useQuery<{assignments: any[]}>(
+	const {data, loading, error} = useQuery<{assignments: unknown[]}>(
 		GET_TASK_TEACHER,
 		{
 			skip: !user,
 			fetchPolicy: "cache-and-network",
+			errorPolicy: "all",
 		},
 	);
 
 	const [createMutation, {loading: createLoading, error: createError}] =
-		useMutation(CREATE_ASSIGNMENT, {
+		useMutation<
+			CreateAssignmentResponse,
+			{createAssignmentInput: CreateAssignmentPayload}
+		>(CREATE_ASSIGNMENT, {
 			refetchQueries: [{query: GET_TASK_TEACHER}],
 		});
 
-	const createAssignment = async (payload: any) => {
+	const createAssignment = async (payload: CreateAssignmentPayload) => {
 		try {
 			const result = await createMutation({
 				variables: {

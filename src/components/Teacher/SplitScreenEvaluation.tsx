@@ -1,13 +1,15 @@
 import React, {useState} from "react";
-import {AIEvaluation, TeacherOverride} from "@/types";
+import {AIEvaluation} from "@/types";
+import {TeacherOverride} from "@/interface";
+import {notifyInfo, notifySuccess, notifyWarning} from "@/utils/toastNotify";
 
 const SplitScreenEvaluation: React.FC = () => {
 	const [aiEvaluation] = useState<AIEvaluation>({
 		criteria: [
 			{
 				name: "Argumentación",
-				score: 8,
-				maxScore: 10,
+				score: 4,
+				maxScore: 5,
 				feedback:
 					"Argumentos sólidos pero podrían profundizarse más con ejemplos concretos.",
 				suggestions: [
@@ -17,16 +19,16 @@ const SplitScreenEvaluation: React.FC = () => {
 			},
 			{
 				name: "Estructura",
-				score: 9,
-				maxScore: 10,
+				score: 4.5,
+				maxScore: 5,
 				feedback:
 					"Excelente organización y transiciones fluidas entre secciones.",
 				suggestions: [],
 			},
 			{
 				name: "Ortografía y Gramática",
-				score: 7,
-				maxScore: 10,
+				score: 3.5,
+				maxScore: 5,
 				feedback:
 					"Se detectaron algunos errores menores de concordancia y puntuación.",
 				suggestions: [
@@ -36,8 +38,8 @@ const SplitScreenEvaluation: React.FC = () => {
 			},
 			{
 				name: "Originalidad",
-				score: 8,
-				maxScore: 10,
+				score: 4,
+				maxScore: 5,
 				feedback:
 					"Perspectiva interesante con algunos aportes personales valiosos.",
 				suggestions: [
@@ -46,7 +48,7 @@ const SplitScreenEvaluation: React.FC = () => {
 				],
 			},
 		],
-		overallScore: 8.0,
+		overallScore: 4.0,
 		generalFeedback:
 			"Excelente trabajo. El estudiante demuestra comprensión del tema con argumentos bien estructurados. Se sugiere mejorar aspectos de redacción y profundizar en algunos argumentos.",
 		confidence: 92,
@@ -69,7 +71,10 @@ Sin embargo, es crucial considerar los aspectos éticos de esta transformación 
 En conclusión, mientras la IA ofrece oportunidades sin precedentes para la personalización educativa, su implementación requiere un equilibrio cuidadoso entre innovación y consideraciones éticas.`;
 
 	const handleOverrideSubmit = (criterionId: string, criterionName: string) => {
-		if (!newOverride.newScore || !newOverride.reason) return;
+		if (!newOverride.newScore || !newOverride.reason) {
+			notifyWarning("Ingresa la nueva nota y el motivo del cambio.");
+			return;
+		}
 
 		const criterion = aiEvaluation.criteria.find(
 			(c) => c.name === criterionName
@@ -86,6 +91,7 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 		setTeacherOverrides([...teacherOverrides, override]);
 		setShowOverrideForm(null);
 		setNewOverride({newScore: 0, reason: "", comments: ""});
+		notifySuccess(`Cambio aplicado en "${criterionName}".`);
 	};
 
 	const calculateFinalScore = () => {
@@ -101,7 +107,7 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 		});
 
 		return {
-			score: ((total / maxTotal) * 10).toFixed(1),
+			score: ((total / maxTotal) * 5).toFixed(1),
 			isModified: teacherOverrides.length > 0,
 		};
 	};
@@ -129,7 +135,7 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 								finalScore.isModified ? "text-purple-600" : "text-electric-500"
 							}`}
 						>
-							{finalScore.score}/10
+							{finalScore.score}/5
 						</div>
 						{finalScore.isModified && (
 							<div className="text-sm text-purple-600">
@@ -144,7 +150,7 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 					<div className="bg-gradient-to-r from-electric-50 to-blue-50 p-4 rounded-xl border border-electric-200">
 						<div className="text-sm text-gray-600 mb-1">Evaluación IA</div>
 						<div className="text-2xl font-bold text-electric-500">
-							{aiEvaluation.overallScore.toFixed(1)}/10
+							{aiEvaluation.overallScore.toFixed(1)}/5
 						</div>
 						<div className="text-sm text-gray-600">
 							Confianza: {aiEvaluation.confidence}%
@@ -154,7 +160,7 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 					<div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl border border-purple-200">
 						<div className="text-sm text-gray-600 mb-1">Tu evaluación</div>
 						<div className="text-2xl font-bold text-purple-600">
-							{finalScore.score}/10
+							{finalScore.score}/5
 						</div>
 						<div className="text-sm text-gray-600">
 							{teacherOverrides.length} criterio
@@ -503,13 +509,19 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 					</div>
 
 					<div className="flex gap-3">
-						<button className="btn-ghost">
+						<button
+							className="btn-ghost"
+							onClick={() => notifyInfo("Borrador de evaluación guardado.")}
+						>
 							<span className="flex items-center gap-2">
 								<span>💾</span>
 								<span>Guardar borrador</span>
 							</span>
 						</button>
-						<button className="btn-primary">
+						<button
+							className="btn-primary"
+							onClick={() => notifySuccess("Evaluación publicada para el estudiante.")}
+						>
 							<span className="flex items-center gap-2">
 								<span>📤</span>
 								<span>Publicar evaluación</span>
@@ -544,7 +556,7 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 												</div>
 												{override.comments && (
 													<div className="text-sm text-gray-700 mt-1">
-														"{override.comments}"
+														&ldquo;{override.comments}&rdquo;
 													</div>
 												)}
 											</div>

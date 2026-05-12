@@ -9,6 +9,12 @@ import {
 	UPDATE_RUBRIC,
 	DELETE_RUBRIC,
 } from "@/gql/Rubrics";
+import {
+	notifyError,
+	notifyInfo,
+	notifySuccess,
+	notifyWarning,
+} from "@/utils/toastNotify";
 
 import type {
 	CreateRubricInput,
@@ -32,7 +38,7 @@ export const useRubrics = () => {
 		totalWeight: 0,
 		isActive: false,
 	});
-	const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
+const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 		"library",
 	);
 	const [isSaving, setIsSaving] = useState(false);
@@ -105,9 +111,9 @@ export const useRubrics = () => {
 		try {
 			setOperationLoading(true);
 			setOperationError(null);
-			const result: any = await createRubricMutation({
+			const result = await createRubricMutation({
 				variables: {createRubricInput: payload},
-			});
+			}) as {data?: {createRubric?: RubricTemplate}};
 			return result.data?.createRubric || null;
 		} catch (error) {
 			setOperationError(error as Error);
@@ -126,9 +132,9 @@ export const useRubrics = () => {
 		try {
 			setOperationLoading(true);
 			setOperationError(null);
-			const result: any = await updateRubricMutation({
+			const result = await updateRubricMutation({
 				variables: {updateRubricInput: payload},
-			});
+			}) as {data?: {updateRubric?: RubricTemplate}};
 			return result.data?.updateRubric || null;
 		} catch (error) {
 			setOperationError(error as Error);
@@ -161,7 +167,7 @@ export const useRubrics = () => {
 		try {
 			const success = await deleteRubric(id);
 			if (success) {
-				console.log("Rúbrica eliminada con éxito");
+				notifySuccess("Rúbrica eliminada correctamente.");
 				// If the deleted rubric was the current one, reset it
 				if (currentRubric.id === id) {
 					setCurrentRubric({
@@ -176,7 +182,7 @@ export const useRubrics = () => {
 			}
 		} catch (error) {
 			console.error("Error al eliminar rúbrica:", error);
-			alert("No se pudo eliminar la rúbrica.");
+			notifyError("No se pudo eliminar la rúbrica.");
 		}
 	};
 
@@ -189,7 +195,7 @@ export const useRubrics = () => {
 		description: string;
 	}) => {
 		if (!user?.id) {
-			alert("Error: No se ha identificado el usuario.");
+			notifyError("No se ha identificado el usuario.");
 			return;
 		}
 
@@ -211,10 +217,13 @@ export const useRubrics = () => {
 					isActive: false,
 				});
 				setActiveTab("builder");
+				notifySuccess(
+					`Rúbrica "${created.title}" creada. Agrega criterios para completarla.`,
+				);
 			}
 		} catch (error) {
 			console.error("Error al iniciar rúbrica:", error);
-			alert("Error al iniciar la creación de la rúbrica.");
+			notifyError("Error al iniciar la creación de la rúbrica.");
 		}
 	};
 
@@ -223,7 +232,7 @@ export const useRubrics = () => {
 		try {
 			// 1. Save Rubric Header
 			if (!user?.id) {
-				alert("Error: No se ha identificado el usuario.");
+				notifyError("No se ha identificado el usuario.");
 				setIsSaving(false);
 				return;
 			}
@@ -275,9 +284,9 @@ export const useRubrics = () => {
 				rubricToSave.criteria.map(async (criterion) => {
 					const levelsPayload =
 						criterion.levels && criterion.levels.length > 0
-							? criterion.levels.map((l: any) => ({
-									description: l.description,
-									score: l.score,
+							? criterion.levels.map((level) => ({
+									description: level.description,
+									score: level.score,
 								}))
 							: [
 									{
@@ -305,8 +314,9 @@ export const useRubrics = () => {
 								maxPoints: payload.maxPoints,
 								levels: payload.levels,
 							});
-						} catch (err: any) {
-							const errorMessage = err.message || JSON.stringify(err);
+						} catch (err: unknown) {
+							const errorMessage =
+								err instanceof Error ? err.message : JSON.stringify(err);
 							if (
 								errorMessage.includes("not found") ||
 								errorMessage.includes("no existe")
@@ -328,7 +338,7 @@ export const useRubrics = () => {
 					name: freshRubric.title,
 					description: freshRubric.description,
 					criteria: freshRubric.criteria
-						? freshRubric.criteria.map((c: any) => ({
+						? freshRubric.criteria.map((c: RubricCriteria) => ({
 								id: c.id,
 								title: c.title,
 								description:
@@ -341,16 +351,21 @@ export const useRubrics = () => {
 						: [],
 					totalWeight: freshRubric.criteria
 						? freshRubric.criteria.reduce(
-								(acc: number, c: any) => acc + (c.weight || 0),
+								(acc: number, c: RubricCriteria) => acc + (c.weight || 0),
 								0,
 							)
 						: 0,
 					isActive: false,
 				});
 			}
-		} catch (error: any) {
+			notifySuccess(`Rúbrica "${rubricToSave.name}" guardada correctamente.`);
+		} catch (error: unknown) {
 			console.error("Error al guardar:", error);
-			alert("Error al guardar la rúbrica y sus criterios.");
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "Error al guardar la rúbrica y sus criterios.",
+			);
 		} finally {
 			setIsSaving(false);
 		}
@@ -365,7 +380,7 @@ export const useRubrics = () => {
 					name: fullRubric.title,
 					description: fullRubric.description,
 					criteria: fullRubric.criteria
-						? fullRubric.criteria.map((c: any) => ({
+						? fullRubric.criteria.map((c: RubricCriteria) => ({
 								id: c.id,
 								title: c.title,
 								description:
@@ -378,7 +393,7 @@ export const useRubrics = () => {
 						: [],
 					totalWeight: fullRubric.criteria
 						? fullRubric.criteria.reduce(
-								(acc: any, c: any) => acc + (c.weight || 0),
+								(acc: number, c: RubricCriteria) => acc + (c.weight || 0),
 								0,
 							)
 						: 100,
@@ -388,6 +403,7 @@ export const useRubrics = () => {
 			}
 		} catch (error) {
 			console.error("Error al cargar la plantilla:", error);
+			notifyError("No se pudo cargar la rúbrica seleccionada.");
 		}
 	};
 
@@ -398,16 +414,17 @@ export const useRubrics = () => {
 		setCurrentRubric((prev) => {
 			const potentialWeight =
 				prev.criteria.reduce(
-					(acc: number, c: any) => acc + (c.weight || 0),
+					(acc: number, c: RubricCriteria) => acc + (c.weight || 0),
 					0,
 				) + (criteria.weight || 0);
 
 			if (potentialWeight > 100) {
-				alert(
+				notifyWarning(
 					`No se puede añadir. Ponderación total (${potentialWeight}%) excedería 100%.`,
 				);
 				return prev;
 			}
+			notifyInfo(`Criterio "${criteria.title}" agregado al borrador.`);
 
 			return {
 				...prev,
@@ -432,10 +449,11 @@ export const useRubrics = () => {
 			);
 
 			if (newTotalWeight > 100) {
-				alert("No se puede actualizar. Ponderación total excedería 100%.");
+				notifyWarning("No se puede actualizar. Ponderación total excedería 100%.");
 				return prev;
 			}
 
+			notifyInfo("Criterio actualizado en el borrador.");
 			return {
 				...prev,
 				criteria: newCriteria,
@@ -452,6 +470,9 @@ export const useRubrics = () => {
 			}
 
 			const newCriteria = prev.criteria.filter((c) => c.id !== id);
+			if (criteriaToDelete) {
+				notifyInfo(`Criterio "${criteriaToDelete.title}" eliminado del borrador.`);
+			}
 			return {
 				...prev,
 				criteria: newCriteria,

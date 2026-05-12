@@ -12,6 +12,7 @@ import {
 	faChartLine,
 	faCloudArrowUp,
 	faFileLines,
+	faGraduationCap,
 } from "@fortawesome/free-solid-svg-icons";
 
 const Sidebar: React.FC = () => {
@@ -29,15 +30,21 @@ const Sidebar: React.FC = () => {
 
 	const studentItems = [
 		{
+			path: "/student/courses",
+			icon: <FontAwesomeIcon icon={faGraduationCap} />,
+			label: "Mis cursos",
+			badge: null,
+		},
+		{
 			path: "/upload",
 			icon: <FontAwesomeIcon icon={faCloudArrowUp} />,
 			label: "Subir Tarea",
-			badge: "3",
+			badge: null,
 		},
 		{
 			path: "/evaluation",
 			icon: <FontAwesomeIcon icon={faFileLines} />,
-			label: "Mis Resultados",
+			label: "Mi progreso",
 			badge: null,
 		},
 	];

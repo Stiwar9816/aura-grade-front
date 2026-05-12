@@ -1,5 +1,4 @@
 import {gql, DocumentNode} from "@apollo/client";
-import {title} from "process";
 
 const RUBRIC_FIELDS = gql`
 	fragment RubricFields on Rubric {
@@ -26,10 +25,6 @@ export const RUBRIC_BY_ID: DocumentNode = gql`
 			criteria {
 				id
 				title
-				levels {
-					description
-					score
-				}
 				maxPoints
 			}
 		}

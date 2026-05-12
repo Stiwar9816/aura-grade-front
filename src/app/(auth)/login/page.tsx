@@ -51,7 +51,7 @@ const LoginPage: React.FC = () => {
 			features={features}
 		>
 			{/* Social Login */}
-			<div className="mb-8">
+			{/* <div className="mb-8">
 				<div className="grid grid-cols-2 gap-4">
 					<button
 						onClick={() => handleSocialLogin("google")}
@@ -99,7 +99,7 @@ const LoginPage: React.FC = () => {
 					</span>
 					<div className="flex-1 h-px bg-gray-300"></div>
 				</div>
-			</div>
+			</div> */}
 
 			{/* Login Form */}
 			<form onSubmit={handleSubmit} className="space-y-6">

@@ -1,3 +1,5 @@
+import {faCheck} from "@fortawesome/free-solid-svg-icons";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import React from "react";
 
 interface Step {
@@ -10,9 +12,23 @@ interface Step {
 interface UploadStepperProps {
 	steps: Step[];
 	currentStep: number;
+	progressPercent?: number;
+	progressLabel?: string;
+	progressDescription?: string;
 }
 
-const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
+const UploadStepper: React.FC<UploadStepperProps> = ({
+	steps,
+	currentStep,
+	progressPercent,
+	progressLabel,
+	progressDescription,
+}) => {
+	const displayedProgress =
+		typeof progressPercent === "number"
+			? progressPercent
+			: Math.round((currentStep / steps.length) * 100);
+
 	const getStepStatus = (stepId: number) => {
 		if (stepId < currentStep) return "completed";
 		if (stepId === currentStep) return "active";
@@ -39,8 +55,8 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 							stepId === 2
 								? "bg-cyan-400"
 								: stepId === 3
-								? "bg-purple-400"
-								: "bg-electric-400"
+									? "bg-purple-400"
+									: "bg-electric-400"
 						}`}
 					></div>
 
@@ -67,8 +83,13 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 				<div className="text-right">
 					<div className="text-sm text-gray-600">Progreso</div>
 					<div className="text-2xl font-bold text-electric-500">
-						{Math.round((currentStep / steps.length) * 100)}%
+						{displayedProgress}%
 					</div>
+					{progressLabel && (
+						<div className="text-xs font-bold text-gray-500 mt-1">
+							{progressLabel}
+						</div>
+					)}
 				</div>
 			</div>
 
@@ -79,9 +100,7 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 					<div className="absolute top-5 left-10 right-10 h-1 bg-gray-200 -z-10">
 						<div
 							className="h-full bg-gradient-to-r from-electric-500 to-cyan-500 transition-all duration-500"
-							style={{
-								width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
-							}}
+							style={{width: `${displayedProgress}%`}}
 						/>
 					</div>
 
@@ -106,8 +125,8 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 												status === "completed"
 													? "text-green-600"
 													: status === "active"
-													? "text-electric-500"
-													: "text-gray-500"
+														? "text-electric-500"
+														: "text-gray-500"
 											}`}
 										>
 											{step.title}
@@ -124,15 +143,15 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 												status === "completed"
 													? "bg-green-100 text-green-800"
 													: status === "active"
-													? "bg-electric-100 text-electric-800 animate-pulse"
-													: "bg-gray-100 text-gray-800"
+														? "bg-electric-100 text-electric-800 animate-pulse"
+														: "bg-gray-100 text-gray-800"
 											}`}
 										>
 											{status === "completed"
 												? "Completado"
 												: status === "active"
-												? "En progreso"
-												: "Pendiente"}
+													? "En progreso"
+													: "Pendiente"}
 										</span>
 									</div>
 								</div>
@@ -157,8 +176,8 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 									isActive
 										? "border-electric-500 bg-electric-50"
 										: isCompleted
-										? "border-green-500 bg-green-50"
-										: "border-gray-200"
+											? "border-green-500 bg-green-50"
+											: "border-gray-200"
 								}`}
 							>
 								{/* Step Icon */}
@@ -175,8 +194,8 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 													isActive
 														? "text-electric-500"
 														: isCompleted
-														? "text-green-600"
-														: "text-gray-700"
+															? "text-green-600"
+															: "text-gray-700"
 												}`}
 											>
 												{step.title}
@@ -191,11 +210,15 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 													isCompleted
 														? "bg-green-100 text-green-800"
 														: isActive
-														? "bg-electric-100 text-electric-800"
-														: "bg-gray-100 text-gray-800"
+															? "bg-electric-100 text-electric-800"
+															: "bg-gray-100 text-gray-800"
 												}`}
 											>
-												{isCompleted ? "✓" : `${index + 1}/${steps.length}`}
+												{isCompleted ? (
+													<FontAwesomeIcon icon={faCheck} />
+												) : (
+													`${index + 1}/${steps.length}`
+												)}
 											</span>
 										</div>
 									</div>
@@ -204,8 +227,8 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 									{isActive && index === currentStep - 1 && (
 										<div className="mt-3">
 											<div className="flex justify-between text-xs text-gray-600 mb-1">
-												<span>Procesando...</span>
-												<span>~30s</span>
+												<span>{progressLabel || "Procesando..."}</span>
+												<span>{displayedProgress}%</span>
 											</div>
 											<div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
 												<div className="h-full bg-gradient-to-r from-electric-500 to-cyan-500 animate-progress"></div>
@@ -220,7 +243,7 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 			</div>
 
 			{/* AI Processing Details - Professional Terminal */}
-			{(currentStep === 2 || currentStep === 3) && (
+			{currentStep > 0 && currentStep < steps.length && (
 				<div className="mt-10 p-6 bg-gray-950 rounded-[2.5rem] border border-gray-800 shadow-2xl overflow-hidden relative">
 					<div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent"></div>
 
@@ -245,20 +268,21 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 								<div className="flex items-start gap-3 animate-in fade-in slide-in-from-left duration-500">
 									<span className="text-cyan-600 shrink-0">01</span>
 									<span className="text-gray-300">
-										Iniciando motor OCR de alta precisión...{" "}
+										Progreso backend: {displayedProgress}%{" "}
 										<span className="text-cyan-500 text-xs">[OK]</span>
 									</span>
 								</div>
 								<div className="flex items-start gap-3 animate-in fade-in slide-in-from-left delay-300 duration-500">
 									<span className="text-cyan-600 shrink-0">02</span>
 									<span className="text-gray-300">
-										Extrayendo vectores de texto y jerarquía visual...
+										{progressLabel || "Preparando entrega..."}
 									</span>
 								</div>
 								<div className="flex items-start gap-3 italic text-cyan-400/60 animate-pulse">
 									<span className="text-cyan-600 shrink-0">03</span>
 									<span>
-										Analizando regularidad sintáctica en bloques B04...
+										{progressDescription ||
+											"Esperando actualización del procesador..."}
 									</span>
 								</div>
 							</>
@@ -267,20 +291,21 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 								<div className="flex items-start gap-3 animate-in fade-in slide-in-from-left duration-500">
 									<span className="text-purple-600 shrink-0">01</span>
 									<span className="text-gray-300">
-										Parámetros de rúbrica sincronizados.{" "}
+										Progreso backend: {displayedProgress}%{" "}
 										<span className="text-purple-500 text-xs">[SYNC]</span>
 									</span>
 								</div>
 								<div className="flex items-start gap-3 animate-in fade-in slide-in-from-left delay-300 duration-500">
 									<span className="text-purple-600 shrink-0">02</span>
 									<span className="text-gray-300">
-										Mapeando respuestas de usuario vs criterios de evaluación...
+										{progressLabel || "Procesando con IA..."}
 									</span>
 								</div>
 								<div className="flex items-start gap-3 italic text-purple-400/60 animate-pulse text-xs">
 									<span className="text-purple-600 shrink-0">03</span>
 									<span>
-										Generando inferencias de retroalimentación pedagógica...
+										{progressDescription ||
+											"Esperando actualización del procesador..."}
 									</span>
 								</div>
 							</>
@@ -316,26 +341,26 @@ const UploadStepper: React.FC<UploadStepperProps> = ({steps, currentStep}) => {
 				</div>
 			</div>
 
-			{/* Estimated Time */}
+			{/* Backend Progress */}
 			{currentStep > 0 && currentStep < steps.length && (
 				<div className="mt-6 p-4 bg-gradient-to-r from-cyan-50 to-electric-50 rounded-xl border border-cyan-200">
 					<div className="flex items-center justify-between">
 						<div className="flex items-center gap-3">
 							<div className="p-2 bg-cyan-100 rounded-lg">
-								<span className="text-cyan-600">⏱️</span>
+								<span className="text-cyan-600">%</span>
 							</div>
 							<div>
 								<div className="font-medium text-gray-900">
-									Tiempo estimado restante
+									{progressLabel || "Procesando entrega"}
 								</div>
 								<div className="text-sm text-gray-600">
-									{Math.max(0, (steps.length - currentStep) * 15)} segundos
-									aproximadamente
+									{progressDescription ||
+										"El frontend se sincroniza con los estados del backend."}
 								</div>
 							</div>
 						</div>
 						<div className="text-2xl font-bold text-cyan-600">
-							{Math.round((currentStep / steps.length) * 100)}%
+							{displayedProgress}%
 						</div>
 					</div>
 				</div>

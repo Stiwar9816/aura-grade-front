@@ -1,9 +1,10 @@
 import React from "react";
 import {CriteriaTableProps} from "@/interface";
+import {gradeToPercentage} from "@/utils/gradeScale";
 
 export const CriteriaTable: React.FC<CriteriaTableProps> = ({criteria}) => {
-	const getScoreColor = (score: number, maxScore: number) => {
-		const percentage = (score / maxScore) * 100;
+	const getScoreColor = (score: number) => {
+		const percentage = gradeToPercentage(score) ?? 0;
 		if (percentage >= 90) return "bg-green-100 text-green-800";
 		if (percentage >= 70) return "bg-blue-100 text-blue-800";
 		if (percentage >= 60) return "bg-yellow-100 text-yellow-800";
@@ -60,7 +61,6 @@ export const CriteriaTable: React.FC<CriteriaTableProps> = ({criteria}) => {
 										<span
 											className={`px-3 py-1 rounded-full text-sm font-bold ${getScoreColor(
 												criterion.score,
-												criterion.maxScore,
 											)}`}
 										>
 											{criterion.score.toFixed(1)}
@@ -71,12 +71,9 @@ export const CriteriaTable: React.FC<CriteriaTableProps> = ({criteria}) => {
 										<div
 											className={`h-full rounded-full ${getScoreColor(
 												criterion.score,
-												criterion.maxScore,
 											).replace("100", "500")}`}
 											style={{
-												width: `${
-													(criterion.score / criterion.maxScore) * 100
-												}%`,
+												width: `${gradeToPercentage(criterion.score) ?? 0}%`,
 											}}
 										/>
 									</div>
