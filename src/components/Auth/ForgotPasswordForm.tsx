@@ -4,6 +4,13 @@ import React, {useState} from "react";
 import Link from "next/link";
 import {forgotPasswordAction} from "@/actions/auth";
 import {AuthLayout} from "@/components/Auth";
+import {
+	faArrowLeft,
+	faCheckCircle,
+	faExclamationTriangle,
+	faInbox,
+} from "@fortawesome/free-solid-svg-icons";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 
 export const ForgotPasswordForm: React.FC = () => {
 	const [email, setEmail] = useState("");
@@ -51,7 +58,9 @@ export const ForgotPasswordForm: React.FC = () => {
 					{error && (
 						<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
 							<div className="flex items-center gap-3">
-								<span className="text-red-600">⚠️</span>
+								<span className="text-red-600">
+									<FontAwesomeIcon icon={faExclamationTriangle} />
+								</span>
 								<span className="text-red-700">{error}</span>
 							</div>
 						</div>
@@ -132,14 +141,16 @@ export const ForgotPasswordForm: React.FC = () => {
 							href="/login"
 							className="text-electric-500 hover:text-electric-600 font-medium"
 						>
-							← Volver al inicio de sesión
+							<FontAwesomeIcon icon={faArrowLeft} /> Volver al inicio de sesión
 						</Link>
 					</div>
 				</>
 			) : (
 				<div className="text-center">
 					<div className="mb-6">
-						<div className="text-5xl mb-4 text-green-500">✅</div>
+						<div className="text-5xl mb-4 text-green-500">
+							<FontAwesomeIcon icon={faCheckCircle} />
+						</div>
 						<p className="text-gray-600 mb-4">{successMessage}</p>
 						<div className="font-medium text-electric-500 bg-electric-50 p-3 rounded-xl">
 							{email}
@@ -148,7 +159,9 @@ export const ForgotPasswordForm: React.FC = () => {
 
 					<div className="bg-blue-50 rounded-xl p-6 border border-blue-200 mb-6 font-normal">
 						<h3 className="font-semibold text-gray-900 mb-3 flex items-center justify-center gap-2">
-							<span>📧</span>
+							<span>
+								<FontAwesomeIcon icon={faInbox} />
+							</span>
 							<span>¿Qué hacer ahora?</span>
 						</h3>
 						<ul className="space-y-3 text-sm text-gray-700 text-left">

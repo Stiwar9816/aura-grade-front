@@ -4,6 +4,16 @@ import Link from "next/link";
 import {DocumentType, UserRole} from "@/interface";
 import {AuthLayout} from "@/components/Auth";
 import {useRegister} from "@/hooks";
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {
+	faArrowLeft,
+	faArrowRight,
+	faChalkboard,
+	faChalkboardTeacher,
+	faExclamationTriangle,
+	faUserGraduate,
+	faUserShield,
+} from "@fortawesome/free-solid-svg-icons";
 
 const RegisterPage: React.FC = () => {
 	const {
@@ -25,19 +35,19 @@ const RegisterPage: React.FC = () => {
 
 	const features = [
 		{
-			icon: "👨‍🎓",
+			icon: <FontAwesomeIcon icon={faUserGraduate} />,
 			title: "Panel de Estudiante",
 			description: "Accede a tus tareas y recibe feedback en tiempo real",
 			gradient: "from-cyan-500 to-blue-500",
 		},
 		{
-			icon: "👨‍🏫",
+			icon: <FontAwesomeIcon icon={faChalkboardTeacher} />,
 			title: "Herramientas de Docente",
 			description: "Gestiona rúbricas y automatiza evaluaciones con precisión",
 			gradient: "from-purple-500 to-electric-500",
 		},
 		{
-			icon: "🛡️",
+			icon: <FontAwesomeIcon icon={faUserShield} />,
 			title: "Seguro y Privado",
 			description: "Tus datos y trabajos están protegidos con encriptación",
 			gradient: "from-emerald-500 to-green-500",
@@ -80,7 +90,9 @@ const RegisterPage: React.FC = () => {
 			{displayError && (
 				<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
 					<div className="flex items-center gap-3">
-						<span className="text-red-600">⚠️</span>
+						<span className="text-red-600">
+							<FontAwesomeIcon icon={faExclamationTriangle} />
+						</span>
 						<span className="text-red-700">{displayError}</span>
 					</div>
 				</div>
@@ -267,7 +279,9 @@ const RegisterPage: React.FC = () => {
 												: "bg-gray-100"
 										}`}
 									>
-										<span className="text-xl">👨‍🎓</span>
+										<span className="text-xl">
+											<FontAwesomeIcon icon={faUserGraduate} />
+										</span>
 									</div>
 									<div>
 										<div className="font-semibold text-gray-900">
@@ -297,7 +311,9 @@ const RegisterPage: React.FC = () => {
 												: "bg-gray-100"
 										}`}
 									>
-										<span className="text-xl">👨‍🏫</span>
+										<span className="text-xl">
+											<FontAwesomeIcon icon={faChalkboardTeacher} />
+										</span>
 									</div>
 									<div>
 										<div className="font-semibold text-gray-900">
@@ -529,9 +545,15 @@ const RegisterPage: React.FC = () => {
 								<div>
 									<div className="text-sm text-gray-600">Tipo de usuario</div>
 									<div className="font-medium text-gray-900">
-										{formData.userType === UserRole.STUDENT
-											? "👨‍🎓 Estudiante"
-											: "👨‍🏫 Docente"}
+										{formData.userType === UserRole.STUDENT ? (
+											<>
+												<FontAwesomeIcon icon={faUserGraduate} /> Estudiante
+											</>
+										) : (
+											<>
+												<FontAwesomeIcon icon={faChalkboardTeacher} /> Docente
+											</>
+										)}
 									</div>
 								</div>
 							</div>
@@ -595,7 +617,7 @@ const RegisterPage: React.FC = () => {
 					}`}
 					disabled={step === 1}
 				>
-					← Anterior
+					<FontAwesomeIcon icon={faArrowLeft} /> Anterior
 				</button>
 
 				<button
@@ -634,7 +656,9 @@ const RegisterPage: React.FC = () => {
 					) : step === 3 ? (
 						"Crear cuenta"
 					) : (
-						"Continuar →"
+						<span>
+							Continuar <FontAwesomeIcon icon={faArrowRight} />
+						</span>
 					)}
 				</button>
 			</div>
