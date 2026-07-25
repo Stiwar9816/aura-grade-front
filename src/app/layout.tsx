@@ -1,5 +1,6 @@
 import type {Metadata} from "next";
 import "@/styles/globals.css";
+import {AuthProvider} from "@/context/AuthContext";
 
 export const metadata: Metadata = {
 	title: "Aura Grade - Clasificación asistida por IA",
@@ -14,7 +15,9 @@ export default function RootLayout({
 }>) {
 	return (
 		<html lang="es" suppressHydrationWarning data-lt-installed>
-			<body className="antialiased">{children}</body>
+			<body className="antialiased">
+				<AuthProvider>{children}</AuthProvider>
+			</body>
 		</html>
 	);
 }

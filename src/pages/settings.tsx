@@ -176,8 +176,7 @@ const SettingsPage: React.FC = () => {
 			});
 			notifySuccess("Cuenta desactivada correctamente.");
 			window.localStorage.removeItem(settingsKey);
-			window.localStorage.removeItem("auraGrade_user");
-			logout();
+			await logout();
 			window.location.href = "/login";
 		} catch (error) {
 			const message =

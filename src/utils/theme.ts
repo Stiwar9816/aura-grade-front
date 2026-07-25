@@ -45,16 +45,9 @@ export const getStoredTheme = (userId?: string): ThemeSetting => {
 	}
 };
 
-export const applyStoredTheme = () => {
+export const applyStoredTheme = (userId?: string) => {
 	if (typeof window === "undefined") return;
-
-	try {
-		const rawUser = window.localStorage.getItem("auraGrade_user");
-		const user = rawUser ? JSON.parse(rawUser) : null;
-		applyTheme(getStoredTheme(user?.id));
-	} catch {
-		applyTheme(DEFAULT_THEME);
-	}
+	applyTheme(getStoredTheme(userId));
 };
 
 export const notifySettingsUpdated = () => {

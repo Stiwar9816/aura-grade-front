@@ -6,11 +6,6 @@ import {
 } from "@apollo/client";
 import {CombinedGraphQLErrors} from "@apollo/client/errors";
 import {ErrorLink} from "@apollo/client/link/error";
-import {SetContextLink} from "@apollo/client/link/context";
-
-type StoredUser = {
-	token?: string;
-};
 
 const getStatusCode = (error: unknown) => {
 	if (typeof error !== "object" || error === null || !("statusCode" in error)) {
@@ -22,37 +17,22 @@ const getStatusCode = (error: unknown) => {
 };
 
 const httpLink = new HttpLink({
-	uri:
-		process.env.NEXT_PUBLIC_GRAPHQL_API_URL || "http://localhost:3000/graphql",
+	uri: "/api/graphql",
+	credentials: "same-origin",
 });
 
-const authLink = new SetContextLink((context) => {
-	const headers = context.headers as Record<string, string> | undefined;
-	// get the authentication token from local storage if it exists
-	let token: string = "";
-	if (typeof window !== "undefined") {
-		const storedUser = localStorage.getItem("auraGrade_user");
-		if (storedUser) {
-			try {
-				const user = JSON.parse(storedUser) as StoredUser;
-				token = user.token || "";
-			} catch (e) {
-				console.error(
-					"Error parsing user from local storage",
-					e instanceof Error ? e.message : e,
-				);
-			}
-		}
-	}
+let redirectingToLogin = false;
 
-	// return the headers to the context so httpLink can read them
-	return {
-		headers: {
-			...headers,
-			authorization: token ? `Bearer ${token}` : "",
-		},
-	};
-});
+const clearSessionAndRedirect = () => {
+	if (typeof window === "undefined" || redirectingToLogin) return;
+	redirectingToLogin = true;
+	void fetch("/api/auth/logout", {
+		method: "POST",
+		credentials: "same-origin",
+	}).finally(() => {
+		window.location.href = "/login";
+	});
+};
 
 const errorLink = new ErrorLink(({error}) => {
 	if (CombinedGraphQLErrors.is(error)) {
@@ -65,33 +45,30 @@ const errorLink = new ErrorLink(({error}) => {
 
 			if (
 				errCode === "UNAUTHENTICATED" ||
-				errCode === "FORBIDDEN" ||
 				errMessage.includes("401") ||
-				errMessage.includes("unauthorized") ||
 				errMessage.includes("jwt expired") ||
-				errMessage.includes("token expired")
+				errMessage.includes("token expired") ||
+				errMessage.includes("sesión inválida")
 			) {
 				console.warn("Authentication error detected:", message);
-				if (typeof window !== "undefined") {
-					localStorage.removeItem("auraGrade_user");
-					window.location.href = "/login";
-				}
+				clearSessionAndRedirect();
+			} else if (errCode === "FORBIDDEN") {
+				console.warn("Access denied:", message);
+			} else if (errCode === "SERVICE_UNAVAILABLE") {
+				console.warn("GraphQL service unavailable:", message);
 			}
 		});
 	} else {
 		console.log(`[Network error]: ${error}`);
 		const statusCode = getStatusCode(error);
-		if (statusCode === 401 || statusCode === 403) {
-			if (typeof window !== "undefined") {
-				localStorage.removeItem("auraGrade_user");
-				window.location.href = "/login";
-			}
+		if (statusCode === 401) {
+			clearSessionAndRedirect();
 		}
 	}
 });
 
 const client = new ApolloClient({
-	link: ApolloLink.from([errorLink, authLink, httpLink]),
+	link: ApolloLink.from([errorLink, httpLink]),
 	cache: new InMemoryCache(),
 });
 

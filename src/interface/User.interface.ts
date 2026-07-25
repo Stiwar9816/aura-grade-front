@@ -3,6 +3,11 @@ export interface AuthState {
 	isAuthenticated: boolean;
 	isLoading: boolean;
 	error: string | null;
+	sessionErrorCode:
+		| "RATE_LIMITED"
+		| "SERVICE_UNAVAILABLE"
+		| "UNAUTHENTICATED"
+		| null;
 }
 
 export interface LoginCredentials {
@@ -43,13 +48,6 @@ export interface ProtectedRouteProps {
 	redirectTo?: string;
 }
 
-export interface AuthToastProps {
-	type: "success" | "error" | "info" | "welcome";
-	message: string;
-	onClose: () => void;
-	duration?: number;
-}
-
 export interface AuthLayoutProps {
 	children: React.ReactNode;
 	title: string;
@@ -83,7 +81,6 @@ export interface User {
 	last_name: string;
 	email: string;
 	role: UserRole;
-	token?: string;
 	phone: number;
 	isActive?: boolean;
 	document_type?: string | null;

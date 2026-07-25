@@ -40,9 +40,14 @@ Aura Grade tiene como objetivo cerrar la brecha entre la evaluación tradicional
 Asegúrate de crear un archivo `.env.local` basado en `.env.example` (si existe) o incluir la siguiente variable para la conexión con la API:
 
 ```bash
-NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:3000/graphql # Ajusta esto a la URL de tu backend
-NEXT_PUBLIC_API_URL=http://localhost:3000/api # Ajusta esto a la URL de tu backend
+AURA_GRADE_API_URL=http://localhost:3000 # Origen privado del backend
+AURA_GRADE_BFF_SECRET=un-secreto-compartido-de-al-menos-32-caracteres
+SESSION_COOKIE_NAME=ag_session
 ```
+
+Estas variables son exclusivamente de servidor y nunca deben usar el prefijo
+`NEXT_PUBLIC_`. `AURA_GRADE_BFF_SECRET` debe coincidir con
+`BFF_SHARED_SECRET` del backend.
 
 ## 🚀 Cómo Empezar
 

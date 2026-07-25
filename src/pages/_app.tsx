@@ -1,8 +1,10 @@
 import "@/styles/globals.css";
 import type {AppProps} from "next/app";
 import {ApolloProvider} from "@apollo/client/react";
-import client from "@/lib/apolloClient";
 import {useEffect} from "react";
+import client from "@/lib/apolloClient";
+import {AuthProvider} from "@/context/AuthContext";
+import {useAuth} from "@/hooks";
 import {
 	SETTINGS_UPDATED_EVENT,
 	applyStoredTheme,
@@ -10,42 +12,42 @@ import {
 	getStoredTheme,
 } from "@/utils/theme";
 
-export default function App({Component, pageProps}: AppProps) {
+const ThemeController = () => {
+	const {user} = useAuth();
+	const userId = user?.id;
+
 	useEffect(() => {
-		applyStoredTheme();
+		applyStoredTheme(userId);
 
-		const syncTheme = () => applyStoredTheme();
+		const syncTheme = () => applyStoredTheme(userId);
 		const handleSystemThemeChange = () => {
-			try {
-				const rawUser = window.localStorage.getItem("auraGrade_user");
-				const user = rawUser ? JSON.parse(rawUser) : null;
-				const theme = getStoredTheme(user?.id);
-
-				if (theme === "auto") {
-					applyTheme("auto");
-				}
-			} catch {
-				applyTheme("light");
+			if (getStoredTheme(userId) === "auto") {
+				applyTheme("auto");
 			}
 		};
 		const mediaQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
 
 		window.addEventListener(SETTINGS_UPDATED_EVENT, syncTheme);
-		window.addEventListener("auraGrade_user_updated", syncTheme);
 		window.addEventListener("storage", syncTheme);
 		mediaQuery?.addEventListener("change", handleSystemThemeChange);
 
 		return () => {
 			window.removeEventListener(SETTINGS_UPDATED_EVENT, syncTheme);
-			window.removeEventListener("auraGrade_user_updated", syncTheme);
 			window.removeEventListener("storage", syncTheme);
 			mediaQuery?.removeEventListener("change", handleSystemThemeChange);
 		};
-	}, []);
+	}, [userId]);
 
+	return null;
+};
+
+export default function App({Component, pageProps}: AppProps) {
 	return (
 		<ApolloProvider client={client}>
-			<Component {...pageProps} />
+			<AuthProvider>
+				<ThemeController />
+				<Component {...pageProps} />
+			</AuthProvider>
 		</ApolloProvider>
 	);
 }

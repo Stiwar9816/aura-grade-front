@@ -49,9 +49,9 @@ export const UserMenu = () => {
 		}
 	};
 
-	const handleLogout = () => {
+	const handleLogout = async () => {
 		setIsOpen(false);
-		logout();
+		await logout();
 		router.push("/login");
 	};
 

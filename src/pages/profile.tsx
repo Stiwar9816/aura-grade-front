@@ -104,10 +104,9 @@ const ProfilePage: React.FC = () => {
 				return;
 			}
 
-			const result = updateUser?.({
+			const result = await updateUser?.({
 				...updatedUser,
 				role: user.role,
-				token: user.token,
 			});
 
 			if (!result?.success) {

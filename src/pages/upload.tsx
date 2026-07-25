@@ -100,27 +100,11 @@ const formatFileSize = (bytes: number) => {
 	return `${(bytes / Math.pow(1024, index)).toFixed(2)} ${units[index]}`;
 };
 
-const getAuthToken = () => {
-	if (typeof window === "undefined") return "";
-
-	const storedUser = localStorage.getItem("auraGrade_user");
-	if (!storedUser) return "";
-
-	try {
-		return JSON.parse(storedUser).token || "";
-	} catch {
-		return "";
-	}
-};
-
 const createSubmissionWithFile = async (
 	file: File,
 	assignment: StudentAssignmentCardData,
 	userId: string,
 ) => {
-	const graphqlUrl =
-		process.env.NEXT_PUBLIC_GRAPHQL_API_URL || "http://localhost:3000/graphql";
-	const token = getAuthToken();
 	const formData = new FormData();
 
 	formData.append(
@@ -160,9 +144,9 @@ const createSubmissionWithFile = async (
 	formData.append("map", JSON.stringify({"0": ["variables.file"]}));
 	formData.append("0", file);
 
-	const response = await fetch(graphqlUrl, {
+	const response = await fetch("/api/graphql", {
 		method: "POST",
-		headers: token ? {authorization: `Bearer ${token}`} : undefined,
+		credentials: "same-origin",
 		body: formData,
 	});
 
@@ -215,15 +199,12 @@ const getBackendProgress = (submission: CreatedSubmission | null) => {
 };
 
 const fetchSubmissionById = async (submissionId: string) => {
-	const graphqlUrl =
-		process.env.NEXT_PUBLIC_GRAPHQL_API_URL || "http://localhost:3000/graphql";
-	const token = getAuthToken();
-	const response = await fetch(graphqlUrl, {
+	const response = await fetch("/api/graphql", {
 		method: "POST",
 		headers: {
 			"content-type": "application/json",
-			...(token ? {authorization: `Bearer ${token}`} : {}),
 		},
+		credentials: "same-origin",
 		body: JSON.stringify({
 			query: `
 				query Submission($submissionId: ID!) {

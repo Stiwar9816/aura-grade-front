@@ -2,6 +2,7 @@ import React, {useEffect} from "react";
 import {useRouter} from "next/router";
 import {useAuth} from "@/hooks";
 import {ProtectedRouteProps, UserRole} from "@/interface";
+import {SessionError} from "./SessionError";
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 	children,
@@ -9,7 +10,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 	redirectTo = "/login",
 }) => {
 	const router = useRouter();
-	const {user, isAuthenticated, isLoading} = useAuth();
+	const {user, isAuthenticated, isLoading, error, sessionErrorCode} = useAuth();
 
 	useEffect(() => {
 		if (!isLoading) {
@@ -53,6 +54,13 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 				</div>
 			</div>
 		);
+	}
+
+	if (
+		sessionErrorCode === "SERVICE_UNAVAILABLE" ||
+		sessionErrorCode === "RATE_LIMITED"
+	) {
+		return <SessionError code={sessionErrorCode} message={error} />;
 	}
 
 	if (!isAuthenticated) {

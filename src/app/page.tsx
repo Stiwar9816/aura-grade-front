@@ -3,29 +3,39 @@
 import {useEffect} from "react";
 import {useRouter} from "next/navigation";
 import {UserRole} from "@/interface";
+import {useAuth} from "@/hooks";
+import {SessionError} from "@/components/Auth";
 
 export default function HomePage() {
 	const router = useRouter();
+	const {user, isLoading, error, sessionErrorCode} = useAuth();
 
 	useEffect(() => {
-		const storedUser = localStorage.getItem("auraGrade_user");
-		if (!storedUser) {
+		if (isLoading) return;
+		if (
+			sessionErrorCode === "SERVICE_UNAVAILABLE" ||
+			sessionErrorCode === "RATE_LIMITED"
+		) {
+			return;
+		}
+		if (!user) {
 			router.push("/login");
 			return;
 		}
 
-		try {
-			const user = JSON.parse(storedUser);
-			const role = user.role;
-			if (role === UserRole.ADMIN || role === UserRole.TEACHER) {
-				router.push("/teacher");
-			} else {
-				router.push("/student");
-			}
-		} catch {
-			router.push("/login");
+		if (user.role === UserRole.ADMIN || user.role === UserRole.TEACHER) {
+			router.push("/teacher");
+		} else {
+			router.push("/student");
 		}
-	}, [router]);
+	}, [isLoading, router, sessionErrorCode, user]);
+
+	if (
+		sessionErrorCode === "SERVICE_UNAVAILABLE" ||
+		sessionErrorCode === "RATE_LIMITED"
+	) {
+		return <SessionError code={sessionErrorCode} message={error} />;
+	}
 
 	return (
 		<div className="min-h-screen flex items-center justify-center bg-background-bone">
