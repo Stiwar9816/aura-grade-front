@@ -1,8 +1,13 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {useRouter} from "next/navigation";
-import {DocumentType, RegisterFormData, UserRole} from "@/interface";
+import {
+	DocumentType,
+	Institution,
+	RegisterFormData,
+	UserRole,
+} from "@/interface";
 import {useAuth} from "./";
 
 export const useRegister = () => {
@@ -10,6 +15,8 @@ export const useRegister = () => {
 	const {register: registerCore, isLoading, error: authError} = useAuth();
 	const [serverError, setServerError] = useState<string | null>(null);
 	const [step, setStep] = useState<number>(1);
+	const [institutions, setInstitutions] = useState<Institution[]>([]);
+	const [institutionsLoading, setInstitutionsLoading] = useState(true);
 	const [formData, setFormData] = useState<RegisterFormData>({
 		name: "",
 		last_name: "",
@@ -20,6 +27,7 @@ export const useRegister = () => {
 		password: "",
 		confirmPassword: "",
 		userType: UserRole.STUDENT,
+		institutionId: "",
 		acceptTerms: false,
 	});
 	const [errors, setErrors] = useState<
@@ -28,6 +36,38 @@ export const useRegister = () => {
 	const [showPassword, setShowPassword] = useState<boolean>(false);
 
 	const displayError: string | null = serverError || authError;
+
+	useEffect(() => {
+		let active = true;
+		void fetch("/api/institutions", {cache: "no-store"})
+			.then(async (response) => {
+				const result = (await response.json()) as {
+					error?: string;
+					institutions?: Institution[];
+				};
+				if (!response.ok) {
+					throw new Error(
+						result.error || "No fue posible cargar las instituciones.",
+					);
+				}
+				if (active) setInstitutions(result.institutions || []);
+			})
+			.catch((error: unknown) => {
+				if (active) {
+					setServerError(
+						error instanceof Error
+							? error.message
+							: "No fue posible cargar las instituciones.",
+					);
+				}
+			})
+			.finally(() => {
+				if (active) setInstitutionsLoading(false);
+			});
+		return () => {
+			active = false;
+		};
+	}, []);
 
 	const validateStep = (stepNumber: number): boolean => {
 		const newErrors: Partial<Record<keyof RegisterFormData, string>> = {};
@@ -56,6 +96,9 @@ export const useRegister = () => {
 			}
 			if (!formData.userType)
 				newErrors.userType = "Debes seleccionar un tipo de usuario";
+			if (!formData.institutionId) {
+				newErrors.institutionId = "Debes seleccionar tu institución";
+			}
 		}
 
 		if (stepNumber === 2) {
@@ -112,9 +155,12 @@ export const useRegister = () => {
 			email: formData.email,
 			password: formData.password,
 			role: formData.userType,
+			institutionId: formData.institutionId,
 		});
 
-		if (result.success && result.user) {
+		if (result.success && result.pendingApproval) {
+			router.push("/registration-pending");
+		} else if (result.success && result.user) {
 			const role = result.user.role;
 			const dest =
 				role === UserRole.ADMIN || role === UserRole.TEACHER
@@ -172,6 +218,8 @@ export const useRegister = () => {
 
 	return {
 		formData,
+		institutions,
+		institutionsLoading,
 		setFormData,
 		step,
 		setStep,

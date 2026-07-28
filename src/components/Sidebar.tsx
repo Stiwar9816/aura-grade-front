@@ -13,6 +13,7 @@ import {
 	faCloudArrowUp,
 	faFileLines,
 	faGraduationCap,
+	faUserCheck,
 } from "@fortawesome/free-solid-svg-icons";
 
 const Sidebar: React.FC = () => {
@@ -76,9 +77,19 @@ const Sidebar: React.FC = () => {
 		},
 	];
 
+	const administratorItems = [
+		{
+			path: "/admin/approvals",
+			icon: <FontAwesomeIcon icon={faUserCheck} />,
+			label: "Aprobaciones",
+			badge: null,
+		},
+	];
+
 	const menuItems = [
 		...commonItems,
 		...(user?.role === UserRole.STUDENT ? studentItems : teacherItems),
+		...(user?.role === UserRole.ADMIN ? administratorItems : []),
 	];
 
 	return (

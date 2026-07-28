@@ -25,6 +25,7 @@ export interface RegisterData {
 	email: string;
 	password: string;
 	role: UserRole;
+	institutionId: string;
 }
 
 export enum UserRole {
@@ -72,7 +73,22 @@ export interface RegisterFormData {
 	password: string;
 	confirmPassword: string;
 	userType: UserRole;
+	institutionId: string;
 	acceptTerms: boolean;
+}
+
+export enum InstitutionApprovalStatus {
+	PENDING = "PENDING",
+	APPROVED = "APPROVED",
+	REJECTED = "REJECTED",
+}
+
+export interface Institution {
+	id: string;
+	name: string;
+	slug: string;
+	emailDomain?: string | null;
+	isActive: boolean;
 }
 
 export interface User {
@@ -83,6 +99,9 @@ export interface User {
 	role: UserRole;
 	phone: number;
 	isActive?: boolean;
+	approvalStatus?: InstitutionApprovalStatus;
+	institution?: Institution;
+	institutionId?: string;
 	document_type?: string | null;
 	document_num?: number | null;
 	courses?: {id: string}[];

@@ -11,6 +11,7 @@ type AuthResult = {
 	error?: string;
 	expiresAt?: string;
 	message?: string;
+	pendingApproval?: boolean;
 	retryAfter?: string;
 	revokedSessions?: number;
 	success?: boolean;
@@ -112,7 +113,12 @@ export async function registerAction(data: RegisterData) {
 			};
 		}
 
-		return {success: true, user: result.user};
+		return {
+			success: true,
+			user: result.user,
+			pendingApproval: result.pendingApproval,
+			message: result.message,
+		};
 	} catch {
 		return {
 			success: false,

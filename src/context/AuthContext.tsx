@@ -29,7 +29,13 @@ export interface AuthContextType extends AuthState {
 	) => Promise<{success: boolean; user?: User; error?: string}>;
 	register: (
 		data: RegisterData,
-	) => Promise<{success: boolean; user?: User; error?: string}>;
+	) => Promise<{
+		success: boolean;
+		user?: User;
+		error?: string;
+		message?: string;
+		pendingApproval?: boolean;
+	}>;
 	logout: () => Promise<{success: boolean; error?: string}>;
 	logoutAll: () => Promise<{
 		success: boolean;
@@ -182,6 +188,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					sessionErrorCode: null,
 				}));
 				return {success: false, error};
+			}
+
+			if (result.pendingApproval) {
+				setAuthState({
+					user: null,
+					isAuthenticated: false,
+					isLoading: false,
+					error: null,
+					sessionErrorCode: null,
+				});
+				return {
+					success: true,
+					user: result.user,
+					pendingApproval: true,
+					message: result.message,
+				};
 			}
 
 			setAuthState({

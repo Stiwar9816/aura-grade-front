@@ -17,6 +17,8 @@ import {
 const RegisterPage: React.FC = () => {
 	const {
 		formData,
+		institutions,
+		institutionsLoading,
 		step,
 		errors,
 		showPassword,
@@ -104,6 +106,44 @@ const RegisterPage: React.FC = () => {
 							Información personal
 						</h2>
 						<p className="text-gray-600">Comencemos con tus datos básicos</p>
+					</div>
+
+					<div>
+						<label className="block text-sm font-medium text-gray-700 mb-2">
+							Institución *
+						</label>
+						<select
+							name="institutionId"
+							value={formData.institutionId}
+							onChange={handleChange}
+							disabled={institutionsLoading}
+							className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all bg-white disabled:bg-gray-100 ${
+								errors.institutionId
+									? "border-red-500"
+									: "border-gray-300 focus:border-electric-500"
+							}`}
+						>
+							<option value="">
+								{institutionsLoading
+									? "Cargando instituciones..."
+									: "Selecciona tu institución"}
+							</option>
+							{institutions.map((institution) => (
+								<option key={institution.id} value={institution.id}>
+									{institution.name}
+								</option>
+							))}
+						</select>
+						{errors.institutionId && (
+							<p className="mt-1 text-sm text-red-600">
+								{errors.institutionId}
+							</p>
+						)}
+						{!institutionsLoading && institutions.length === 0 && (
+							<p className="mt-1 text-sm text-amber-700">
+								No hay instituciones disponibles para registro.
+							</p>
+						)}
 					</div>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -560,6 +600,15 @@ const RegisterPage: React.FC = () => {
 								<div className="text-sm text-gray-600">Correo electrónico</div>
 								<div className="font-medium text-gray-900">
 									{formData.email}
+								</div>
+							</div>
+							<div>
+								<div className="text-sm text-gray-600">Institución</div>
+								<div className="font-medium text-gray-900">
+									{institutions.find(
+										(institution) =>
+											institution.id === formData.institutionId,
+									)?.name || "Sin seleccionar"}
 								</div>
 							</div>
 						</div>
