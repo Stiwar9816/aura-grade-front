@@ -6,10 +6,10 @@ const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
 const TRACEPARENT_PATTERN = /^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/i;
 
 const legacyApiUrl =
-	process.env.API_URL ||
+	process.env.AURA_GRADE_APP_URL ||
 	"http://localhost:3000/api";
 const legacyGraphqlUrl =
-	process.env.GRAPHQL_API_URL ||
+	process.env.NEXT_PUBLIC_GRAPHQL_API_URL ||
 	"http://localhost:3000/graphql";
 
 const backendOrigin = process.env.AURA_GRADE_API_URL?.replace(/\/+$/, "");
