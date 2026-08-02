@@ -25,6 +25,22 @@ type PendingUsersData = {
 	pendingInstitutionUsers: User[];
 };
 
+const documentTypeLabels: Record<string, string> = {
+	CITIZENSHIP_CARD: "Cédula de ciudadanía",
+	PASSPORT: "Pasaporte",
+	CIVIL_REGISRTRY: "Registro civil",
+	FOREIGNER_CARD: "Cédula de extranjería",
+	MILITARY_ID: "Libreta militar",
+	IDENTITY_CARD: "Tarjeta de identidad",
+	"Cedula de ciudadania": "Cédula de ciudadanía",
+	"Cedula de extranjeria": "Cédula de extranjería",
+};
+
+const documentTypeLabel = (documentType?: string | null) =>
+	documentType
+		? documentTypeLabels[documentType] || documentType
+		: "Sin tipo";
+
 const ApprovalsPage = () => {
 	const {data, loading, error, refetch} =
 		useQuery<PendingUsersData>(PENDING_INSTITUTION_USERS);
@@ -128,7 +144,7 @@ const ApprovalsPage = () => {
 										<div>
 											<dt className="font-medium text-gray-800">Documento</dt>
 											<dd>
-												{candidate.document_type || "Sin tipo"} ·{" "}
+												{/* documentTypeLabel(candidate.document_type)} ·{" "} */}
 												{candidate.document_num || "Sin número"}
 											</dd>
 										</div>

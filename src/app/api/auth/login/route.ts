@@ -27,7 +27,10 @@ export async function POST(request: NextRequest) {
 		>;
 		const backendResponse = await fetchBackendRest(request, "auth/login", {
 			method: "POST",
-			headers: {"content-type": "application/json"},
+			headers: {
+				"content-type": "application/json",
+				"X-BFF-Secret": process.env.X_BFF_SECRET!,
+			},
 			body: JSON.stringify({
 				email: credentials.email,
 				password: credentials.password,
