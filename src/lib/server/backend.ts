@@ -1,6 +1,7 @@
 import "server-only";
 
 import {randomUUID} from "node:crypto";
+import {isIP} from "node:net";
 
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
 const TRACEPARENT_PATTERN = /^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/i;
@@ -48,6 +49,25 @@ export const getRequestContext = (request: Request) => ({
 	traceparent: trustedHeader(request, "traceparent", TRACEPARENT_PATTERN),
 });
 
+const clientIp = (request: Request) => {
+	const forwardedChain = (request.headers.get("x-forwarded-for") || "")
+		.split(",")
+		.map((value) => value.trim())
+		.filter(Boolean);
+	const configuredHops = Number(
+		process.env.AURA_GRADE_TRUSTED_PROXY_HOPS || "1",
+	);
+	const trustedProxyHops =
+		Number.isInteger(configuredHops) && configuredHops > 0
+			? configuredHops
+			: 1;
+	const forwardedIndex = forwardedChain.length - trustedProxyHops;
+	const forwarded =
+		forwardedIndex >= 0 ? forwardedChain[forwardedIndex] : undefined;
+	const candidate = forwarded || request.headers.get("x-real-ip")?.trim();
+	return candidate && isIP(candidate) ? candidate : undefined;
+};
+
 export type BackendFetchOptions = Omit<RequestInit, "headers"> & {
 	duplex?: "half";
 	headers?: HeadersInit;
@@ -67,6 +87,8 @@ const backendFetch = (
 	headers.set("x-request-id", context.requestId);
 	if (context.traceparent) headers.set("traceparent", context.traceparent);
 	if (bffSecret) headers.set("x-bff-secret", bffSecret);
+	const requestClientIp = clientIp(request);
+	if (requestClientIp) headers.set("x-client-ip", requestClientIp);
 	if (sessionToken) {
 		headers.set("authorization", `Bearer ${sessionToken}`);
 	}

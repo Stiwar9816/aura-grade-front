@@ -86,9 +86,46 @@ export enum InstitutionApprovalStatus {
 export interface Institution {
 	id: string;
 	name: string;
-	slug: string;
-	emailDomain?: string | null;
+	legalName?: string | null;
+	taxId?: string | null;
+	contactEmail?: string | null;
+	phone?: string | null;
+	address?: string | null;
+	city?: string | null;
+	website?: string | null;
+	logoUrl?: string | null;
 	isActive: boolean;
+	createdAt?: string;
+	updatedAt?: string;
+}
+
+export type InstitutionInput = Omit<
+	Institution,
+	"id" | "isActive" | "createdAt" | "updatedAt"
+>;
+
+export interface AuditLog {
+	id: string;
+	actorUserId?: string | null;
+	actorName: string;
+	actorEmail?: string | null;
+	institutionId: string;
+	ipAddress?: string | null;
+	action: string;
+	resource: string;
+	resourceId?: string | null;
+	changes?: Record<string, unknown> | null;
+	requestId?: string | null;
+	path?: string | null;
+	createdAt: string;
+}
+
+export interface AuditLogPage {
+	items: AuditLog[];
+	total: number;
+	page: number;
+	limit: number;
+	totalPages: number;
 }
 
 export interface User {
@@ -99,6 +136,7 @@ export interface User {
 	role: UserRole;
 	phone: number;
 	isActive?: boolean;
+	isPlatformAdmin?: boolean;
 	approvalStatus?: InstitutionApprovalStatus;
 	institution?: Institution;
 	institutionId?: string;

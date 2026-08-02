@@ -12,6 +12,7 @@ import {
 import {
 	notifyError,
 	notifyInfo,
+	notifyLoading,
 	notifySuccess,
 	notifyWarning,
 } from "@/utils/toastNotify";
@@ -164,10 +165,13 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 	};
 
 	const handleDeleteRubric = async (id: string) => {
+		const notificationId = notifyLoading("Eliminando rúbrica...");
 		try {
 			const success = await deleteRubric(id);
 			if (success) {
-				notifySuccess("Rúbrica eliminada correctamente.");
+				notifySuccess("Rúbrica eliminada correctamente.", {
+					id: notificationId,
+				});
 				// If the deleted rubric was the current one, reset it
 				if (currentRubric.id === id) {
 					setCurrentRubric({
@@ -182,7 +186,7 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 			}
 		} catch (error) {
 			console.error("Error al eliminar rúbrica:", error);
-			notifyError("No se pudo eliminar la rúbrica.");
+			notifyError("No se pudo eliminar la rúbrica.", {id: notificationId});
 		}
 	};
 
@@ -199,6 +203,7 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 			return;
 		}
 
+		const notificationId = notifyLoading("Creando rúbrica...");
 		try {
 			const created = await createRubric({
 				title: data.title,
@@ -219,24 +224,29 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 				setActiveTab("builder");
 				notifySuccess(
 					`Rúbrica "${created.title}" creada. Agrega criterios para completarla.`,
+					{id: notificationId},
 				);
+			} else {
+				throw new Error("El servidor no retornó la rúbrica creada.");
 			}
 		} catch (error) {
 			console.error("Error al iniciar rúbrica:", error);
-			notifyError("Error al iniciar la creación de la rúbrica.");
+			notifyError("Error al iniciar la creación de la rúbrica.", {
+				id: notificationId,
+			});
 		}
 	};
 
 	const handleSaveRubric = async (rubricToSave: Rubric = currentRubric) => {
+		if (!user?.id) {
+			notifyError("No se ha identificado el usuario.");
+			return;
+		}
+
 		setIsSaving(true);
+		const notificationId = notifyLoading("Guardando rúbrica y criterios...");
 		try {
 			// 1. Save Rubric Header
-			if (!user?.id) {
-				notifyError("No se ha identificado el usuario.");
-				setIsSaving(false);
-				return;
-			}
-
 			// Check if it's a real ID (existing rubric) or temp ID (new rubric)
 			const isNewRubric = !rubricToSave.id || rubricToSave.id.length < 20;
 			let savedRubricId = "";
@@ -358,13 +368,16 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 					isActive: false,
 				});
 			}
-			notifySuccess(`Rúbrica "${rubricToSave.name}" guardada correctamente.`);
+			notifySuccess(`Rúbrica "${rubricToSave.name}" guardada correctamente.`, {
+				id: notificationId,
+			});
 		} catch (error: unknown) {
 			console.error("Error al guardar:", error);
 			notifyError(
 				error instanceof Error
 					? error.message
 					: "Error al guardar la rúbrica y sus criterios.",
+				{id: notificationId},
 			);
 		} finally {
 			setIsSaving(false);

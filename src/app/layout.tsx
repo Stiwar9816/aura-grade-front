@@ -1,23 +1,28 @@
-import type {Metadata} from "next";
+import type { Metadata } from "next";
+import { Toaster } from "sonner";
 import "@/styles/globals.css";
-import {AuthProvider} from "@/context/AuthContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { ConfirmProvider } from "@/context/ConfirmContext";
 
 export const metadata: Metadata = {
-	title: "Aura Grade - Clasificación asistida por IA",
-	description:
-		"Una plataforma progresiva para la gestión educativa eficiente y escalable, potenciada por IA.",
+  title: "Aura Grade - Clasificación asistida por IA",
+  description:
+    "Una plataforma progresiva para la gestión educativa eficiente y escalable, potenciada por IA.",
 };
 
 export default function RootLayout({
-	children,
+  children,
 }: Readonly<{
-	children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-	return (
-		<html lang="es" suppressHydrationWarning data-lt-installed>
-			<body className="antialiased">
-				<AuthProvider>{children}</AuthProvider>
-			</body>
-		</html>
-	);
+  return (
+    <html lang="es" suppressHydrationWarning data-lt-installed>
+      <body className="antialiased">
+        <AuthProvider>
+          <ConfirmProvider>{children}</ConfirmProvider>
+          <Toaster richColors closeButton position="bottom-right" />
+        </AuthProvider>
+      </body>
+    </html>
+  );
 }

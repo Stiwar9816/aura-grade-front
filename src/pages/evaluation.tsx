@@ -46,6 +46,7 @@ import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
 import {
 	notifyError,
 	notifyInfo,
+	notifyLoading,
 	notifySuccess,
 	notifyWarning,
 } from "@/utils/toastNotify";
@@ -596,6 +597,11 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
+		const notificationId = notifyLoading(
+			pendingReEvaluationRequest
+				? "Publicando nota y resolviendo solicitud..."
+				: "Publicando evaluación...",
+		);
 		try {
 			setPublishError(null);
 			setPublishSuccess(null);
@@ -632,19 +638,23 @@ const EvaluationPage: React.FC = () => {
 				await refetchEvaluationDetail();
 				setTeacherResponse("");
 				setPublishSuccess("Solicitud aprobada y nota actualizada.");
-				notifySuccess("Solicitud aprobada y nota actualizada.");
+				notifySuccess("Solicitud aprobada y nota actualizada.", {
+					id: notificationId,
+				});
 				return;
 			}
 
 			setPublishSuccess("Nota final publicada para el estudiante.");
-			notifySuccess("Nota final publicada para el estudiante.");
+			notifySuccess("Nota final publicada para el estudiante.", {
+				id: notificationId,
+			});
 		} catch (error) {
 			const message =
 				error instanceof Error
 					? error.message
 					: "No se pudo publicar la evaluación.";
 			setPublishError(message);
-			notifyError(message);
+			notifyError(message, {id: notificationId});
 		}
 	};
 
@@ -661,6 +671,7 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
+		const notificationId = notifyLoading("Rechazando solicitud de reevaluación...");
 		try {
 			setPublishError(null);
 			setPublishSuccess(null);
@@ -678,14 +689,16 @@ const EvaluationPage: React.FC = () => {
 			await refetchReEvaluationRequests();
 			setTeacherResponse("");
 			setPublishSuccess("Solicitud rechazada y respuesta enviada.");
-			notifySuccess("Solicitud rechazada y respuesta enviada.");
+			notifySuccess("Solicitud rechazada y respuesta enviada.", {
+				id: notificationId,
+			});
 		} catch (error) {
 			const message =
 				error instanceof Error
 					? error.message
 					: "No se pudo resolver la solicitud.";
 			setPublishError(message);
-			notifyError(message);
+			notifyError(message, {id: notificationId});
 		}
 	};
 
@@ -716,6 +729,7 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
+		const notificationId = notifyLoading("Enviando solicitud de reevaluación...");
 		try {
 			await createReEvaluationRequest({
 				variables: {
@@ -731,14 +745,16 @@ const EvaluationPage: React.FC = () => {
 			setReevaluationReason("");
 			setReevaluationError(null);
 			setShowReevaluationForm(false);
-			notifySuccess("Solicitud de reevaluación enviada.");
+			notifySuccess("Solicitud de reevaluación enviada.", {
+				id: notificationId,
+			});
 		} catch (error) {
 			const message =
 				error instanceof Error
 					? error.message
 					: "No se pudo enviar la solicitud de reevaluación.";
 			setReevaluationError(message);
-			notifyError(message);
+			notifyError(message, {id: notificationId});
 		}
 	};
 

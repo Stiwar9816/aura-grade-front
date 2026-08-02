@@ -7,7 +7,12 @@ import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import {UpdateUserInput, User, UserRole} from "@/interface";
 import {RESET_PASSWORD_AUTH, UPDATE_USER} from "@/gql/User";
-import {notifyError, notifySuccess, notifyWarning} from "@/utils/toastNotify";
+import {
+	notifyError,
+	notifyLoading,
+	notifySuccess,
+	notifyWarning,
+} from "@/utils/toastNotify";
 
 const getRoleLabel = (role?: UserRole) => {
 	if (role === UserRole.STUDENT) return "Estudiante";
@@ -92,6 +97,7 @@ const ProfilePage: React.FC = () => {
 			role: user.role,
 		};
 
+		const notificationId = notifyLoading("Guardando cambios del perfil...");
 		try {
 			const {data} = await updateUserMutation({
 				variables: {updateUserInput},
@@ -100,7 +106,7 @@ const ProfilePage: React.FC = () => {
 
 			if (!updatedUser) {
 				const message = "El servidor no retornó el usuario actualizado.";
-				notifyError(message);
+				notifyError(message, {id: notificationId});
 				return;
 			}
 
@@ -112,7 +118,7 @@ const ProfilePage: React.FC = () => {
 			if (!result?.success) {
 				const message =
 					result?.error || "No se pudo actualizar la sesión local.";
-				notifyError(message);
+				notifyError(message, {id: notificationId});
 				return;
 			}
 		} catch (error) {
@@ -120,12 +126,12 @@ const ProfilePage: React.FC = () => {
 				error instanceof Error
 					? error.message
 					: "No se pudo guardar el perfil.";
-			notifyError(message);
+			notifyError(message, {id: notificationId});
 			return;
 		}
 
 		setIsEditing(false);
-		notifySuccess("Perfil actualizado correctamente.");
+		notifySuccess("Perfil actualizado correctamente.", {id: notificationId});
 	};
 
 	const handlePasswordSave = async (event?: React.FormEvent) => {
@@ -148,24 +154,29 @@ const ProfilePage: React.FC = () => {
 			return;
 		}
 
+		const notificationId = notifyLoading("Actualizando contraseña...");
 		try {
 			const {data} = await resetPasswordAuthMutation({
 				variables: {newPassword},
 			});
 
 			if (!data?.resetPasswordAuth) {
-				notifyError("El servidor no confirmó el cambio de contraseña.");
+				notifyError("El servidor no confirmó el cambio de contraseña.", {
+					id: notificationId,
+				});
 				return;
 			}
 
 			setPasswordData({newPassword: "", confirmPassword: ""});
-			notifySuccess("Contraseña actualizada correctamente.");
+			notifySuccess("Contraseña actualizada correctamente.", {
+				id: notificationId,
+			});
 		} catch (error) {
 			const message =
 				error instanceof Error
 					? error.message
 					: "No se pudo actualizar la contraseña.";
-			notifyError(message);
+			notifyError(message, {id: notificationId});
 		}
 	};
 

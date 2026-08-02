@@ -3,7 +3,12 @@ import {useAuth, useAssignments, useCourse, useRubrics} from "@/hooks";
 import Card from "@/components/Common/Card";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faTriangleExclamation} from "@fortawesome/free-solid-svg-icons";
-import {notifyError, notifySuccess, notifyWarning} from "@/utils/toastNotify";
+import {
+	notifyError,
+	notifyLoading,
+	notifySuccess,
+	notifyWarning,
+} from "@/utils/toastNotify";
 import type {CoursesData, RubricTemplate} from "@/interface";
 
 type CourseOption = CoursesData["courses"][number];
@@ -38,6 +43,7 @@ const AssignmentCreator: React.FC = () => {
 			return;
 		}
 
+		const notificationId = notifyLoading("Publicando tarea...");
 		try {
 			await createAssignment({
 				title: form.title,
@@ -51,11 +57,12 @@ const AssignmentCreator: React.FC = () => {
 			setIsSubmitted(true);
 			notifySuccess(
 				`Tarea "${form.title}" publicada. Los estudiantes ya pueden verla.`,
+				{id: notificationId},
 			);
 		} catch (err: unknown) {
 			const message = getErrorMessage(err, "Error al crear la tarea.");
 			setError(message);
-			notifyError(message);
+			notifyError(message, {id: notificationId});
 		}
 	};
 

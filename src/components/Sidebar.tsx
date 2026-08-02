@@ -14,6 +14,8 @@ import {
 	faFileLines,
 	faGraduationCap,
 	faUserCheck,
+	faBuildingColumns,
+	faClockRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
 
 const Sidebar: React.FC = () => {
@@ -82,6 +84,22 @@ const Sidebar: React.FC = () => {
 			path: "/admin/approvals",
 			icon: <FontAwesomeIcon icon={faUserCheck} />,
 			label: "Aprobaciones",
+			badge: null,
+		},
+		...(user?.isPlatformAdmin
+			? [
+					{
+						path: "/admin/institutions",
+						icon: <FontAwesomeIcon icon={faBuildingColumns} />,
+						label: "Instituciones",
+						badge: null,
+					},
+				]
+			: []),
+		{
+			path: "/admin/audit-logs",
+			icon: <FontAwesomeIcon icon={faClockRotateLeft} />,
+			label: "Auditoría",
 			badge: null,
 		},
 	];

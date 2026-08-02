@@ -19,6 +19,7 @@ import {
 import {
 	notifyError,
 	notifyInfo,
+	notifyLoading,
 	notifySuccess,
 	notifyWarning,
 } from "@/utils/toastNotify";
@@ -170,11 +171,14 @@ const SettingsPage: React.FC = () => {
 			role: user.role,
 		};
 
+		const notificationId = notifyLoading("Desactivando cuenta...");
 		try {
 			await updateUserMutation({
 				variables: {updateUserInput},
 			});
-			notifySuccess("Cuenta desactivada correctamente.");
+			notifySuccess("Cuenta desactivada correctamente.", {
+				id: notificationId,
+			});
 			window.localStorage.removeItem(settingsKey);
 			await logout();
 			window.location.href = "/login";
@@ -183,7 +187,7 @@ const SettingsPage: React.FC = () => {
 				error instanceof Error
 					? error.message
 					: "No se pudo desactivar la cuenta.";
-			notifyError(message);
+			notifyError(message, {id: notificationId});
 		}
 	};
 

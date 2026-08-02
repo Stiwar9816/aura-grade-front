@@ -16,6 +16,7 @@ import {
 import {
 	notifyError,
 	notifyInfo,
+	notifyLoading,
 	notifySuccess,
 	notifyWarning,
 } from "@/utils/toastNotify";
@@ -383,36 +384,53 @@ const UploadPage: React.FC = () => {
 			setCreatedSubmission(null);
 			setProcessError(null);
 			updateGradingProgress(10);
-			notifyInfo(`Enviando "${selectedFile.name}" para evaluación.`);
-
-			const submission = await createSubmissionWithFile(
-				selectedFile,
-				selectedAssignment,
-				user.id,
+			const notificationId = notifyLoading(
+				`Enviando "${selectedFile.name}" para evaluación...`,
 			);
 
-			setCreatedSubmission(submission);
-			updateGradingProgress(getBackendProgress(submission));
-
-			const finalSubmission = submission?.evaluation
-				? submission
-				: submission?.id
-					? await waitForBackendEvaluation(submission.id)
-					: null;
-
-			setCreatedSubmission(finalSubmission || submission);
-
-			if (finalSubmission?.evaluation) {
-				updateGradingProgress(100);
-				notifySuccess(
-					"Tu entrega fue registrada y quedó pendiente de revisión docente.",
+			try {
+				const submission = await createSubmissionWithFile(
+					selectedFile,
+					selectedAssignment,
+					user.id,
 				);
+
+				setCreatedSubmission(submission);
+				updateGradingProgress(getBackendProgress(submission));
+
+				const finalSubmission = submission?.evaluation
+					? submission
+					: submission?.id
+						? await waitForBackendEvaluation(submission.id)
+						: null;
+
+				setCreatedSubmission(finalSubmission || submission);
+
+				if (finalSubmission?.evaluation) {
+					updateGradingProgress(100);
+					notifySuccess(
+						"Tu entrega fue registrada y quedó pendiente de revisión docente.",
+						{id: notificationId},
+					);
+				} else {
+					notifyInfo("Entrega registrada. La evaluación continúa en proceso.", {
+						id: notificationId,
+					});
+				}
+			} catch (error) {
+				const message =
+					error instanceof Error
+						? error.message
+						: "No se pudo registrar la entrega.";
+				setProcessError(message);
+				setCurrentStep(0);
+				notifyError(message, {id: notificationId});
 			}
 		} catch (error) {
 			const message =
 				error instanceof Error
 					? error.message
-					: "No se pudo registrar la entrega.";
+					: "No se pudo preparar la entrega.";
 			setProcessError(message);
 			setCurrentStep(0);
 			notifyError(message);

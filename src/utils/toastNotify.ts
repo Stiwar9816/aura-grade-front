@@ -1,64 +1,59 @@
-import {showToast, type ToastOptions} from "nextjs-toast-notify";
+import { toast, type ExternalToast } from "sonner";
 
 type ToastType = "success" | "error" | "warning" | "info";
+type ToastOptions = ExternalToast;
 
 const DEFAULT_OPTIONS: ToastOptions = {
-	duration: 3500,
-	progress: true,
-	position: "bottom-right",
-	transition: "slideInUp",
-	sound: false,
+  duration: 3500,
+  position: "bottom-right",
 };
 
 const TOAST_OPTIONS_BY_TYPE: Record<ToastType, ToastOptions> = {
-	success: {
-		duration: 4500,
-		transition: "bounceIn",
-	},
-	error: {
-		duration: 6500,
-		transition: "popUp",
-	},
-	warning: {
-		duration: 5500,
-		transition: "topBounce",
-	},
-	info: {
-		duration: 5000,
-		transition: "slideInUp",
-	},
+  success: { duration: 4500 },
+  error: { duration: 6500 },
+  warning: { duration: 5500 },
+  info: { duration: 5000 },
 };
 
-const escapeToastMessage = (message: string) =>
-	message
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;")
-		.replace(/'/g, "&#039;");
+const TOAST_BY_TYPE = {
+  success: toast.success,
+  error: toast.error,
+  warning: toast.warning,
+  info: toast.info,
+} satisfies Record<ToastType, typeof toast.success>;
 
 export const notify = (
-	type: ToastType,
-	message: string,
-	options: ToastOptions = {},
+  type: ToastType,
+  message: string,
+  options: ToastOptions = {},
 ) => {
-	if (typeof window === "undefined") return;
+  if (typeof window === "undefined") return;
 
-	showToast[type](escapeToastMessage(message), {
-		...DEFAULT_OPTIONS,
-		...TOAST_OPTIONS_BY_TYPE[type],
-		...options,
-	});
+  TOAST_BY_TYPE[type](message, {
+    ...DEFAULT_OPTIONS,
+    ...TOAST_OPTIONS_BY_TYPE[type],
+    ...options,
+  });
 };
 
 export const notifySuccess = (message: string, options?: ToastOptions) =>
-	notify("success", message, options);
+  notify("success", message, options);
 
 export const notifyError = (message: string, options?: ToastOptions) =>
-	notify("error", message, options);
+  notify("error", message, options);
 
 export const notifyWarning = (message: string, options?: ToastOptions) =>
-	notify("warning", message, options);
+  notify("warning", message, options);
 
 export const notifyInfo = (message: string, options?: ToastOptions) =>
-	notify("info", message, options);
+  notify("info", message, options);
+
+export const notifyLoading = (message: string, options: ToastOptions = {}) => {
+  if (typeof window === "undefined") return undefined;
+
+  return toast.loading(message, {
+    ...DEFAULT_OPTIONS,
+    duration: Number.POSITIVE_INFINITY,
+    ...options,
+  });
+};
