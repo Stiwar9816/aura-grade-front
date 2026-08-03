@@ -4,9 +4,13 @@ import Layout from "@/components/Layout";
 import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
-import {useAuth} from "@/hooks";
+import {useAuth, useNotificationPreferences} from "@/hooks";
 import {UPDATE_USER} from "@/gql/User";
-import {UpdateUserInput, User} from "@/interface";
+import {
+	DEFAULT_NOTIFICATION_PREFERENCES,
+	UpdateUserInput,
+	User,
+} from "@/interface";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faArrowsRotate, faMoon, faSun} from "@fortawesome/free-solid-svg-icons";
 import {
@@ -24,31 +28,17 @@ import {
 	notifyWarning,
 } from "@/utils/toastNotify";
 
-type NotificationSettings = {
-	email: boolean;
-	push: boolean;
-	submissions: boolean;
-	grades: boolean;
-};
-
 type PrivacySettings = {
 	profileVisible: boolean;
 	showEmail: boolean;
 };
 
 type AppSettings = {
-	notifications: NotificationSettings;
 	privacy: PrivacySettings;
 	theme: ThemeSetting;
 };
 
 const defaultSettings: AppSettings = {
-	notifications: {
-		email: true,
-		push: false,
-		submissions: true,
-		grades: true,
-	},
 	privacy: {
 		profileVisible: true,
 		showEmail: false,
@@ -61,10 +51,15 @@ const SettingsPage: React.FC = () => {
 	const [updateUserMutation, {loading: deletingAccount}] = useMutation<{
 		updateUser: User;
 	}>(UPDATE_USER);
+	const {
+		preferences: notifications,
+		setPreferences: setNotifications,
+		savePreferences,
+		loading: loadingNotifications,
+		saving: savingNotifications,
+		error: notificationPreferencesError,
+	} = useNotificationPreferences(user?.id);
 	const settingsKey = useMemo(() => getSettingsKey(user?.id), [user?.id]);
-	const [notifications, setNotifications] = useState<NotificationSettings>(
-		defaultSettings.notifications,
-	);
 	const [privacy, setPrivacy] = useState<PrivacySettings>(
 		defaultSettings.privacy,
 	);
@@ -83,10 +78,6 @@ const SettingsPage: React.FC = () => {
 
 			const savedSettings = JSON.parse(rawSettings) as Partial<AppSettings>;
 			const nextSettings: AppSettings = {
-				notifications: {
-					...defaultSettings.notifications,
-					...savedSettings.notifications,
-				},
 				privacy: {
 					...defaultSettings.privacy,
 					...savedSettings.privacy,
@@ -95,7 +86,6 @@ const SettingsPage: React.FC = () => {
 			};
 
 			window.requestAnimationFrame(() => {
-				setNotifications(nextSettings.notifications);
 				setPrivacy(nextSettings.privacy);
 				setTheme(nextSettings.theme);
 				applyTheme(nextSettings.theme);
@@ -108,23 +98,48 @@ const SettingsPage: React.FC = () => {
 		}
 	}, [settingsKey]);
 
-	const saveSettings = (nextSettings?: AppSettings) => {
-		const settingsToSave = nextSettings || {notifications, privacy, theme};
-
-		window.localStorage.setItem(settingsKey, JSON.stringify(settingsToSave));
-		applyTheme(settingsToSave.theme);
-		notifySettingsUpdated();
-		notifySuccess("Configuración guardada correctamente.");
+	const saveSettings = async (nextSettings?: AppSettings) => {
+		const settingsToSave = nextSettings || {privacy, theme};
+		const notificationId = notifyLoading("Guardando configuración...");
+		try {
+			await savePreferences(notifications);
+			window.localStorage.setItem(settingsKey, JSON.stringify(settingsToSave));
+			applyTheme(settingsToSave.theme);
+			notifySettingsUpdated();
+			notifySuccess("Configuración guardada correctamente.", {
+				id: notificationId,
+			});
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "No fue posible guardar la configuración.",
+				{id: notificationId},
+			);
+		}
 	};
 
-	const resetSettings = () => {
-		setNotifications(defaultSettings.notifications);
+	const resetSettings = async () => {
+		setNotifications(DEFAULT_NOTIFICATION_PREFERENCES);
 		setPrivacy(defaultSettings.privacy);
 		setTheme(defaultSettings.theme);
-		window.localStorage.setItem(settingsKey, JSON.stringify(defaultSettings));
-		applyTheme(defaultSettings.theme);
-		notifySettingsUpdated();
-		notifyInfo("Configuración restaurada a los valores predeterminados.");
+		const notificationId = notifyLoading("Restaurando configuración...");
+		try {
+			await savePreferences(DEFAULT_NOTIFICATION_PREFERENCES);
+			window.localStorage.setItem(settingsKey, JSON.stringify(defaultSettings));
+			applyTheme(defaultSettings.theme);
+			notifySettingsUpdated();
+			notifyInfo("Configuración restaurada a los valores predeterminados.", {
+				id: notificationId,
+			});
+		} catch (error) {
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "No fue posible restaurar la configuración.",
+				{id: notificationId},
+			);
+		}
 	};
 
 	const handleThemeChange = (nextTheme: ThemeSetting) => {
@@ -133,22 +148,28 @@ const SettingsPage: React.FC = () => {
 	};
 
 	const handlePushToggle = async (checked: boolean) => {
+		if (checked && typeof window !== "undefined" && !("Notification" in window)) {
+			notifyWarning("Este navegador no admite notificaciones del sistema.");
+			setNotifications((current) => ({...current, browserEnabled: false}));
+			return;
+		}
+
 		if (checked && typeof window !== "undefined" && "Notification" in window) {
 			const permission = await Notification.requestPermission();
 
 			if (permission !== "granted") {
 				const message = "No se activaron las notificaciones push.";
 				notifyWarning(message);
-				setNotifications((current) => ({...current, push: false}));
+				setNotifications((current) => ({...current, browserEnabled: false}));
 				return;
 			}
 		}
 
-		setNotifications((current) => ({...current, push: checked}));
+		setNotifications((current) => ({...current, browserEnabled: checked}));
 		notifyInfo(
 			checked
-				? "Notificaciones push activadas. Guarda la configuración para conservar el cambio."
-				: "Notificaciones push desactivadas. Guarda la configuración para conservar el cambio.",
+				? "Notificaciones del navegador activadas. Guarda la configuración para conservar el cambio."
+				: "Notificaciones del navegador desactivadas. Guarda la configuración para conservar el cambio.",
 		);
 	};
 
@@ -201,6 +222,16 @@ const SettingsPage: React.FC = () => {
 							description="Gestiona cómo y cuándo recibes notificaciones"
 							className="mb-6"
 						/>
+						{loadingNotifications && (
+							<p className="mb-4 text-sm text-gray-500">
+								Cargando preferencias de notificación...
+							</p>
+						)}
+						{notificationPreferencesError && !loadingNotifications && (
+							<p className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">
+								{notificationPreferencesError}
+							</p>
+						)}
 
 						<div className="space-y-4">
 							<div className="flex items-center justify-between py-3 border-b border-gray-100">
@@ -215,12 +246,14 @@ const SettingsPage: React.FC = () => {
 								<label className="relative inline-flex items-center cursor-pointer">
 									<input
 										type="checkbox"
-										checked={notifications.email}
+										checked={notifications.emailEnabled}
+										disabled={loadingNotifications || savingNotifications}
+										aria-label="Activar notificaciones por correo"
 										onChange={(event) =>
-											setNotifications({
-												...notifications,
-												email: event.target.checked,
-											})
+											setNotifications((current) => ({
+												...current,
+												emailEnabled: event.target.checked,
+											}))
 										}
 										className="sr-only peer"
 									/>
@@ -231,16 +264,18 @@ const SettingsPage: React.FC = () => {
 							<div className="flex items-center justify-between py-3 border-b border-gray-100">
 								<div>
 									<h4 className="font-medium text-gray-900">
-										Notificaciones Push
+										Notificaciones del navegador
 									</h4>
 									<p className="text-sm text-gray-600">
-										Recibe notificaciones en el navegador
+										Recibe avisos del sistema mientras usas el panel
 									</p>
 								</div>
 								<label className="relative inline-flex items-center cursor-pointer">
 									<input
 										type="checkbox"
-										checked={notifications.push}
+										checked={notifications.browserEnabled}
+										disabled={loadingNotifications || savingNotifications}
+										aria-label="Activar notificaciones del navegador"
 										onChange={(event) => handlePushToggle(event.target.checked)}
 										className="sr-only peer"
 									/>
@@ -258,12 +293,14 @@ const SettingsPage: React.FC = () => {
 								<label className="relative inline-flex items-center cursor-pointer">
 									<input
 										type="checkbox"
-										checked={notifications.submissions}
+										checked={notifications.newSubmissionsEnabled}
+										disabled={loadingNotifications || savingNotifications}
+										aria-label="Notificar nuevas entregas"
 										onChange={(event) =>
-											setNotifications({
-												...notifications,
-												submissions: event.target.checked,
-											})
+											setNotifications((current) => ({
+												...current,
+												newSubmissionsEnabled: event.target.checked,
+											}))
 										}
 										className="sr-only peer"
 									/>
@@ -281,12 +318,14 @@ const SettingsPage: React.FC = () => {
 								<label className="relative inline-flex items-center cursor-pointer">
 									<input
 										type="checkbox"
-										checked={notifications.grades}
+										checked={notifications.gradesEnabled}
+										disabled={loadingNotifications || savingNotifications}
+										aria-label="Notificar nuevas calificaciones"
 										onChange={(event) =>
-											setNotifications({
-												...notifications,
-												grades: event.target.checked,
-											})
+											setNotifications((current) => ({
+												...current,
+												gradesEnabled: event.target.checked,
+											}))
 										}
 										className="sr-only peer"
 									/>
@@ -345,14 +384,16 @@ const SettingsPage: React.FC = () => {
 					<div className="flex flex-col sm:flex-row justify-end gap-3">
 						<button
 							type="button"
-							onClick={resetSettings}
+							onClick={() => void resetSettings()}
+							disabled={loadingNotifications || savingNotifications}
 							className="px-5 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-semibold text-gray-700"
 						>
 							Restaurar valores
 						</button>
 						<button
 							type="button"
-							onClick={() => saveSettings()}
+							onClick={() => void saveSettings()}
+							disabled={loadingNotifications || savingNotifications}
 							className="btn-primary"
 						>
 							Guardar configuración

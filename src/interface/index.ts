@@ -9,3 +9,4 @@ export * from "./Activity.interface";
 export * from "./Evaluation.interface";
 export * from "./Analytic.interface";
 export * from "./ReEvaluationRequest.interface";
+export * from "./Notification.interface";

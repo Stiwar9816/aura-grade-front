@@ -43,6 +43,7 @@ const resourceLabels: Record<string, string> = {
   Submission: "Entrega",
   Evaluation: "Evaluación",
   ReEvaluation: "Reevaluación",
+  Notifications: "Preferencias de notificación",
 };
 
 const fieldLabels: Record<string, string> = {
@@ -71,6 +72,10 @@ const fieldLabels: Record<string, string> = {
   title: "Título",
   dueDate: "Fecha límite",
   rememberMe: "Mantener sesión iniciada",
+  emailEnabled: "Notificaciones por correo",
+  browserEnabled: "Notificaciones del navegador",
+  newSubmissionsEnabled: "Avisos de nuevas entregas",
+  gradesEnabled: "Avisos de calificaciones",
 };
 
 const valueLabels: Record<string, string> = {

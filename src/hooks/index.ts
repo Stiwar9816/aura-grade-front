@@ -18,6 +18,7 @@ export {useEvaluationDetail} from "./useEvaluationDetail";
 export {useReEvaluationRequests} from "./useReEvaluationRequests";
 export {useAnalyticsData} from "./useAnalyticsData";
 export {useStudentAcademicData} from "./useStudentAcademicData";
+export {useNotificationPreferences} from "./useNotificationPreferences";
 export type {
 	StudentAssignmentCardData,
 	StudentCourseReport,

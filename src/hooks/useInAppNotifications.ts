@@ -3,6 +3,10 @@ import type {StudentAssignmentCardData} from "@/hooks/useStudentAcademicData";
 import type {Submission} from "@/interface";
 import {SubmissionStatus} from "@/interface";
 import {notifyInfo, notifySuccess} from "@/utils/toastNotify";
+import {
+	showBrowserNotification,
+	useNotificationPreferences,
+} from "./useNotificationPreferences";
 
 const getSeenEvents = (storageKey: string) => {
 	if (typeof window === "undefined") return new Set<string>();
@@ -32,9 +36,16 @@ export const useStudentGradeNotifications = ({
 	loading: boolean;
 }) => {
 	const initializedRef = useRef(false);
+	const {preferences} = useNotificationPreferences(userId);
 
 	useEffect(() => {
-		if (!userId || loading || assignments.length === 0) return;
+		if (
+			!userId ||
+			loading ||
+			assignments.length === 0 ||
+			!preferences.gradesEnabled
+		)
+			return;
 
 		const storageKey = `auraGrade_notifications_student_${userId}`;
 		const seenEvents = getSeenEvents(storageKey);
@@ -47,13 +58,18 @@ export const useStudentGradeNotifications = ({
 			const alreadySeen = seenEvents.has(eventKey);
 
 			if (initializedRef.current && !alreadySeen) {
-				notifySuccess(
-					`Tu entrega "${assignment.title}" ya fue calificada${
+				const message = `Tu entrega "${assignment.title}" ya fue calificada${
 						typeof assignment.score === "number"
 							? `: ${assignment.score.toFixed(1)}/${assignment.maxScore}`
 							: "."
-					}`,
-				);
+					}`;
+				notifySuccess(message);
+				if (preferences.browserEnabled) {
+					showBrowserNotification("Calificación publicada", {
+						body: message,
+						tag: eventKey,
+					});
+				}
 			}
 
 			seenEvents.add(eventKey);
@@ -61,7 +77,7 @@ export const useStudentGradeNotifications = ({
 
 		saveSeenEvents(storageKey, seenEvents);
 		initializedRef.current = true;
-	}, [assignments, loading, userId]);
+	}, [assignments, loading, preferences.browserEnabled, preferences.gradesEnabled, userId]);
 };
 
 export const useTeacherSubmissionNotifications = ({
@@ -74,9 +90,16 @@ export const useTeacherSubmissionNotifications = ({
 	loading: boolean;
 }) => {
 	const initializedRef = useRef(false);
+	const {preferences} = useNotificationPreferences(userId);
 
 	useEffect(() => {
-		if (!userId || loading || submissions.length === 0) return;
+		if (
+			!userId ||
+			loading ||
+			submissions.length === 0 ||
+			!preferences.newSubmissionsEnabled
+		)
+			return;
 
 		const storageKey = `auraGrade_notifications_teacher_${userId}`;
 		const seenEvents = getSeenEvents(storageKey);
@@ -91,9 +114,14 @@ export const useTeacherSubmissionNotifications = ({
 			const alreadySeen = seenEvents.has(eventKey);
 
 			if (initializedRef.current && !alreadySeen) {
-				notifyInfo(
-					`${submission.studentName} envió "${submission.assignmentTitle}" para revisión.`,
-				);
+				const message = `${submission.studentName} envió "${submission.assignmentTitle}" para revisión.`;
+				notifyInfo(message);
+				if (preferences.browserEnabled) {
+					showBrowserNotification("Nueva entrega", {
+						body: message,
+						tag: eventKey,
+					});
+				}
 			}
 
 			seenEvents.add(eventKey);
@@ -101,5 +129,11 @@ export const useTeacherSubmissionNotifications = ({
 
 		saveSeenEvents(storageKey, seenEvents);
 		initializedRef.current = true;
-	}, [loading, submissions, userId]);
+	}, [
+		loading,
+		preferences.browserEnabled,
+		preferences.newSubmissionsEnabled,
+		submissions,
+		userId,
+	]);
 };
