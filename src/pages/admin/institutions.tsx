@@ -1,8 +1,18 @@
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import {
+  FormEvent,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faBuildingColumns,
+  faChevronLeft,
+  faChevronRight,
   faGlobe,
+  faMagnifyingGlass,
   faPen,
   faPlus,
   faPowerOff,
@@ -19,6 +29,8 @@ import {
   notifySuccess,
 } from "@/utils/toastNotify";
 import { useConfirm } from "@/context/ConfirmContext";
+
+const INSTITUTIONS_PAGE_SIZE = 5;
 
 const emptyForm: InstitutionInput = {
   name: "",
@@ -52,6 +64,12 @@ const institutionInitials = (name: string) =>
     .map((word) => word[0])
     .join("")
     .toUpperCase();
+
+const normalizeSearchValue = (value: string) =>
+  value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase("es");
 
 const InstitutionLogo = ({ institution }: { institution: Institution }) => {
   const [imageFailed, setImageFailed] = useState(false);
@@ -93,6 +111,8 @@ const responseMessage = (payload: unknown, fallback: string) => {
 const InstitutionsPage = () => {
   const confirm = useConfirm();
   const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
   const [form, setForm] = useState<InstitutionInput>(emptyForm);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -102,6 +122,32 @@ const InstitutionsPage = () => {
     useState<Institution | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const savingRef = useRef(false);
+
+  const filteredInstitutions = useMemo(() => {
+    const normalizedSearch = normalizeSearchValue(search.trim());
+    if (!normalizedSearch) return institutions;
+
+    return institutions.filter((institution) =>
+      [
+        institution.name,
+        institution.legalName,
+        institution.taxId,
+        institution.contactEmail,
+        institution.city,
+      ].some((value) =>
+        normalizeSearchValue(value ?? "").includes(normalizedSearch),
+      ),
+    );
+  }, [institutions, search]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredInstitutions.length / INSTITUTIONS_PAGE_SIZE),
+  );
+  const visibleInstitutions = filteredInstitutions.slice(
+    (page - 1) * INSTITUTIONS_PAGE_SIZE,
+    page * INSTITUTIONS_PAGE_SIZE,
+  );
 
   const loadInstitutions = useCallback(async () => {
     setLoading(true);
@@ -138,6 +184,10 @@ const InstitutionsPage = () => {
   useEffect(() => {
     savingRef.current = saving;
   }, [saving]);
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, totalPages));
+  }, [totalPages]);
 
   useEffect(() => {
     if (!isInstitutionModalOpen) return;
@@ -303,7 +353,7 @@ const InstitutionsPage = () => {
       <Layout title="Gestión de instituciones" hideHeader={true}>
         <div className="space-y-6">
           <section className="space-y-4">
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
               <div>
                 <h2 className="text-3xl font-semibold text-gray-900">
                   Instituciones registradas
@@ -312,14 +362,33 @@ const InstitutionsPage = () => {
                   {institutions.length} entidades configuradas en la plataforma
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={openCreateModal}
-                className="btn-primary shrink-0"
-              >
-                <FontAwesomeIcon icon={faPlus} className="mr-2" />
-                Nueva institución
-              </button>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="relative">
+                  <label className="sr-only" htmlFor="institution-search">
+                    Buscar instituciones
+                  </label>
+      
+                  <input
+                    id="institution-search"
+                    type="search"
+                    className="input-primary w-full sm:w-72"
+                    placeholder="Buscar institución"
+                    value={search}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setPage(1);
+                    }}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={openCreateModal}
+                  className="btn-primary shrink-0"
+                >
+                  <FontAwesomeIcon icon={faPlus} className="mr-2" />
+                  Nueva institución
+                </button>
+              </div>
             </div>
 
             {loading && <Card>Cargando instituciones...</Card>}
@@ -330,90 +399,143 @@ const InstitutionsPage = () => {
               </Card>
             )}
 
-            {institutions.map((institution) => (
-              <Card key={institution.id}>
-                <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-                  <div className="flex min-w-0 gap-4">
-                    <InstitutionLogo
-                      key={`${institution.id}:${institution.logoUrl ?? ""}`}
-                      institution={institution}
-                    />
-                    <div className="min-w-0">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {institution.name}
-                        </h3>
-                        <Badge
-                          variant={institution.isActive ? "success" : "error"}
-                        >
-                          {institution.isActive ? "Activa" : "Inactiva"}
-                        </Badge>
+            {!loading &&
+              !error &&
+              institutions.length > 0 &&
+              filteredInstitutions.length === 0 && (
+                <Card className="text-center text-gray-600">
+                  No se encontraron instituciones que coincidan con la
+                  búsqueda.
+                </Card>
+              )}
+
+            {!loading &&
+              !error &&
+              visibleInstitutions.map((institution) => (
+                <Card key={institution.id}>
+                  <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
+                    <div className="flex min-w-0 gap-4">
+                      <InstitutionLogo
+                        key={`${institution.id}:${institution.logoUrl ?? ""}`}
+                        institution={institution}
+                      />
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {institution.name}
+                          </h3>
+                          <Badge
+                            variant={institution.isActive ? "success" : "error"}
+                          >
+                            {institution.isActive ? "Activa" : "Inactiva"}
+                          </Badge>
+                        </div>
+                        <dl className="mt-4 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
+                          <div>
+                            <dt className="font-medium text-gray-800">NIT</dt>
+                            <dd className="text-gray-600">
+                              {institution.taxId || "Sin NIT"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="font-medium text-gray-800">
+                              Contacto
+                            </dt>
+                            <dd className="text-gray-600">
+                              {institution.contactEmail || "Sin contacto"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="font-medium text-gray-800">
+                              Dirección
+                            </dt>
+                            <dd className="text-gray-600">
+                              {[institution.address, institution.city]
+                                .filter(Boolean)
+                                .join(", ") || "Sin dirección"}
+                            </dd>
+                          </div>
+                          <div>
+                            <dt className="font-medium text-gray-800">
+                              Teléfono
+                            </dt>
+                            <dd className="text-gray-600">
+                              {institution.phone || "Sin teléfono"}
+                            </dd>
+                          </div>
+                        </dl>
+                        {institution.website && (
+                          <a
+                            href={institution.website}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-electric-600 hover:underline"
+                          >
+                            <FontAwesomeIcon icon={faGlobe} /> Sitio web
+                          </a>
+                        )}
                       </div>
-                      <dl className="mt-4 grid gap-x-8 gap-y-2 text-sm sm:grid-cols-2">
-                        <div>
-                          <dt className="font-medium text-gray-800">NIT</dt>
-                          <dd className="text-gray-600">
-                            {institution.taxId || "Sin NIT"}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="font-medium text-gray-800">Contacto</dt>
-                          <dd className="text-gray-600">
-                            {institution.contactEmail || "Sin contacto"}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="font-medium text-gray-800">Dirección</dt>
-                          <dd className="text-gray-600">
-                            {[institution.address, institution.city]
-                              .filter(Boolean)
-                              .join(", ") || "Sin dirección"}
-                          </dd>
-                        </div>
-                        <div>
-                          <dt className="font-medium text-gray-800">Teléfono</dt>
-                          <dd className="text-gray-600">
-                            {institution.phone || "Sin teléfono"}
-                          </dd>
-                        </div>
-                      </dl>
-                      {institution.website && (
-                        <a
-                          href={institution.website}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="mt-3 inline-flex items-center gap-2 text-sm font-medium text-electric-600 hover:underline"
-                        >
-                          <FontAwesomeIcon icon={faGlobe} /> Sitio web
-                        </a>
-                      )}
+                    </div>
+                    <div className="flex shrink-0 flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(institution)}
+                        className="rounded-xl border border-electric-200 px-3 py-2 text-sm font-semibold text-electric-700 transition-colors hover:bg-electric-50"
+                      >
+                        <FontAwesomeIcon icon={faPen} className="mr-2" />
+                        Editar
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => void toggleInstitution(institution)}
+                        className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
+                          institution.isActive
+                            ? "border-red-200 text-red-700 hover:bg-red-50"
+                            : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
+                        }`}
+                      >
+                        <FontAwesomeIcon icon={faPowerOff} className="mr-2" />
+                        {institution.isActive ? "Desactivar" : "Activar"}
+                      </button>
                     </div>
                   </div>
-                  <div className="flex shrink-0 flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => openEditModal(institution)}
-                      className="rounded-xl border border-electric-200 px-3 py-2 text-sm font-semibold text-electric-700 transition-colors hover:bg-electric-50"
-                    >
-                      <FontAwesomeIcon icon={faPen} className="mr-2" />
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void toggleInstitution(institution)}
-                      className={`rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
-                        institution.isActive
-                          ? "border-red-200 text-red-700 hover:bg-red-50"
-                          : "border-emerald-200 text-emerald-700 hover:bg-emerald-50"
-                      }`}
-                    >
-                      <FontAwesomeIcon icon={faPowerOff} className="mr-2" />
-                      {institution.isActive ? "Desactivar" : "Activar"}
-                    </button>
-                  </div>
+                </Card>
+              ))}
+
+            {!loading && !error && filteredInstitutions.length > 0 && (
+              <div className="flex flex-col items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 sm:flex-row">
+                <p className="text-sm text-gray-600">
+                  Página {page} de {totalPages} · {filteredInstitutions.length}{" "}
+                  {filteredInstitutions.length === 1
+                    ? "institución"
+                    : "instituciones"}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    disabled={page <= 1}
+                    onClick={() =>
+                      setPage((current) => Math.max(1, current - 1))
+                    }
+                    className="btn-ghost px-3 py-2 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Página anterior de instituciones"
+                  >
+                    <FontAwesomeIcon icon={faChevronLeft} />
+                  </button>
+                  <button
+                    type="button"
+                    disabled={page >= totalPages}
+                    onClick={() =>
+                      setPage((current) => Math.min(totalPages, current + 1))
+                    }
+                    className="btn-ghost px-3 py-2 disabled:cursor-not-allowed disabled:opacity-40"
+                    aria-label="Página siguiente de instituciones"
+                  >
+                    <FontAwesomeIcon icon={faChevronRight} />
+                  </button>
                 </div>
-              </Card>
-            ))}
+              </div>
+            )}
           </section>
 
           {isInstitutionModalOpen && (

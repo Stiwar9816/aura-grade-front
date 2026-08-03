@@ -13,11 +13,13 @@ import Badge from "@/components/Common/Badge";
 import { ProtectedRoute } from "@/components/Auth";
 import { AuditLog, AuditLogPage, UserRole } from "@/interface";
 
+const AUDIT_LOGS_PAGE_SIZE = 10;
+
 const emptyPage: AuditLogPage = {
   items: [],
   total: 0,
   page: 1,
-  limit: 25,
+  limit: AUDIT_LOGS_PAGE_SIZE,
   totalPages: 1,
 };
 
@@ -206,7 +208,10 @@ const AuditLogsPage = () => {
     setLoading(true);
     setError(null);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "25" });
+      const params = new URLSearchParams({
+        page: String(page),
+        limit: String(AUDIT_LOGS_PAGE_SIZE),
+      });
       if (search) params.set("search", search);
       const response = await fetch(`/api/admin/audit-logs?${params}`, {
         credentials: "same-origin",
