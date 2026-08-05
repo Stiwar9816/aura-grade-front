@@ -5,8 +5,8 @@ import {ProtectedRoute} from "@/components/Auth";
 import {useAuth} from "@/hooks";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
-import {UpdateUserInput, User, UserRole} from "@/interface";
-import {RESET_PASSWORD_AUTH, UPDATE_USER} from "@/gql/User";
+import {UpdateOwnProfileInput, User, UserRole} from "@/interface";
+import {RESET_PASSWORD_AUTH, UPDATE_MY_PROFILE} from "@/gql/User";
 import {
 	notifyError,
 	notifyLoading,
@@ -22,9 +22,10 @@ const getRoleLabel = (role?: UserRole) => {
 
 const ProfilePage: React.FC = () => {
 	const {user, updateUser} = useAuth();
-	const [updateUserMutation, {loading: savingProfile}] = useMutation<{
-		updateUser: User;
-	}>(UPDATE_USER);
+	const [updateMyProfileMutation, {loading: savingProfile}] = useMutation<
+		{updateMyProfile: User},
+		{input: UpdateOwnProfileInput}
+	>(UPDATE_MY_PROFILE);
 	const [resetPasswordAuthMutation, {loading: savingPassword}] = useMutation<
 		{resetPasswordAuth: User},
 		{newPassword: string}
@@ -74,11 +75,17 @@ const ProfilePage: React.FC = () => {
 
 		const firstName = formData.firstName.trim();
 		const lastName = formData.lastName.trim();
+		const email = formData.email.trim().toLowerCase();
 		const cleanPhone = formData.phone.replace(/\s+/g, "");
 
-		if (!firstName || !lastName) {
-			const message = "Nombre y apellido son obligatorios.";
+		if (!firstName || !lastName || !email) {
+			const message = "Nombre, apellido y correo son obligatorios.";
 			notifyWarning(message);
+			return;
+		}
+
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+			notifyWarning("Ingresa un correo electrónico válido.");
 			return;
 		}
 
@@ -88,21 +95,19 @@ const ProfilePage: React.FC = () => {
 			return;
 		}
 
-		const updateUserInput: UpdateUserInput = {
-			id: user.id,
+		const input: UpdateOwnProfileInput = {
 			name: firstName,
 			last_name: lastName,
+			email,
 			phone: cleanPhone ? Number(cleanPhone.replace(/^\+/, "")) : null,
-			isActive: user.isActive ?? true,
-			role: user.role,
 		};
 
 		const notificationId = notifyLoading("Guardando cambios del perfil...");
 		try {
-			const {data} = await updateUserMutation({
-				variables: {updateUserInput},
+			const {data} = await updateMyProfileMutation({
+				variables: {input},
 			});
-			const updatedUser = data?.updateUser;
+			const updatedUser = data?.updateMyProfile;
 
 			if (!updatedUser) {
 				const message = "El servidor no retornó el usuario actualizado.";
@@ -274,10 +279,23 @@ const ProfilePage: React.FC = () => {
 									<label className="block text-sm font-medium text-gray-700 mb-2">
 										Correo Electrónico
 									</label>
-									<p className="text-gray-900 font-medium">{user?.email}</p>
-									<p className="text-xs text-gray-500 mt-1">
-										El correo no se puede modificar
-									</p>
+									{isEditing ? (
+										<input
+											type="email"
+											value={formData.email}
+											onChange={(event) =>
+												setFormData({
+													...formData,
+													email: event.target.value,
+												})
+											}
+											className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-electric-500 focus:border-electric-500"
+										/>
+									) : (
+										<p className="text-gray-900 font-medium">
+											{user?.email}
+										</p>
+									)}
 								</div>
 
 								<div>

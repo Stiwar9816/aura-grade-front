@@ -13,7 +13,6 @@ import {
 	faCloudArrowUp,
 	faFileLines,
 	faGraduationCap,
-	faUserCheck,
 	faBuildingColumns,
 	faClockRotateLeft,
 } from "@fortawesome/free-solid-svg-icons";
@@ -24,7 +23,12 @@ const Sidebar: React.FC = () => {
 
 	const commonItems = [
 		{
-			path: user?.role === UserRole.STUDENT ? "/student" : "/teacher",
+			path:
+				user?.role === UserRole.STUDENT
+					? "/student"
+					: user?.role === UserRole.ADMIN
+						? "/admin/approvals"
+						: "/teacher",
 			icon: <FontAwesomeIcon icon={faHouse} />,
 			label: "Panel de Inicio",
 			badge: null,
@@ -81,9 +85,9 @@ const Sidebar: React.FC = () => {
 
 	const administratorItems = [
 		{
-			path: "/admin/approvals",
-			icon: <FontAwesomeIcon icon={faUserCheck} />,
-			label: "Aprobaciones",
+			path: "/teacher/courses",
+			icon: <FontAwesomeIcon icon={faPeopleRoof} />,
+			label: "Asignación de Cursos",
 			badge: null,
 		},
 		...(user?.isPlatformAdmin
@@ -106,7 +110,11 @@ const Sidebar: React.FC = () => {
 
 	const menuItems = [
 		...commonItems,
-		...(user?.role === UserRole.STUDENT ? studentItems : teacherItems),
+		...(user?.role === UserRole.STUDENT
+			? studentItems
+			: user?.role === UserRole.TEACHER
+				? teacherItems
+				: []),
 		...(user?.role === UserRole.ADMIN ? administratorItems : []),
 	];
 

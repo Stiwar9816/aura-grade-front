@@ -46,6 +46,7 @@ export enum DocumentType {
 export interface ProtectedRouteProps {
 	children: React.ReactNode;
 	requiredRole?: UserRole;
+	requiredRoles?: UserRole[];
 	redirectTo?: string;
 }
 
@@ -156,6 +157,20 @@ export interface UpdateUserInput {
 	last_name?: string | null;
 	name?: string | null;
 	phone?: number | null;
+}
+
+export interface UpdateOwnProfileInput {
+	name?: string | null;
+	last_name?: string | null;
+	email?: string | null;
+	phone?: number | null;
+	document_type?: string | null;
+	document_num?: number | null;
+}
+
+export interface AssignCoursesInput {
+	userId: string;
+	courseIds: string[];
 }
 
 export interface UsersStats {

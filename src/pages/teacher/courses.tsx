@@ -24,6 +24,7 @@ import {
   notifyWarning,
 } from "@/utils/toastNotify";
 import { useConfirm } from "@/context/ConfirmContext";
+import { useAuth } from "@/hooks";
 
 type CourseStudent = {
   id: string;
@@ -43,18 +44,24 @@ type CourseSummary = {
 
 type StudentOption = UsersStats["users"][number];
 
+const COURSE_MANAGEMENT_ROLES: UserRole[] = [
+  UserRole.TEACHER,
+  UserRole.ADMIN,
+];
+
 const CourseManagement: React.FC = () => {
   const confirm = useConfirm();
+  const { user } = useAuth();
   const {
     courses,
     loading: coursesLoading,
     saveCourse,
     deleteCourse,
-    addStudentToCourse,
-    removeStudentFromCourse,
+    assignCoursesToStudent,
   } = useCourse();
 
-  const { data: studentsData } = useQuery<UsersStats>(USER_ROLE_STUDENTS);
+  const { data: studentsData, refetch: refetchStudents } =
+    useQuery<UsersStats>(USER_ROLE_STUDENTS);
 
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -65,6 +72,15 @@ const CourseManagement: React.FC = () => {
   const courseList = courses as CourseSummary[];
   const selectedCourse = courseList.find((c) => c.id === selectedCourseId);
   const allStudents = studentsData?.users || [];
+  const canManageCourseCatalog = user?.role === UserRole.TEACHER;
+
+  const getManagedCourseIds = (student: StudentOption) => {
+    const assignedCourseIds = student.courses?.map((course) => course.id) || [];
+    if (user?.role === UserRole.ADMIN) return assignedCourseIds;
+
+    const visibleCourseIds = new Set(courseList.map((course) => course.id));
+    return assignedCourseIds.filter((courseId) => visibleCourseIds.has(courseId));
+  };
 
   // Filter students based on search - Fixed crash with safe navigation
   const filteredStudents = allStudents.filter(
@@ -156,11 +172,11 @@ const CourseManagement: React.FC = () => {
 
     const notificationId = notifyLoading("Asignando estudiante al curso...");
     try {
-      await addStudentToCourse(
-        selectedCourse.id,
-        student.id,
-        currentStudentIds,
+      const nextCourseIds = Array.from(
+        new Set([...getManagedCourseIds(student), selectedCourse.id]),
       );
+      await assignCoursesToStudent(student.id, nextCourseIds);
+      await refetchStudents();
       notifySuccess(
           `${student.name} ${student.last_name || ""}`.trim() +
           ` fue asignado a ${selectedCourse.course_name}.`,
@@ -180,13 +196,19 @@ const CourseManagement: React.FC = () => {
   const handleRemoveStudentFromCourse = async (student: CourseStudent) => {
     if (!selectedCourse) return;
 
+    const studentRecord = allStudents.find((item) => item.id === student.id);
+    if (!studentRecord) {
+      notifyError("No se encontró la información actual del estudiante.");
+      return;
+    }
+
     const notificationId = notifyLoading("Removiendo estudiante del curso...");
     try {
-      await removeStudentFromCourse(
-        selectedCourse.id,
-        student.id,
-        currentStudentIds,
+      const nextCourseIds = getManagedCourseIds(studentRecord).filter(
+        (courseId) => courseId !== selectedCourse.id,
       );
+      await assignCoursesToStudent(student.id, nextCourseIds);
+      await refetchStudents();
       notifyInfo(
           `${student.name} ${student.last_name || ""}`.trim() +
           ` fue removido de ${selectedCourse.course_name}.`,
@@ -206,21 +228,27 @@ const CourseManagement: React.FC = () => {
   const currentStudentIds = selectedCourse?.users?.map((u) => u.id) || [];
 
   return (
-    <ProtectedRoute requiredRole={UserRole.TEACHER}>
+    <ProtectedRoute requiredRoles={COURSE_MANAGEMENT_ROLES}>
       <Layout title="Gestión de Cursos" hideHeader>
         <SectionHeader
           title="Gestión de Cursos"
-          description="Gestiona tus cursos y estudiantes"
+          description={
+            canManageCourseCatalog
+              ? "Gestiona tus cursos y estudiantes"
+              : "Asigna estudiantes a los cursos de tu institución"
+          }
           className="mb-8"
         />
-        <div className="flex justify-end my-4">
-          <button
-            onClick={handleOpenCreateModal}
-            className="btn-primary flex items-center"
-          >
-            <span>Nuevo Curso</span>
-          </button>
-        </div>
+        {canManageCourseCatalog && (
+          <div className="flex justify-end my-4">
+            <button
+              onClick={handleOpenCreateModal}
+              className="btn-primary flex items-center"
+            >
+              <span>Nuevo Curso</span>
+            </button>
+          </div>
+        )}
 
         <div className="max-w-7xl mx-auto space-y-6">
           {coursesLoading ? (
@@ -286,22 +314,24 @@ const CourseManagement: React.FC = () => {
                           >
                             Asignar Estudiantes
                           </button>
-                          <div className="flex gap-4">
-                            <button
-                              onClick={handleOpenEditModal}
-                              className="p-2 text-slate-500 hover:text-electric-700 hover:bg-electric-50 rounded-xl transition-all dark:text-slate-400 dark:hover:text-blue-200 dark:hover:bg-blue-950/60"
-                              title="Editar Curso"
-                            >
-                              <FontAwesomeIcon icon={faEdit} />
-                            </button>
-                            <button
-                              onClick={handleDeleteCourse}
-                              className="p-2 text-slate-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all dark:text-slate-400 dark:hover:text-red-200 dark:hover:bg-red-950/60"
-                              title="Eliminar Curso"
-                            >
-                              <FontAwesomeIcon icon={faTrash} />
-                            </button>
-                          </div>
+                          {canManageCourseCatalog && (
+                            <div className="flex gap-4">
+                              <button
+                                onClick={handleOpenEditModal}
+                                className="p-2 text-slate-500 hover:text-electric-700 hover:bg-electric-50 rounded-xl transition-all dark:text-slate-400 dark:hover:text-blue-200 dark:hover:bg-blue-950/60"
+                                title="Editar Curso"
+                              >
+                                <FontAwesomeIcon icon={faEdit} />
+                              </button>
+                              <button
+                                onClick={handleDeleteCourse}
+                                className="p-2 text-slate-500 hover:text-red-700 hover:bg-red-50 rounded-xl transition-all dark:text-slate-400 dark:hover:text-red-200 dark:hover:bg-red-950/60"
+                                title="Eliminar Curso"
+                              >
+                                <FontAwesomeIcon icon={faTrash} />
+                              </button>
+                            </div>
+                          )}
                         </div>
                       </div>
 
@@ -383,7 +413,7 @@ const CourseManagement: React.FC = () => {
         </div>
 
         {/* Create/Edit Course Modal */}
-        {showModal && (
+        {showModal && canManageCourseCatalog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
             <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
               <div className="flex justify-between items-center mb-6">
