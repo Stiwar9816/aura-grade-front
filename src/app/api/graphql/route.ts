@@ -57,12 +57,16 @@ export async function POST(request: NextRequest) {
 	try {
 		const contentType =
 			request.headers.get("content-type") || "application/json";
+		const backendHeaders = new Headers({
+			accept: request.headers.get("accept") || "application/json",
+			"content-type": contentType,
+		});
+		if (contentType.toLowerCase().startsWith("multipart/form-data")) {
+			backendHeaders.set("apollo-require-preflight", "true");
+		}
 		const backendResponse = await fetchBackendGraphql(request, {
 			method: "POST",
-			headers: {
-				accept: request.headers.get("accept") || "application/json",
-				"content-type": contentType,
-			},
+			headers: backendHeaders,
 			sessionToken,
 			body: request.body,
 			duplex: "half",
