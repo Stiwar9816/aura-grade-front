@@ -191,7 +191,6 @@ const assignmentBelongsToTeacher = (
 
 export const useAssignments = () => {
 	const {user} = useAuth();
-	const isAdmin = user?.role === UserRole.ADMIN;
 	const [assignmentDetailsById, setAssignmentDetailsById] = useState<
 		Record<string, TeacherAssignment>
 	>({});
@@ -215,16 +214,14 @@ export const useAssignments = () => {
 
 		const teacherAssignments = assignments as TeacherAssignment[];
 
-		if (!isAdmin && user?.id) {
-			const ownedAssignments = teacherAssignments.filter((assignment) =>
+		if (user?.role === UserRole.TEACHER && user.id) {
+			return teacherAssignments.filter((assignment) =>
 				assignmentBelongsToTeacher(assignment, user.id),
 			);
-
-			return ownedAssignments.length > 0 ? ownedAssignments : teacherAssignments;
 		}
 
 		return teacherAssignments;
-	}, [assignments, isAdmin, user?.id]);
+	}, [assignments, user?.id, user?.role]);
 
 	useEffect(() => {
 		const assignmentsMissingSubmissions = filteredAssignments.filter(

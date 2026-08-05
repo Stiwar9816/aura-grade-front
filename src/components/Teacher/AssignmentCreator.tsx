@@ -1,5 +1,5 @@
 import React, {useState} from "react";
-import {useAuth, useAssignments, useCourse, useRubrics} from "@/hooks";
+import {useAssignments, useCourse, useRubrics} from "@/hooks";
 import Card from "@/components/Common/Card";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faTriangleExclamation} from "@fortawesome/free-solid-svg-icons";
@@ -17,7 +17,6 @@ const getErrorMessage = (error: unknown, fallback: string) =>
 	error instanceof Error ? error.message : fallback;
 
 const AssignmentCreator: React.FC = () => {
-	const {user} = useAuth();
 	const {createAssignment, createLoading} = useAssignments();
 	const {courses, loading: coursesLoading} = useCourse();
 	const {rubrics, loading: rubricsLoading} = useRubrics();
@@ -51,7 +50,6 @@ const AssignmentCreator: React.FC = () => {
 				dueDate: new Date(form.dueDate).toISOString(),
 				courseId: form.courseId,
 				rubricId: form.rubricId,
-				userId: user?.id,
 				isActive: true,
 			});
 			setIsSubmitted(true);

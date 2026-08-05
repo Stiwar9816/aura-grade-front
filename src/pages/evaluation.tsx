@@ -610,7 +610,6 @@ const EvaluationPage: React.FC = () => {
 					id: submissionDetail.evaluation.id,
 					updateEvaluationInput: {
 						id: submissionDetail.evaluation.id,
-						submissionId,
 						totalScore: parsedScore,
 						generalFeedback: feedbackToPublish,
 					},

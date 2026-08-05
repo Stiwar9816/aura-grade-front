@@ -40,20 +40,22 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 		}
 
 		// Validar tipo por extensión
-		const validExtensions = [".docx", ".doc"];
+		const validExtensions = [".docx"];
 		const fileExtension = "." + file.name.split(".").pop()?.toLowerCase();
 
 		if (!validExtensions.includes(fileExtension)) {
 			return {
 				isValid: false,
-				error: "Formato no soportado. Use DOCX o DOC",
+				error: "Formato no soportado. Usa un archivo DOCX",
 			};
 		}
 
 		// Validar tipo MIME
 		const validMimeTypes = [
 			"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-			"application/msword",
+			"application/octet-stream",
+			"application/zip",
+			"application/x-zip-compressed",
 		];
 
 		if (!validMimeTypes.includes(file.type) && file.type !== "") {
@@ -129,7 +131,6 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 		const extension = fileName.split(".").pop()?.toLowerCase();
 		switch (extension) {
 			case "docx":
-			case "doc":
 				return <FontAwesomeIcon icon={faFileText} />;
 			default:
 				return "📎";
@@ -204,7 +205,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 					ref={fileInputRef}
 					type="file"
 					onChange={handleFileInputChange}
-					accept=".docx,.doc"
+					accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 					className="hidden"
 				/>
 
@@ -219,13 +220,6 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 					</div>
 
 					<div className="inline-flex flex-wrap items-center gap-3 px-5 py-1.5 bg-white/60 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-sm text-gray-600">
-						<span className="flex items-center gap-1.5">
-							<span className="text-blue-500">
-								<FontAwesomeIcon icon={faFileText} />
-							</span>{" "}
-							.DOC
-						</span>
-						<span className="w-1 h-1 bg-gray-300 rounded-full"></span>
 						<span className="flex items-center gap-1.5">
 							<span className="text-blue-500">
 								<FontAwesomeIcon icon={faFileText} />

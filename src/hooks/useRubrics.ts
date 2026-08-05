@@ -26,6 +26,7 @@ import type {
 	UpdateRubricInput,
 	RubricCriteria,
 } from "@/interface";
+import {UserRole} from "@/interface";
 import {useAuth, useCriteria} from "@/hooks";
 
 export const useRubrics = () => {
@@ -209,7 +210,6 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 				title: data.title,
 				description: data.description,
 				maxTotalScore: 0,
-				userId: user.id,
 			});
 
 			if (created) {
@@ -274,7 +274,6 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 						(acc, c) => acc + c.maxPoints,
 						0,
 					),
-					userId: user.id,
 				};
 				const created = await createRubric(createPayload);
 				if (created) savedRubricId = created.id;
@@ -497,7 +496,10 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 	return {
 		error: queryError || operationError,
 		loading: queryLoading || rubricLoading,
-		rubrics: data?.rubrics || [],
+		rubrics:
+			user?.role === UserRole.TEACHER && user.id
+				? (data?.rubrics || []).filter((rubric) => rubric.user?.id === user.id)
+				: data?.rubrics || [],
 		rubric: rubricData?.rubric || null,
 		createRubric,
 		deleteRubric,

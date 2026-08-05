@@ -30,7 +30,6 @@ export const SubmissionActions = () => {
 
 			return data?.submission || null;
 		} catch (error) {
-			console.error("Error fetching submission:", error);
 			throw error;
 		}
 	}, []);

@@ -6,6 +6,9 @@ const RUBRIC_FIELDS = gql`
 		title
 		description
 		maxTotalScore
+		user {
+			id
+		}
 	}
 `;
 

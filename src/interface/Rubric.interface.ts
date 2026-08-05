@@ -47,6 +47,7 @@ export interface RubricTemplate {
 	title: string;
 	description: string;
 	maxTotalScore: number;
+	user?: {id: string};
 	criteria?: RubricCriteria[];
 }
 
@@ -75,7 +76,6 @@ export interface CreateRubricInput {
 	title: string;
 	description: string;
 	maxTotalScore: number;
-	userId: string;
 }
 
 export interface UpdateRubricInput {

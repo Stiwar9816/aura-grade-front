@@ -104,7 +104,6 @@ const formatFileSize = (bytes: number) => {
 const createSubmissionWithFile = async (
 	file: File,
 	assignment: StudentAssignmentCardData,
-	userId: string,
 ) => {
 	const formData = new FormData();
 
@@ -136,7 +135,6 @@ const createSubmissionWithFile = async (
 			variables: {
 				createSubmissionInput: {
 					assignmentId: assignment.id,
-					studentId: userId,
 				},
 				file: null,
 			},
@@ -392,7 +390,6 @@ const UploadPage: React.FC = () => {
 				const submission = await createSubmissionWithFile(
 					selectedFile,
 					selectedAssignment,
-					user.id,
 				);
 
 				setCreatedSubmission(submission);
