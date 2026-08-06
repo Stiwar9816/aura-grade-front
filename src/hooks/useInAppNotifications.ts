@@ -3,10 +3,7 @@ import type {StudentAssignmentCardData} from "@/hooks/useStudentAcademicData";
 import type {Submission} from "@/interface";
 import {SubmissionStatus} from "@/interface";
 import {notifyInfo, notifySuccess} from "@/utils/toastNotify";
-import {
-	showBrowserNotification,
-	useNotificationPreferences,
-} from "./useNotificationPreferences";
+import {useNotificationPreferences} from "./useNotificationPreferences";
 
 const getSeenEvents = (storageKey: string) => {
 	if (typeof window === "undefined") return new Set<string>();
@@ -64,12 +61,6 @@ export const useStudentGradeNotifications = ({
 							: "."
 					}`;
 				notifySuccess(message);
-				if (preferences.browserEnabled) {
-					showBrowserNotification("Calificación publicada", {
-						body: message,
-						tag: eventKey,
-					});
-				}
 			}
 
 			seenEvents.add(eventKey);
@@ -77,7 +68,7 @@ export const useStudentGradeNotifications = ({
 
 		saveSeenEvents(storageKey, seenEvents);
 		initializedRef.current = true;
-	}, [assignments, loading, preferences.browserEnabled, preferences.gradesEnabled, userId]);
+	}, [assignments, loading, preferences.gradesEnabled, userId]);
 };
 
 export const useTeacherSubmissionNotifications = ({
@@ -116,12 +107,6 @@ export const useTeacherSubmissionNotifications = ({
 			if (initializedRef.current && !alreadySeen) {
 				const message = `${submission.studentName} envió "${submission.assignmentTitle}" para revisión.`;
 				notifyInfo(message);
-				if (preferences.browserEnabled) {
-					showBrowserNotification("Nueva entrega", {
-						body: message,
-						tag: eventKey,
-					});
-				}
 			}
 
 			seenEvents.add(eventKey);
@@ -131,7 +116,6 @@ export const useTeacherSubmissionNotifications = ({
 		initializedRef.current = true;
 	}, [
 		loading,
-		preferences.browserEnabled,
 		preferences.newSubmissionsEnabled,
 		submissions,
 		userId,

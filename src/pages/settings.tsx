@@ -14,6 +14,11 @@ import {
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faArrowsRotate, faMoon, faSun} from "@fortawesome/free-solid-svg-icons";
 import {
+	subscribeToWebPush,
+	supportsWebPush,
+	unsubscribeFromWebPush,
+} from "@/lib/pushNotifications";
+import {
 	DEFAULT_THEME,
 	ThemeSetting,
 	applyTheme,
@@ -125,6 +130,7 @@ const SettingsPage: React.FC = () => {
 		setTheme(defaultSettings.theme);
 		const notificationId = notifyLoading("Restaurando configuración...");
 		try {
+			await unsubscribeFromWebPush().catch(() => undefined);
 			await savePreferences(DEFAULT_NOTIFICATION_PREFERENCES);
 			window.localStorage.setItem(settingsKey, JSON.stringify(defaultSettings));
 			applyTheme(defaultSettings.theme);
@@ -148,29 +154,42 @@ const SettingsPage: React.FC = () => {
 	};
 
 	const handlePushToggle = async (checked: boolean) => {
-		if (checked && typeof window !== "undefined" && !("Notification" in window)) {
-			notifyWarning("Este navegador no admite notificaciones del sistema.");
+		if (checked && !supportsWebPush()) {
+			notifyWarning("Este navegador no admite Web Push en un contexto seguro.");
 			setNotifications((current) => ({...current, browserEnabled: false}));
 			return;
 		}
 
-		if (checked && typeof window !== "undefined" && "Notification" in window) {
-			const permission = await Notification.requestPermission();
-
-			if (permission !== "granted") {
-				const message = "No se activaron las notificaciones push.";
-				notifyWarning(message);
-				setNotifications((current) => ({...current, browserEnabled: false}));
-				return;
-			}
+		if (!checked) {
+			await unsubscribeFromWebPush().catch(() => undefined);
+			setNotifications((current) => ({...current, browserEnabled: false}));
+			notifyInfo(
+				"Web Push se desactivó para este dispositivo. Guarda para aplicarlo a tu cuenta.",
+			);
+			return;
 		}
 
-		setNotifications((current) => ({...current, browserEnabled: checked}));
-		notifyInfo(
-			checked
-				? "Notificaciones del navegador activadas. Guarda la configuración para conservar el cambio."
-				: "Notificaciones del navegador desactivadas. Guarda la configuración para conservar el cambio.",
-		);
+		const permission = await Notification.requestPermission();
+		if (permission !== "granted") {
+			notifyWarning("El navegador no concedió permiso para Web Push.");
+			setNotifications((current) => ({...current, browserEnabled: false}));
+			return;
+		}
+
+		try {
+			await subscribeToWebPush();
+			setNotifications((current) => ({...current, browserEnabled: true}));
+			notifyInfo(
+				"Este dispositivo quedó suscrito. Guarda para activar Web Push en tu cuenta.",
+			);
+		} catch (error) {
+			setNotifications((current) => ({...current, browserEnabled: false}));
+			notifyError(
+				error instanceof Error
+					? error.message
+					: "No fue posible suscribir este dispositivo.",
+			);
+		}
 	};
 
 	const handleDeleteAccount = async () => {
@@ -267,7 +286,7 @@ const SettingsPage: React.FC = () => {
 										Notificaciones del navegador
 									</h4>
 									<p className="text-sm text-gray-600">
-										Recibe avisos del sistema mientras usas el panel
+										Recibe avisos incluso cuando Aura Grade está cerrado
 									</p>
 								</div>
 								<label className="relative inline-flex items-center cursor-pointer">
@@ -276,7 +295,9 @@ const SettingsPage: React.FC = () => {
 										checked={notifications.browserEnabled}
 										disabled={loadingNotifications || savingNotifications}
 										aria-label="Activar notificaciones del navegador"
-										onChange={(event) => handlePushToggle(event.target.checked)}
+										onChange={(event) =>
+											void handlePushToggle(event.target.checked)
+										}
 										className="sr-only peer"
 									/>
 									<div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-electric-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-electric-500"></div>

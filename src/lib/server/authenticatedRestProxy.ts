@@ -9,7 +9,7 @@ import {
 import {clearSessionCookie, readSessionToken} from "./authSession";
 
 type ProxyOptions = {
-	method: "GET" | "POST" | "PATCH";
+	method: "GET" | "POST" | "PATCH" | "DELETE";
 };
 
 export const proxyAuthenticatedRest = async (

@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: "Aura Grade - Clasificación asistida por IA",
   description:
     "Una plataforma progresiva para la gestión educativa eficiente y escalable, potenciada por IA.",
+  manifest: "/site.webmanifest",
 };
 
 export default function RootLayout({

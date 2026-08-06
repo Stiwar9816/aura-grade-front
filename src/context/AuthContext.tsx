@@ -17,6 +17,7 @@ import {
 	updateSessionUserAction,
 } from "@/actions/auth";
 import {AuthState, LoginCredentials, RegisterData, User} from "@/interface";
+import {unsubscribeFromWebPush} from "@/lib/pushNotifications";
 
 const AUTH_CHANNEL_NAME = "auraGrade_auth";
 
@@ -228,6 +229,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 	}, []);
 
 	const logout = useCallback(async () => {
+		await unsubscribeFromWebPush().catch(() => undefined);
 		const result = await logoutAction();
 		setAuthState({
 			user: null,
@@ -241,6 +243,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 	}, []);
 
 	const logoutAll = useCallback(async () => {
+		await unsubscribeFromWebPush().catch(() => undefined);
 		const result = await logoutAllAction();
 		if (result.success) {
 			setAuthState({

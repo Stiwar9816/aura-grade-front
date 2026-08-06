@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import { useEffect } from "react";
 import client from "@/lib/apolloClient";
 import { AuthProvider } from "@/context/AuthContext";
+import PushSubscriptionSync from "@/components/Notifications/PushSubscriptionSync";
 import { ConfirmProvider } from "@/context/ConfirmContext";
 import { useAuth } from "@/hooks";
 import {
@@ -49,6 +50,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <AuthProvider>
         <ConfirmProvider>
           <ThemeController />
+          <PushSubscriptionSync />
           <Component {...pageProps} />
           <Toaster richColors closeButton position="bottom-right" />
         </ConfirmProvider>

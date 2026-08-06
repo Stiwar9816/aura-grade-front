@@ -172,21 +172,3 @@ export const useNotificationPreferences = (userId?: string) => {
 		error,
 	};
 };
-
-export const showBrowserNotification = (
-	title: string,
-	options: NotificationOptions,
-) => {
-	if (
-		typeof window === "undefined" ||
-		!("Notification" in window) ||
-		Notification.permission !== "granted"
-	)
-		return;
-
-	const notification = new Notification(title, options);
-	notification.onclick = () => {
-		window.focus();
-		notification.close();
-	};
-};
