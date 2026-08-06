@@ -14,6 +14,7 @@ import { ProtectedRoute } from "@/components/Auth";
 import { AuditLog, AuditLogPage, UserRole } from "@/interface";
 
 const AUDIT_LOGS_PAGE_SIZE = 10;
+type AuditOutcomeFilter = "" | AuditLog["outcome"];
 
 const emptyPage: AuditLogPage = {
   items: [],
@@ -46,6 +47,18 @@ const resourceLabels: Record<string, string> = {
   Evaluation: "Evaluación",
   ReEvaluation: "Reevaluación",
   Notifications: "Preferencias de notificación",
+};
+
+const outcomeLabels: Record<AuditLog["outcome"], string> = {
+  SUCCESS: "Exitoso",
+  DENIED: "Denegado",
+  FAILED: "Fallido",
+};
+
+const outcomeVariant = (outcome: AuditLog["outcome"]) => {
+  if (outcome === "SUCCESS") return "success" as const;
+  if (outcome === "DENIED") return "warning" as const;
+  return "error" as const;
 };
 
 const fieldLabels: Record<string, string> = {
@@ -201,6 +214,7 @@ const AuditLogsPage = () => {
   const [page, setPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [outcome, setOutcome] = useState<AuditOutcomeFilter>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -213,6 +227,7 @@ const AuditLogsPage = () => {
         limit: String(AUDIT_LOGS_PAGE_SIZE),
       });
       if (search) params.set("search", search);
+      if (outcome) params.set("outcome", outcome);
       const response = await fetch(`/api/admin/audit-logs?${params}`, {
         credentials: "same-origin",
         cache: "no-store",
@@ -239,7 +254,7 @@ const AuditLogsPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, search]);
+  }, [outcome, page, search]);
 
   useEffect(() => {
     void loadLogs();
@@ -254,7 +269,7 @@ const AuditLogsPage = () => {
   return (
     <ProtectedRoute requiredRole={UserRole.ADMIN}>
       <Layout title="Auditoría del sistema">
-        <div className="mb-6 grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
+        <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
           <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
             <div className="flex gap-3">
               <FontAwesomeIcon icon={faShieldHalved} className="mt-0.5" />
@@ -265,7 +280,24 @@ const AuditLogsPage = () => {
               </p>
             </div>
           </div>
-          <form onSubmit={submitSearch} className="flex gap-2">
+          <form onSubmit={submitSearch} className="flex flex-wrap gap-2">
+            <label className="sr-only" htmlFor="audit-outcome">
+              Filtrar por resultado
+            </label>
+            <select
+              id="audit-outcome"
+              className="input-primary"
+              value={outcome}
+              onChange={(event) => {
+                setPage(1);
+                setOutcome(event.target.value as AuditOutcomeFilter);
+              }}
+            >
+              <option value="">Todos los resultados</option>
+              <option value="SUCCESS">Exitosos</option>
+              <option value="DENIED">Denegados</option>
+              <option value="FAILED">Fallidos</option>
+            </select>
             <label className="sr-only" htmlFor="audit-search">
               Buscar en auditoría
             </label>
@@ -321,13 +353,14 @@ const AuditLogsPage = () => {
 
           {!loading && !error && data.items.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[920px] text-left text-sm">
+              <table className="w-full min-w-[1080px] text-left text-sm">
                 <thead className="bg-gray-50 text-xs uppercase tracking-wide text-gray-500">
                   <tr>
                     <th className="px-6 py-3 font-semibold">Fecha y hora</th>
                     <th className="px-6 py-3 font-semibold">Actor</th>
                     <th className="px-6 py-3 font-semibold">IP</th>
                     <th className="px-6 py-3 font-semibold">Acción</th>
+                    <th className="px-6 py-3 font-semibold">Resultado</th>
                     <th className="px-6 py-3 font-semibold">Cambio</th>
                   </tr>
                 </thead>
@@ -340,7 +373,14 @@ const AuditLogsPage = () => {
                         className="align-top hover:bg-gray-50/50"
                       >
                         <td className="whitespace-nowrap px-6 py-4 text-gray-600">
-                          {dateFormatter.format(new Date(log.createdAt))}
+                          {dateFormatter.format(
+                            new Date(log.occurredAt || log.createdAt),
+                          )}
+                          {typeof log.durationMs === "number" && (
+                            <p className="mt-1 text-xs text-gray-400">
+                              {log.durationMs} ms
+                            </p>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <p className="font-medium text-gray-900">
@@ -360,6 +400,16 @@ const AuditLogsPage = () => {
                           <p className="mt-2 text-xs text-gray-500">
                             {resourceLabelFor(log.resource)}
                           </p>
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge variant={outcomeVariant(log.outcome)}>
+                            {outcomeLabels[log.outcome]}
+                          </Badge>
+                          {log.errorCode && (
+                            <p className="mt-2 break-all font-mono text-xs text-gray-500">
+                              {log.errorCode}
+                            </p>
+                          )}
                         </td>
                         <td className="max-w-md px-6 py-4">
                           {changes.length > 0 ? (

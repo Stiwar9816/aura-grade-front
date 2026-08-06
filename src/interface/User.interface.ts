@@ -114,6 +114,11 @@ export interface AuditLog {
 	ipAddress?: string | null;
 	action: string;
 	resource: string;
+	eventKey: string;
+	outcome: "SUCCESS" | "DENIED" | "FAILED";
+	errorCode?: string | null;
+	durationMs?: number | null;
+	occurredAt: string;
 	resourceId?: string | null;
 	changes?: Record<string, unknown> | null;
 	requestId?: string | null;
