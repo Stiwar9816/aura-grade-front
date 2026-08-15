@@ -1,12 +1,18 @@
 import React from "react";
 import {useRouter} from "next/router";
-import {useQuery} from "@apollo/client/react";
+import {useMutation, useQuery} from "@apollo/client/react";
 import Layout from "@/components/Layout";
 import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import Badge from "@/components/Common/Badge";
 import {GET_TEACHER_SUBMISSIONS} from "@/gql/Submission";
+import {
+	GET_ASSIGNMENT_BY_ID,
+	GET_TASK_TEACHER,
+	REMOVE_ASSIGNMENT_EXTENSION,
+	UPSERT_ASSIGNMENT_EXTENSION,
+} from "@/gql/Assignment";
 import {
 	AssignmentRubricCriterion,
 	AssignmentSubmission,
@@ -29,8 +35,10 @@ import {
 	faChartLine,
 	faCircleExclamation,
 	faClipboardList,
+	faClock,
 	faFileLines,
 	faGraduationCap,
+	faTrashCan,
 	faUserGroup,
 } from "@fortawesome/free-solid-svg-icons";
 import {
@@ -86,6 +94,11 @@ const formatDate = (date?: string, withTime = false) => {
 		year: "numeric",
 		...(withTime ? {hour: "2-digit", minute: "2-digit"} : {}),
 	});
+};
+
+const toDateTimeLocalValue = (date: Date) => {
+	const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+	return localDate.toISOString().slice(0, 16);
 };
 
 const normalizeStatusValue = (status?: string | null) =>
@@ -212,6 +225,31 @@ const AssignmentDetailPage: React.FC = () => {
 		React.useState<AssignmentReminderPreview | null>(null);
 	const [reminderLoading, setReminderLoading] = React.useState(false);
 	const [reminderError, setReminderError] = React.useState<string | null>(null);
+	const [extensionStudentId, setExtensionStudentId] = React.useState("");
+	const [extensionDueDate, setExtensionDueDate] = React.useState("");
+	const [extensionReason, setExtensionReason] = React.useState("");
+	const [extensionSaving, setExtensionSaving] = React.useState(false);
+	const [upsertExtension] = useMutation(UPSERT_ASSIGNMENT_EXTENSION);
+	const [removeExtension] = useMutation(REMOVE_ASSIGNMENT_EXTENSION);
+	const submittedStudentIds = React.useMemo(
+		() =>
+			new Set(
+				(assignment?.submissionItems || [])
+					.map((submission) => submission.student?.id)
+					.filter((id): id is string => Boolean(id)),
+			),
+		[assignment?.submissionItems],
+	);
+	const studentsWithoutSubmission = React.useMemo(
+		() =>
+			(assignment?.course?.users || []).filter(
+				(student) =>
+					student.role === UserRole.STUDENT &&
+					student.isActive !== false &&
+					!submittedStudentIds.has(student.id),
+			),
+		[assignment?.course?.users, submittedStudentIds],
+	);
 
 	const loadReminderPreview = React.useCallback(async () => {
 		if (!assignmentId) return;
@@ -280,6 +318,90 @@ const AssignmentDetailPage: React.FC = () => {
 			);
 		} finally {
 			setReminderLoading(false);
+		}
+	};
+
+	const selectExtensionStudent = (studentId: string) => {
+		setExtensionStudentId(studentId);
+		const currentExtension = assignment?.extensions.find(
+			(extension) => extension.student.id === studentId,
+		);
+		setExtensionDueDate(
+			currentExtension
+				? toDateTimeLocalValue(new Date(currentExtension.extendedDueDate))
+				: "",
+		);
+		setExtensionReason(currentExtension?.reason || "");
+	};
+
+	const extensionRefetchQueries = assignmentId
+		? [
+				{query: GET_ASSIGNMENT_BY_ID, variables: {id: assignmentId}},
+				{query: GET_TASK_TEACHER},
+			]
+		: [];
+
+	const saveExtension = async () => {
+		if (!assignmentId || !extensionStudentId || !extensionDueDate) {
+			notifyError("Selecciona un estudiante y una nueva fecha límite.");
+			return;
+		}
+		const notificationId = notifyLoading("Guardando prórroga...");
+		setExtensionSaving(true);
+		try {
+			await upsertExtension({
+				variables: {
+					input: {
+						assignmentId,
+						studentId: extensionStudentId,
+						extendedDueDate: new Date(extensionDueDate),
+						...(extensionReason.trim()
+							? {reason: extensionReason.trim()}
+							: {}),
+					},
+				},
+				refetchQueries: extensionRefetchQueries,
+				awaitRefetchQueries: true,
+			});
+			notifySuccess("La prórroga quedó aplicada.", {id: notificationId});
+			setExtensionStudentId("");
+			setExtensionDueDate("");
+			setExtensionReason("");
+			await loadReminderPreview();
+		} catch (saveError) {
+			notifyError(
+				saveError instanceof Error
+					? saveError.message
+					: "No fue posible guardar la prórroga.",
+				{id: notificationId},
+			);
+		} finally {
+			setExtensionSaving(false);
+		}
+	};
+
+	const deleteExtension = async (studentId: string) => {
+		if (!assignmentId) return;
+		const notificationId = notifyLoading("Retirando prórroga...");
+		setExtensionSaving(true);
+		try {
+			await removeExtension({
+				variables: {assignmentId, studentId},
+				refetchQueries: extensionRefetchQueries,
+				awaitRefetchQueries: true,
+			});
+			notifySuccess("La prórroga fue retirada.", {id: notificationId});
+			if (extensionStudentId === studentId) selectExtensionStudent("");
+			await loadReminderPreview();
+		} catch (removeError) {
+			notifyError(
+				removeError instanceof Error
+					? removeError.message
+					: "No fue posible retirar la prórroga.",
+				{id: notificationId},
+			);
+		} finally {
+			setExtensionSaving(false);
 		}
 	};
 
@@ -631,6 +753,104 @@ const AssignmentDetailPage: React.FC = () => {
 									<FontAwesomeIcon icon={faBell} className="mr-2" />
 									Enviar recordatorio
 								</button>
+							</Card>
+
+							<Card className="bg-white/70 border border-gray-100">
+								<SectionHeader title="Prórrogas individuales" className="mb-4" />
+								<p className="mb-4 text-sm text-gray-500">
+									Extiende la fecha de un estudiante pendiente sin cambiar el plazo
+									general del curso.
+								</p>
+								{studentsWithoutSubmission.length === 0 ? (
+									<p className="rounded-xl bg-gray-50 p-3 text-sm text-gray-500">
+										No hay estudiantes pendientes disponibles.
+									</p>
+								) : (
+									<div className="space-y-3">
+										<select
+											value={extensionStudentId}
+											onChange={(event) => selectExtensionStudent(event.target.value)}
+											className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
+										>
+											<option value="">Selecciona un estudiante</option>
+											{studentsWithoutSubmission.map((student) => (
+												<option key={student.id} value={student.id}>
+													{`${student.name} ${student.last_name || ""}`.trim()}
+												</option>
+											))}
+										</select>
+										<input
+											type="datetime-local"
+											value={extensionDueDate}
+											min={toDateTimeLocalValue(
+												new Date(
+													Math.max(Date.now(), new Date(assignment.dueDate).getTime()) +
+														60_000,
+												),
+											)}
+											onChange={(event) => setExtensionDueDate(event.target.value)}
+											disabled={!extensionStudentId}
+											className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm disabled:bg-gray-100"
+										/>
+										<textarea
+											value={extensionReason}
+											onChange={(event) => setExtensionReason(event.target.value)}
+											placeholder="Motivo (opcional)"
+											maxLength={500}
+											disabled={!extensionStudentId}
+											className="min-h-20 w-full resize-y rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm disabled:bg-gray-100"
+										/>
+										<button
+											type="button"
+											onClick={() => void saveExtension()}
+											disabled={
+												extensionSaving || !extensionStudentId || !extensionDueDate
+											}
+											className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
+										>
+											<FontAwesomeIcon icon={faClock} className="mr-2" />
+											Guardar prórroga
+										</button>
+									</div>
+								)}
+
+								{assignment.extensions.length > 0 && (
+									<div className="mt-5 space-y-2 border-t border-gray-100 pt-4">
+										{assignment.extensions.map((extension) => (
+											<div
+												key={extension.id}
+												className="flex items-start justify-between gap-3 rounded-xl bg-electric-50 p-3"
+											>
+												<button
+													type="button"
+													onClick={() => selectExtensionStudent(extension.student.id)}
+													className="min-w-0 flex-1 text-left"
+												>
+													<div className="truncate text-sm font-bold text-gray-900">
+														{`${extension.student.name} ${extension.student.last_name || ""}`.trim()}
+													</div>
+													<div className="text-xs text-electric-700">
+														Hasta {formatDate(extension.extendedDueDate, true)}
+													</div>
+													{extension.reason && (
+														<p className="mt-1 text-xs text-gray-500">
+															{extension.reason}
+														</p>
+													)}
+												</button>
+												<button
+													type="button"
+													onClick={() => void deleteExtension(extension.student.id)}
+													disabled={extensionSaving}
+													aria-label={`Retirar prórroga de ${extension.student.name}`}
+													className="rounded-lg p-2 text-red-500 hover:bg-red-50 disabled:opacity-50"
+												>
+													<FontAwesomeIcon icon={faTrashCan} />
+												</button>
+											</div>
+										))}
+									</div>
+								)}
 							</Card>
 
 							<Card className="bg-white/70 border border-gray-100">

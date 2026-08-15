@@ -13,6 +13,14 @@ export interface AssignmentStudent {
 	last_name?: string;
 	email?: string;
 	isActive?: boolean;
+	role?: string;
+}
+
+export interface AssignmentExtension {
+	id: string;
+	extendedDueDate: string;
+	reason?: string;
+	student: AssignmentStudent;
 }
 
 export interface AssignmentEvaluation {
@@ -59,6 +67,7 @@ export interface TeacherAssignment {
 	title: string;
 	description?: string;
 	dueDate: string;
+	effectiveDueDate?: string;
 	isActive?: boolean;
 	user?: {
 		id: string;
@@ -68,11 +77,9 @@ export interface TeacherAssignment {
 	course?: {
 		id: string;
 		course_name: string;
-		users?: {
-			id: string;
-			role?: string;
-		}[];
+		users?: AssignmentStudent[];
 	};
+	extensions?: AssignmentExtension[];
 	rubric?: AssignmentRubric;
 	submissions?: AssignmentSubmission[];
 }
@@ -82,8 +89,10 @@ export interface ProcessedTeacherAssignment {
 	title: string;
 	description?: string;
 	dueDate: string;
+	effectiveDueDate?: string;
 	course?: TeacherAssignment["course"];
 	courseName?: string;
+	extensions: AssignmentExtension[];
 	rubric?: AssignmentRubric;
 	rubricTitle?: string;
 	submissionItems: AssignmentSubmission[];
@@ -328,10 +337,12 @@ export const useAssignments = () => {
 				title: assignment.title,
 				description: assignment.description,
 				dueDate: assignment.dueDate,
+				effectiveDueDate: assignment.effectiveDueDate,
 				course: assignment.course,
 				courseName: assignment.course?.course_name,
 				rubric: assignment.rubric,
 				rubricTitle: assignment.rubric?.title,
+				extensions: assignment.extensions || [],
 				submissionItems: latestSubmissions,
 				submissions: latestSubmissions.length,
 				pending,

@@ -38,6 +38,7 @@ type AssignmentRecord = {
 	title: string;
 	description?: string;
 	dueDate: string;
+	effectiveDueDate?: string;
 	isActive?: boolean;
 	course?: {
 		id: string;
@@ -159,7 +160,9 @@ const getAssignmentStatus = (
 
 	if (submission) return "review_pending";
 
-	return new Date(assignment.dueDate) < new Date() ? "overdue" : "pending";
+	return new Date(assignment.effectiveDueDate || assignment.dueDate) < new Date()
+		? "overdue"
+		: "pending";
 };
 
 export const useStudentAcademicData = () => {
@@ -299,7 +302,7 @@ export const useStudentAcademicData = () => {
 				id: assignment.id,
 				title: assignment.title,
 				description: assignment.description || "Sin descripción",
-				dueDate: assignment.dueDate,
+				dueDate: assignment.effectiveDueDate || assignment.dueDate,
 				status: getAssignmentStatus(assignment, displaySubmission),
 				score,
 				maxScore,
