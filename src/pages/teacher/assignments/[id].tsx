@@ -24,6 +24,7 @@ import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faArrowLeft,
+	faBell,
 	faCalendarDays,
 	faChartLine,
 	faCircleExclamation,
@@ -32,6 +33,34 @@ import {
 	faGraduationCap,
 	faUserGroup,
 } from "@fortawesome/free-solid-svg-icons";
+import {
+	notifyError,
+	notifyLoading,
+	notifySuccess,
+} from "@/utils/toastNotify";
+
+type AssignmentReminderPreview = {
+	assignmentId: string;
+	dueDate: string;
+	pendingCount: number;
+	eligibleCount: number;
+	cooldownCount: number;
+	canSendCount: number;
+	nextAllowedAt?: string;
+};
+
+type AssignmentReminderSendResult = AssignmentReminderPreview & {
+	queuedCount: number;
+};
+
+const reminderResponseMessage = async (response: Response, fallback: string) => {
+	const payload = (await response.json().catch(() => null)) as {
+		error?: unknown;
+		message?: unknown;
+	} | null;
+	const message = payload?.error ?? payload?.message;
+	return typeof message === "string" ? message : fallback;
+};
 
 type StatusConfig = {
 	label: string;
@@ -179,6 +208,80 @@ const AssignmentDetailPage: React.FC = () => {
 	const assignment = assignments.find(
 		(item: ProcessedTeacherAssignment) => item.id === assignmentId,
 	);
+	const [reminderPreview, setReminderPreview] =
+		React.useState<AssignmentReminderPreview | null>(null);
+	const [reminderLoading, setReminderLoading] = React.useState(false);
+	const [reminderError, setReminderError] = React.useState<string | null>(null);
+
+	const loadReminderPreview = React.useCallback(async () => {
+		if (!assignmentId) return;
+		setReminderLoading(true);
+		setReminderError(null);
+		try {
+			const response = await fetch(
+				`/api/notifications/assignments/${encodeURIComponent(assignmentId)}/reminder-preview`,
+				{credentials: "same-origin", cache: "no-store"},
+			);
+			if (!response.ok) {
+				throw new Error(
+					await reminderResponseMessage(
+						response,
+						"No fue posible consultar los estudiantes pendientes.",
+					),
+				);
+			}
+			setReminderPreview((await response.json()) as AssignmentReminderPreview);
+		} catch (loadError) {
+			setReminderError(
+				loadError instanceof Error
+					? loadError.message
+					: "No fue posible consultar los estudiantes pendientes.",
+			);
+		} finally {
+			setReminderLoading(false);
+		}
+	}, [assignmentId]);
+
+	React.useEffect(() => {
+		void loadReminderPreview();
+	}, [loadReminderPreview]);
+
+	const sendPendingReminders = async () => {
+		if (!assignmentId) return;
+		const notificationId = notifyLoading("Programando recordatorios...");
+		setReminderLoading(true);
+		try {
+			const response = await fetch(
+				`/api/notifications/assignments/${encodeURIComponent(assignmentId)}/reminders`,
+				{method: "POST", credentials: "same-origin"},
+			);
+			if (!response.ok) {
+				throw new Error(
+					await reminderResponseMessage(
+						response,
+						"No fue posible programar los recordatorios.",
+					),
+				);
+			}
+			const result = (await response.json()) as AssignmentReminderSendResult;
+			setReminderPreview(result);
+			notifySuccess(
+				result.queuedCount === 1
+					? "Se programó 1 recordatorio."
+					: `Se programaron ${result.queuedCount} recordatorios.`,
+				{id: notificationId},
+			);
+		} catch (sendError) {
+			notifyError(
+				sendError instanceof Error
+					? sendError.message
+					: "No fue posible programar los recordatorios.",
+				{id: notificationId},
+			);
+		} finally {
+			setReminderLoading(false);
+		}
+	};
 
 	if (loading || reevaluationLoading) {
 		return (
@@ -483,6 +586,53 @@ const AssignmentDetailPage: React.FC = () => {
 						</Card>
 
 						<div className="space-y-6">
+							<Card className="bg-white/70 border border-gray-100">
+								<SectionHeader title="Recordar a pendientes" className="mb-4" />
+								<div className="flex items-start gap-3 rounded-xl bg-electric-50 p-4">
+									<FontAwesomeIcon
+										icon={faBell}
+										className="mt-1 text-electric-600"
+									/>
+									<div className="min-w-0 flex-1">
+										<p className="text-sm font-bold text-gray-900">
+											{reminderLoading && !reminderPreview
+												? "Consultando destinatarios..."
+												: `${reminderPreview?.canSendCount ?? 0} estudiantes recibirán el aviso`}
+										</p>
+										<p className="mt-1 text-xs text-gray-600">
+											{reminderPreview
+												? `${reminderPreview.pendingCount} sin entrega; ${reminderPreview.eligibleCount} tienen recordatorios activos.`
+												: "Solo se avisará a estudiantes matriculados que aún no hayan entregado."}
+										</p>
+										{reminderError && (
+											<p className="mt-2 text-xs font-medium text-red-600">
+												{reminderError}
+											</p>
+										)}
+										{Boolean(reminderPreview?.cooldownCount) && (
+											<p className="mt-2 text-xs text-amber-700">
+												{reminderPreview?.cooldownCount} ya fueron avisados durante
+												 las últimas 6 horas.
+											</p>
+										)}
+									</div>
+								</div>
+								<button
+									type="button"
+									onClick={() => void sendPendingReminders()}
+									disabled={
+										reminderLoading ||
+										!reminderPreview?.canSendCount ||
+										assignment.isExpired ||
+										!assignment.isActive
+									}
+									className="btn-primary mt-4 w-full disabled:cursor-not-allowed disabled:opacity-50"
+								>
+									<FontAwesomeIcon icon={faBell} className="mr-2" />
+									Enviar recordatorio
+								</button>
+							</Card>
+
 							<Card className="bg-white/70 border border-gray-100">
 								<SectionHeader title="Configuración" className="mb-6" />
 								<div className="space-y-4">

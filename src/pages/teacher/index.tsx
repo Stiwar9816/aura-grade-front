@@ -12,9 +12,7 @@ import {
 	useUserStats,
 	useAssignments,
 	useRecentActivity,
-	useSubmission,
 } from "@/hooks";
-import {useTeacherSubmissionNotifications} from "@/hooks/useInAppNotifications";
 import {notifyError} from "@/utils/toastNotify";
 import type {ProcessedTeacherAssignment} from "@/hooks";
 import {UserRole} from "@/interface";
@@ -81,29 +79,12 @@ const TeacherDashboard: React.FC = () => {
 		error: assignmentsError,
 	} = useAssignments();
 	const {
-		submissions: teacherSubmissions,
-		loading: submissionsLoading,
-		error: submissionsError,
-	} = useSubmission();
-	const {
 		activities,
 		loading: activitiesLoading,
 		error: activitiesError,
 	} = useRecentActivity(activityLimit);
 
 	const router = useRouter();
-
-	useTeacherSubmissionNotifications({
-		userId: user?.id,
-		submissions: teacherSubmissions,
-		loading: submissionsLoading,
-	});
-
-	React.useEffect(() => {
-		if (submissionsError) {
-			notifyError(submissionsError.message || "Error al cargar entregas");
-		}
-	}, [submissionsError]);
 
 	React.useEffect(() => {
 		if (activitiesError) {

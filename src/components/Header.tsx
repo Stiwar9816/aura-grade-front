@@ -2,6 +2,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {UserMenu} from "./Auth";
+import NotificationCenter from "./Notifications/NotificationCenter";
 
 const Header: React.FC = () => {
 	return (
@@ -22,6 +23,7 @@ const Header: React.FC = () => {
 
 				{/* Navegación y controles */}
 				<div className="flex items-center space-x-4">
+					<NotificationCenter />
 					<UserMenu />
 				</div>
 			</div>
