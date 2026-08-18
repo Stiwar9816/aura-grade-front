@@ -6,6 +6,9 @@ const SUBMISSION_FIELDS = gql`
 		fileUrl
 		extractedText
 		status
+		gradingAttemptCount
+		gradingFailureReason
+		gradingLastAttemptAt
 		createdAt
 		updatedAt
 		student {
@@ -70,6 +73,9 @@ export const GET_TEACHER_EVALUATIONS: DocumentNode = gql`
 				fileUrl
 				extractedText
 				status
+				gradingAttemptCount
+				gradingFailureReason
+				gradingLastAttemptAt
 				createdAt
 				updatedAt
 				student {
@@ -127,6 +133,19 @@ export const CREATE_SUBMISSION: DocumentNode = gql`
 	${SUBMISSION_FIELDS}
 `;
 
+export const RETRY_SUBMISSION_GRADING: DocumentNode = gql`
+	mutation RetrySubmissionGrading($id: ID!) {
+			retrySubmissionGrading(id: $id) {
+				id
+				status
+				gradingAttemptCount
+				gradingFailureReason
+				gradingLastAttemptAt
+				updatedAt
+		}
+	}
+`;
+
 export const PUBLISH_EVALUATION: DocumentNode = gql`
 	mutation PublishEvaluation(
 		$id: ID!
@@ -150,6 +169,9 @@ export const GET_TEACHER_SUBMISSIONS: DocumentNode = gql`
 			id
 			fileUrl
 			status
+			gradingAttemptCount
+			gradingFailureReason
+			gradingLastAttemptAt
 			createdAt
 			updatedAt
 			student {

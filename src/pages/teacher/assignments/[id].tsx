@@ -6,7 +6,10 @@ import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import Badge from "@/components/Common/Badge";
-import {GET_TEACHER_SUBMISSIONS} from "@/gql/Submission";
+import {
+	GET_TEACHER_SUBMISSIONS,
+	RETRY_SUBMISSION_GRADING,
+} from "@/gql/Submission";
 import {
 	GET_ASSIGNMENT_BY_ID,
 	GET_TASK_TEACHER,
@@ -38,6 +41,7 @@ import {
 	faClock,
 	faFileLines,
 	faGraduationCap,
+	faRotateRight,
 	faTrashCan,
 	faUserGroup,
 } from "@fortawesome/free-solid-svg-icons";
@@ -174,6 +178,9 @@ const mapSubmissionDetailToAssignmentSubmission = (
 	fileUrl: submission.fileUrl,
 	extractedText: submission.extractedText,
 	status: submission.status,
+	gradingAttemptCount: submission.gradingAttemptCount,
+	gradingFailureReason: submission.gradingFailureReason,
+	gradingLastAttemptAt: submission.gradingLastAttemptAt,
 	createdAt: submission.createdAt,
 	updatedAt: submission.updatedAt,
 	student: submission.student,
@@ -206,6 +213,10 @@ const AssignmentDetailPage: React.FC = () => {
 	const router = useRouter();
 	const assignmentId =
 		typeof router.query.id === "string" ? router.query.id : undefined;
+	const focusedSubmissionId =
+		typeof router.query.submission === "string"
+			? router.query.submission
+			: undefined;
 	const {assignments, loading, error} = useAssignments();
 	const {
 		getRequestBySubmissionId,
@@ -229,8 +240,12 @@ const AssignmentDetailPage: React.FC = () => {
 	const [extensionDueDate, setExtensionDueDate] = React.useState("");
 	const [extensionReason, setExtensionReason] = React.useState("");
 	const [extensionSaving, setExtensionSaving] = React.useState(false);
+	const [retryingSubmissionId, setRetryingSubmissionId] = React.useState<
+		string | null
+	>(null);
 	const [upsertExtension] = useMutation(UPSERT_ASSIGNMENT_EXTENSION);
 	const [removeExtension] = useMutation(REMOVE_ASSIGNMENT_EXTENSION);
+	const [retrySubmissionGrading] = useMutation(RETRY_SUBMISSION_GRADING);
 	const submittedStudentIds = React.useMemo(
 		() =>
 			new Set(
@@ -250,6 +265,24 @@ const AssignmentDetailPage: React.FC = () => {
 			),
 		[assignment?.course?.users, submittedStudentIds],
 	);
+	const assignmentSubmissionCount = assignment?.submissionItems?.length ?? 0;
+	const fetchedSubmissionCount = teacherSubmissionsData?.submissions?.length ?? 0;
+
+	React.useEffect(() => {
+		if (!focusedSubmissionId || loading || submissionsLoading) return;
+		const frame = window.requestAnimationFrame(() => {
+			document
+				.getElementById(`submission-${focusedSubmissionId}`)
+				?.scrollIntoView({behavior: "smooth", block: "center"});
+		});
+		return () => window.cancelAnimationFrame(frame);
+	}, [
+		focusedSubmissionId,
+		loading,
+		submissionsLoading,
+		assignmentSubmissionCount,
+		fetchedSubmissionCount,
+	]);
 
 	const loadReminderPreview = React.useCallback(async () => {
 		if (!assignmentId) return;
@@ -402,6 +435,35 @@ const AssignmentDetailPage: React.FC = () => {
 			);
 		} finally {
 			setExtensionSaving(false);
+		}
+	};
+
+	const retryFailedSubmission = async (submissionId: string) => {
+		if (!assignmentId) return;
+		const notificationId = notifyLoading("Reintentando evaluación...");
+		setRetryingSubmissionId(submissionId);
+		try {
+			await retrySubmissionGrading({
+				variables: {id: submissionId},
+				refetchQueries: [
+					{query: GET_ASSIGNMENT_BY_ID, variables: {id: assignmentId}},
+					{query: GET_TASK_TEACHER},
+					{query: GET_TEACHER_SUBMISSIONS},
+				],
+				awaitRefetchQueries: true,
+			});
+			notifySuccess("La entrega volvió a la cola de evaluación.", {
+				id: notificationId,
+			});
+		} catch (retryError) {
+			notifyError(
+				retryError instanceof Error
+					? retryError.message
+					: "No fue posible reintentar la evaluación.",
+				{id: notificationId},
+			);
+		} finally {
+			setRetryingSubmissionId(null);
 		}
 	};
 
@@ -605,6 +667,9 @@ const AssignmentDetailPage: React.FC = () => {
 													submission,
 													reevaluationSubmissionIds,
 												);
+												const isFailed =
+													normalizeStatusValue(submission.status) ===
+													SubmissionStatus.FAILED;
 												const reevaluationRequest = getRequestBySubmissionId(
 													submission.id,
 												);
@@ -614,11 +679,16 @@ const AssignmentDetailPage: React.FC = () => {
 														}`.trim()
 													: "Estudiante sin nombre";
 
-												return (
-													<tr
-														key={submission.id}
-														className="border-b border-gray-100 hover:bg-gray-50"
-													>
+											return (
+												<React.Fragment key={submission.id}>
+											<tr
+												id={`submission-${submission.id}`}
+												className={`border-b border-gray-100 hover:bg-gray-50 ${
+													focusedSubmissionId === submission.id
+														? "bg-red-50/70"
+														: ""
+												}`}
+											>
 														<td className="py-4 px-4">
 															<div className="font-bold text-gray-900">
 																{studentName}
@@ -628,9 +698,7 @@ const AssignmentDetailPage: React.FC = () => {
 															</div>
 														</td>
 														<td className="py-4 px-4">
-															<Badge variant={status.variant}>
-																{status.label}
-															</Badge>
+															<Badge variant={status.variant}>{status.label}</Badge>
 															{reevaluationRequest && (
 																<div className="mt-2 max-w-xs">
 																	<div className="text-[10px] font-black uppercase text-amber-700">
@@ -640,10 +708,7 @@ const AssignmentDetailPage: React.FC = () => {
 																		{reevaluationRequest.reason}
 																	</p>
 																	<div className="text-[10px] text-gray-400 mt-1">
-																		{formatDate(
-																			reevaluationRequest.createdAt,
-																			true,
-																		)}
+																		{formatDate(reevaluationRequest.createdAt, true)}
 																	</div>
 																</div>
 															)}
@@ -679,27 +744,79 @@ const AssignmentDetailPage: React.FC = () => {
 														</td>
 														<td className="py-4 px-4 text-right">
 															<button
-																onClick={() =>
+																onClick={() => {
+																	if (isFailed) {
+																		void retryFailedSubmission(submission.id);
+																		return;
+																	}
 																	router.push(
 																		`/evaluation?submission=${submission.id}`,
-																	)
-																}
-																className="px-3 py-1.5 bg-electric-500 text-white text-sm rounded-lg hover:bg-electric-600 transition-colors"
+																	);
+																}}
+																disabled={retryingSubmissionId === submission.id}
+																className={`px-3 py-1.5 text-white text-sm rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+																	isFailed
+																		? "bg-red-500 hover:bg-red-600"
+																		: "bg-electric-500 hover:bg-electric-600"
+																}`}
 															>
-																{reevaluationRequest
-																	? "Reevaluar"
-																	: isPublishedSubmission(
-																				submission,
-																				reevaluationSubmissionIds,
-																		  )
-																		? "Ver"
-																		: submission.evaluation
-																			? "Revisar"
-																			: "Evaluar"}
+																{isFailed ? (
+																	<>
+																		<FontAwesomeIcon icon={faRotateRight} className="mr-1" />
+																		{retryingSubmissionId === submission.id
+																			? "Reintentando"
+																			: "Reintentar"}
+																	</>
+																) : reevaluationRequest ? (
+																	"Reevaluar"
+																) : isPublishedSubmission(
+																		submission,
+																		reevaluationSubmissionIds,
+																  ) ? (
+																	"Ver"
+																) : submission.evaluation ? (
+																	"Revisar"
+																) : (
+																	"Evaluar"
+																)}
 															</button>
 														</td>
 													</tr>
-												);
+													{isFailed && (
+														<tr className="border-b border-gray-100">
+															<td colSpan={5} className="px-4 pb-4">
+																<div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 p-3 text-red-800">
+																	<FontAwesomeIcon
+																		icon={faCircleExclamation}
+																		className="mt-0.5 text-red-500"
+																	/>
+																	<div className="min-w-0">
+																		<p className="text-sm font-semibold">
+																			{submission.gradingFailureReason ||
+																				"No se registró una causa detallada para este fallo."}
+																		</p>
+																		<div className="mt-1 text-xs text-red-600">
+																			{typeof submission.gradingAttemptCount === "number"
+																				? `${submission.gradingAttemptCount} ${
+																						submission.gradingAttemptCount === 1
+																							? "intento"
+																							: "intentos"
+																					}`
+																				: "Intentos sin registro"}
+																			{submission.gradingLastAttemptAt && (
+																				<>
+																					{" · Último intento: "}
+																					{formatDate(submission.gradingLastAttemptAt, true)}
+																				</>
+																			)}
+																		</div>
+																	</div>
+																</div>
+															</td>
+														</tr>
+													)}
+												</React.Fragment>
+											);
 											})}
 										</tbody>
 									</table>
@@ -733,8 +850,8 @@ const AssignmentDetailPage: React.FC = () => {
 										)}
 										{Boolean(reminderPreview?.cooldownCount) && (
 											<p className="mt-2 text-xs text-amber-700">
-												{reminderPreview?.cooldownCount} ya fueron avisados durante
-												 las últimas 6 horas.
+											{reminderPreview?.cooldownCount} ya fueron avisados durante
+											 las últimas 6 horas.
 											</p>
 										)}
 									</div>
@@ -769,7 +886,7 @@ const AssignmentDetailPage: React.FC = () => {
 									<div className="space-y-3">
 										<select
 											value={extensionStudentId}
-											onChange={(event) => selectExtensionStudent(event.target.value)}
+										onChange={(event) => selectExtensionStudent(event.target.value)}
 											className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
 										>
 											<option value="">Selecciona un estudiante</option>
@@ -783,18 +900,18 @@ const AssignmentDetailPage: React.FC = () => {
 											type="datetime-local"
 											value={extensionDueDate}
 											min={toDateTimeLocalValue(
-												new Date(
-													Math.max(Date.now(), new Date(assignment.dueDate).getTime()) +
-														60_000,
-												),
+											new Date(
+												Math.max(Date.now(), new Date(assignment.dueDate).getTime()) +
+													60_000,
+											),
 											)}
-											onChange={(event) => setExtensionDueDate(event.target.value)}
+										onChange={(event) => setExtensionDueDate(event.target.value)}
 											disabled={!extensionStudentId}
 											className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm disabled:bg-gray-100"
 										/>
 										<textarea
 											value={extensionReason}
-											onChange={(event) => setExtensionReason(event.target.value)}
+										onChange={(event) => setExtensionReason(event.target.value)}
 											placeholder="Motivo (opcional)"
 											maxLength={500}
 											disabled={!extensionStudentId}
@@ -804,7 +921,7 @@ const AssignmentDetailPage: React.FC = () => {
 											type="button"
 											onClick={() => void saveExtension()}
 											disabled={
-												extensionSaving || !extensionStudentId || !extensionDueDate
+											extensionSaving || !extensionStudentId || !extensionDueDate
 											}
 											className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
 										>
@@ -823,7 +940,7 @@ const AssignmentDetailPage: React.FC = () => {
 											>
 												<button
 													type="button"
-													onClick={() => selectExtensionStudent(extension.student.id)}
+											onClick={() => selectExtensionStudent(extension.student.id)}
 													className="min-w-0 flex-1 text-left"
 												>
 													<div className="truncate text-sm font-bold text-gray-900">
@@ -840,7 +957,7 @@ const AssignmentDetailPage: React.FC = () => {
 												</button>
 												<button
 													type="button"
-													onClick={() => void deleteExtension(extension.student.id)}
+											onClick={() => void deleteExtension(extension.student.id)}
 													disabled={extensionSaving}
 													aria-label={`Retirar prórroga de ${extension.student.name}`}
 													className="rounded-lg p-2 text-red-500 hover:bg-red-50 disabled:opacity-50"

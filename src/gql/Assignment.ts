@@ -30,6 +30,9 @@ export const GET_TASK_TEACHER: DocumentNode = gql`
 				fileUrl
 				extractedText
 				status
+				gradingAttemptCount
+				gradingFailureReason
+				gradingLastAttemptAt
 				createdAt
 				updatedAt
 				student {
@@ -105,6 +108,9 @@ export const GET_ASSIGNMENT_BY_ID: DocumentNode = gql`
 				fileUrl
 				extractedText
 				status
+				gradingAttemptCount
+				gradingFailureReason
+				gradingLastAttemptAt
 				createdAt
 				updatedAt
 				student {

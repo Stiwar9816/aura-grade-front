@@ -21,6 +21,9 @@ export interface SubmissionDetail {
 	fileUrl?: string; // Adding fileUrl as it is in the fragment
 	extractedText: string;
 	status: SubmissionStatus;
+	gradingAttemptCount?: number;
+	gradingFailureReason?: string;
+	gradingLastAttemptAt?: string;
 	createdAt: string;
 	updatedAt: string;
 	student: {

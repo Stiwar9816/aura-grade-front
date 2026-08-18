@@ -37,6 +37,9 @@ export interface AssignmentSubmission {
 	fileUrl?: string;
 	extractedText?: string;
 	status?: string;
+	gradingAttemptCount?: number;
+	gradingFailureReason?: string;
+	gradingLastAttemptAt?: string;
 	createdAt?: string;
 	updatedAt?: string;
 	student?: AssignmentStudent;

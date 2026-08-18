@@ -125,18 +125,28 @@ const NotificationCenter = () => {
 							</div>
 						)}
 
-						{items.map((notification) => (
-							<button
+						{items.map((notification) => {
+							const isGradingFailure = notification.type === "GRADING_FAILED";
+							return (
+								<button
 								key={notification.id}
 								type="button"
 								onClick={() => void openNotification(notification)}
 								className={`flex w-full gap-3 border-b border-gray-100 px-4 py-3 text-left transition-colors hover:bg-gray-50 ${
-									notification.readAt ? "bg-white" : "bg-electric-50/60"
+									notification.readAt
+										? "bg-white"
+										: isGradingFailure
+											? "bg-red-50/70"
+											: "bg-electric-50/60"
 								}`}
 							>
 								<span
 									className={`mt-2 h-2.5 w-2.5 shrink-0 rounded-full ${
-										notification.readAt ? "bg-gray-300" : "bg-electric-500"
+										notification.readAt
+											? "bg-gray-300"
+											: isGradingFailure
+												? "bg-red-500"
+												: "bg-electric-500"
 									}`}
 								/>
 								<span className="min-w-0 flex-1">
@@ -153,8 +163,9 @@ const NotificationCenter = () => {
 										})}
 									</span>
 								</span>
-							</button>
-						))}
+								</button>
+							);
+						})}
 
 						{hasMore && (
 							<button

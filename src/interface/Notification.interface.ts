@@ -17,6 +17,7 @@ export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
 export type InAppNotificationType =
 	| "NEW_SUBMISSION"
 	| "GRADE_PUBLISHED"
+	| "GRADING_FAILED"
 	| "ASSIGNMENT_REMINDER";
 
 export type NotificationResourceType =
