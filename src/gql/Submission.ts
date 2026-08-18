@@ -20,6 +20,7 @@ const SUBMISSION_FIELDS = gql`
 		}
 		evaluation {
 			id
+			origin
 			generalFeedback
 			detailedFeedback
 			status
@@ -63,6 +64,7 @@ export const GET_TEACHER_EVALUATIONS: DocumentNode = gql`
 	query GetTeacherEvaluations {
 		evaluations {
 			id
+			origin
 			status
 			totalScore
 			generalFeedback
@@ -135,13 +137,13 @@ export const CREATE_SUBMISSION: DocumentNode = gql`
 
 export const RETRY_SUBMISSION_GRADING: DocumentNode = gql`
 	mutation RetrySubmissionGrading($id: ID!) {
-			retrySubmissionGrading(id: $id) {
-				id
-				status
-				gradingAttemptCount
-				gradingFailureReason
-				gradingLastAttemptAt
-				updatedAt
+		retrySubmissionGrading(id: $id) {
+			id
+			status
+			gradingAttemptCount
+			gradingFailureReason
+			gradingLastAttemptAt
+			updatedAt
 		}
 	}
 `;
@@ -153,6 +155,20 @@ export const PUBLISH_EVALUATION: DocumentNode = gql`
 	) {
 		publishEvaluation(id: $id, updateEvaluationInput: $updateEvaluationInput) {
 			id
+			status
+			totalScore
+			generalFeedback
+			detailedFeedback
+			createdAt
+		}
+	}
+`;
+
+export const CREATE_MANUAL_EVALUATION_DRAFT: DocumentNode = gql`
+	mutation CreateManualEvaluationDraft($input: CreateManualEvaluationInput!) {
+		createManualEvaluationDraft(input: $input) {
+			id
+			origin
 			status
 			totalScore
 			generalFeedback
@@ -195,6 +211,7 @@ export const GET_TEACHER_SUBMISSIONS: DocumentNode = gql`
 			}
 			evaluation {
 				id
+				origin
 				status
 				totalScore
 				generalFeedback

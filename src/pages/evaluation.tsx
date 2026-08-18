@@ -9,7 +9,11 @@ import {
 	useReEvaluationRequests,
 	useStudentAcademicData,
 } from "@/hooks";
-import {GET_SUBMISSION_BY_ID, PUBLISH_EVALUATION} from "@/gql/Submission";
+import {
+	CREATE_MANUAL_EVALUATION_DRAFT,
+	GET_SUBMISSION_BY_ID,
+	PUBLISH_EVALUATION,
+} from "@/gql/Submission";
 import {
 	CREATE_RE_EVALUATION_REQUEST,
 	GET_RE_EVALUATION_REQUESTS,
@@ -100,6 +104,40 @@ const formatDateTime = (date?: string) => {
 const getReEvaluationRequestTime = (request: ReEvaluationRequest) =>
 	request.reviewedAt || request.updatedAt || request.createdAt;
 
+type ManualCriterionDraft = {score: string; feedback: string};
+
+const parseManualCriterionDrafts = (
+	value: unknown,
+): Record<string, ManualCriterionDraft> => {
+	let parsed = value;
+	if (typeof parsed === "string") {
+		try {
+			parsed = JSON.parse(parsed);
+		} catch {
+			return {};
+		}
+	}
+	if (!Array.isArray(parsed)) return {};
+
+	return Object.fromEntries(
+		parsed.flatMap((item) => {
+			if (typeof item !== "object" || item === null) return [];
+			const record = item as Record<string, unknown>;
+			if (typeof record.criteriaId !== "string") return [];
+			return [
+				[
+					record.criteriaId,
+					{
+						score: typeof record.score === "number" ? String(record.score) : "",
+						feedback:
+							typeof record.feedback === "string" ? record.feedback : "",
+					},
+				],
+			];
+		}),
+	);
+};
+
 const getReEvaluationStatusContent = (request?: ReEvaluationRequest | null) => {
 	const status = normalizeReEvaluationStatus(request?.status);
 
@@ -176,10 +214,15 @@ const EvaluationPage: React.FC = () => {
 		null,
 	);
 	const [teacherResponse, setTeacherResponse] = useState<string>("");
+	const [manualCriteria, setManualCriteria] = useState<
+		Record<string, ManualCriterionDraft>
+	>({});
 	const [showReevaluationForm, setShowReevaluationForm] =
 		useState<boolean>(false);
 	const [publishEvaluation, {loading: publishing}] =
 		useMutation(PUBLISH_EVALUATION);
+	const [createManualEvaluationDraft, {loading: creatingManualDraft}] =
+		useMutation(CREATE_MANUAL_EVALUATION_DRAFT);
 	const [createReEvaluationRequest, {loading: creatingReevaluationRequest}] =
 		useMutation(CREATE_RE_EVALUATION_REQUEST);
 	const [resolveReEvaluationRequest, {loading: resolvingReevaluationRequest}] =
@@ -191,6 +234,7 @@ const EvaluationPage: React.FC = () => {
 			setReevaluationReason("");
 			setReevaluationError(null);
 			setTeacherResponse("");
+			setManualCriteria({});
 			setShowReevaluationForm(false);
 		});
 	}, [submissionId]);
@@ -461,10 +505,52 @@ const EvaluationPage: React.FC = () => {
 		submissionDetail?.evaluation?.status === "PUBLISHED";
 	const isPublishedEvaluation =
 		!hasPendingReevaluationRequest && hasPublishedResult;
-	const teacherActionLoading = publishing || resolvingReevaluationRequest;
+	const isManualEvaluation = submissionDetail?.evaluation?.origin === "MANUAL";
+	const canCreateManualDraft = Boolean(
+		user?.role === UserRole.TEACHER &&
+		submissionDetail?.status === "FAILED" &&
+		!submissionDetail?.evaluation,
+	);
+	const showManualEditor = canCreateManualDraft || isManualEvaluation;
+	const teacherActionLoading =
+		publishing || resolvingReevaluationRequest || creatingManualDraft;
 	const scoreDraft = evaluationData.overallScore;
 	const feedbackDraft = evaluationData.generalFeedback;
 	const maxScore = evaluationData.maxScore || STANDARD_GRADE_MAX;
+	const existingManualCriteria = parseManualCriterionDrafts(
+		submissionDetail?.evaluation?.detailedFeedback,
+	);
+	const buildManualDetailedFeedback = () => {
+		const criteria = submissionDetail?.assignment?.rubric?.criteria || [];
+		return criteria.flatMap((criterion) => {
+			const draft = {
+				...(existingManualCriteria[criterion.id] || {
+					score: "",
+					feedback: "",
+				}),
+				...(manualCriteria[criterion.id] || {}),
+			};
+			const feedback = draft.feedback.trim();
+			const score = draft.score === "" ? undefined : Number(draft.score);
+			if (
+				score !== undefined &&
+				(!Number.isFinite(score) || score < 0 || score > criterion.maxPoints)
+			)
+				throw new Error(
+					`La puntuación de “${criterion.title}” debe estar entre 0 y ${criterion.maxPoints}.`,
+				);
+			if (score === undefined && !feedback) return [];
+			return [
+				{
+					criteriaId: criterion.id,
+					name: criterion.title,
+					score: score ?? 0,
+					feedback,
+					suggestion: "",
+				},
+			];
+		});
+	};
 	const relatedAssignment = submissionDetail?.assignment?.id
 		? assignments.find(
 				(assignment) => assignment.id === submissionDetail.assignment.id,
@@ -553,11 +639,77 @@ const EvaluationPage: React.FC = () => {
 		new Date(relatedAssignment.dueDate) >= new Date(),
 	);
 
+	const handleCreateManualDraft = async () => {
+		if (!submissionId || !canCreateManualDraft) return;
+		const parsedScore = Number(finalScore);
+		const feedback = finalFeedback.trim();
+		if (
+			!Number.isFinite(parsedScore) ||
+			parsedScore < 0 ||
+			parsedScore > maxScore
+		) {
+			const message = `La nota inicial debe estar entre 0 y ${maxScore}.`;
+			setPublishError(message);
+			notifyWarning(message);
+			return;
+		}
+		if (!feedback) {
+			const message = "La retroalimentación manual es obligatoria.";
+			setPublishError(message);
+			notifyWarning(message);
+			return;
+		}
+
+		let detailedFeedback: ReturnType<typeof buildManualDetailedFeedback>;
+		try {
+			detailedFeedback = buildManualDetailedFeedback();
+		} catch (criterionError) {
+			const message =
+				criterionError instanceof Error
+					? criterionError.message
+					: "Revisa las puntuaciones por criterio.";
+			setPublishError(message);
+			notifyWarning(message);
+			return;
+		}
+
+		const notificationId = notifyLoading("Creando borrador manual...");
+		try {
+			setPublishError(null);
+			await createManualEvaluationDraft({
+				variables: {
+					input: {
+						submissionId,
+						totalScore: parsedScore,
+						generalFeedback: feedback,
+						detailedFeedback,
+					},
+				},
+				refetchQueries: [
+					{query: GET_SUBMISSION_BY_ID, variables: {submissionId}},
+				],
+				awaitRefetchQueries: true,
+			});
+			await refetchEvaluationDetail();
+			setPublishSuccess(
+				"Borrador manual creado. Revisa y publica la nota final.",
+			);
+			notifySuccess("Borrador manual creado.", {id: notificationId});
+		} catch (manualError) {
+			const message =
+				manualError instanceof Error
+					? manualError.message
+					: "No se pudo iniciar la calificación manual.";
+			setPublishError(message);
+			notifyError(message, {id: notificationId});
+		}
+	};
+
 	const handlePublishEvaluation = async () => {
 		if (!submissionId) return;
 		if (!submissionDetail?.evaluation?.id) {
 			const message =
-				"Esta entrega aún no tiene evaluación de IA para publicar.";
+				"Primero crea el borrador manual para esta entrega fallida.";
 			setPublishError(message);
 			setPublishSuccess(null);
 			notifyWarning(message);
@@ -602,6 +754,21 @@ const EvaluationPage: React.FC = () => {
 				? "Publicando nota y resolviendo solicitud..."
 				: "Publicando evaluación...",
 		);
+		let detailedFeedback:
+			| ReturnType<typeof buildManualDetailedFeedback>
+			| undefined;
+		try {
+			if (isManualEvaluation) detailedFeedback = buildManualDetailedFeedback();
+		} catch (criterionError) {
+			const message =
+				criterionError instanceof Error
+					? criterionError.message
+					: "Revisa las puntuaciones por criterio.";
+			setPublishError(message);
+			notifyWarning(message);
+			return;
+		}
+
 		try {
 			setPublishError(null);
 			setPublishSuccess(null);
@@ -612,6 +779,7 @@ const EvaluationPage: React.FC = () => {
 						id: submissionDetail.evaluation.id,
 						totalScore: parsedScore,
 						generalFeedback: feedbackToPublish,
+						...(detailedFeedback ? {detailedFeedback} : {}),
 					},
 				},
 				refetchQueries: [
@@ -670,7 +838,9 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
-		const notificationId = notifyLoading("Rechazando solicitud de reevaluación...");
+		const notificationId = notifyLoading(
+			"Rechazando solicitud de reevaluación...",
+		);
 		try {
 			setPublishError(null);
 			setPublishSuccess(null);
@@ -728,7 +898,9 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
-		const notificationId = notifyLoading("Enviando solicitud de reevaluación...");
+		const notificationId = notifyLoading(
+			"Enviando solicitud de reevaluación...",
+		);
 		try {
 			await createReEvaluationRequest({
 				variables: {
@@ -959,7 +1131,7 @@ const EvaluationPage: React.FC = () => {
 
 	return (
 		<ProtectedRoute>
-			<Layout title="Evaluación de IA">
+			<Layout title="Evaluación">
 				<div className="max-w-6xl mx-auto">
 					<div className="mb-6 flex flex-wrap items-center justify-between gap-3">
 						<button
@@ -973,9 +1145,11 @@ const EvaluationPage: React.FC = () => {
 						<Badge variant={isPublishedEvaluation ? "success" : "warning"}>
 							{pendingReEvaluationRequest
 								? "Re-evaluación pendiente"
-								: isPublishedEvaluation
-									? "Resultado publicado"
-									: "Borrador interno"}
+								: canCreateManualDraft
+									? "Requiere calificación manual"
+									: isPublishedEvaluation
+										? "Resultado publicado"
+										: "Borrador interno"}
 						</Badge>
 					</div>
 
@@ -1075,12 +1249,32 @@ const EvaluationPage: React.FC = () => {
 					)}
 
 					{/* Resumen de evaluación */}
-					<EvaluationSummary
-						score={evaluationData.overallScore}
-						maxScore={evaluationData.maxScore}
-						feedback={evaluationData.generalFeedback}
-						evaluationDate={evaluationData.evaluationDate}
-					/>
+					{submissionDetail?.evaluation ? (
+						<EvaluationSummary
+							score={evaluationData.overallScore}
+							maxScore={evaluationData.maxScore}
+							feedback={evaluationData.generalFeedback}
+							evaluationDate={evaluationData.evaluationDate}
+						/>
+					) : (
+						<Card className="mb-8 border border-red-100 bg-red-50">
+							<div className="flex items-start gap-3 text-red-800">
+								<FontAwesomeIcon
+									icon={faFileLines}
+									className="mt-1 text-red-500"
+								/>
+								<div>
+									<h2 className="font-black">
+										La calificación automática no pudo completarse
+									</h2>
+									<p className="mt-1 text-sm">
+										{submissionDetail?.gradingFailureReason ||
+											"El docente puede reintentar la IA o continuar con una calificación manual."}
+									</p>
+								</div>
+							</div>
+						</Card>
+					)}
 
 					{canViewDraft && (
 						<Card className="mb-8 bg-white/80 border border-gray-100">
@@ -1098,11 +1292,17 @@ const EvaluationPage: React.FC = () => {
 										>
 											{pendingReEvaluationRequest
 												? "Reevaluación solicitada"
-												: isPublishedEvaluation
-													? "Publicado"
-													: "Pendiente de publicación docente"}
+												: canCreateManualDraft
+													? "Calificación automática fallida"
+													: isPublishedEvaluation
+														? "Publicado"
+														: "Pendiente de publicación docente"}
 										</Badge>
-										<Badge variant="info">Sugerencia interna IA</Badge>
+										<Badge variant={isManualEvaluation ? "electric" : "info"}>
+											{isManualEvaluation || canCreateManualDraft
+												? "Calificación manual"
+												: "Sugerencia interna IA"}
+										</Badge>
 									</div>
 									<h2 className="text-xl font-black text-gray-900 mb-2">
 										Revisión docente
@@ -1110,7 +1310,11 @@ const EvaluationPage: React.FC = () => {
 									<p className="text-sm text-gray-600">
 										{pendingReEvaluationRequest
 											? "El estudiante pidió una segunda revisión. Si apruebas la solicitud, publica la nota/feedback ajustados y la solicitud quedará resuelta."
-											: "La nota sugerida por IA no es visible para el estudiante hasta que publiques la nota final."}
+											: canCreateManualDraft
+												? "La IA agotó sus intentos. Ingresa una nota y retroalimentación para crear un borrador manual; el estudiante no verá nada hasta que lo publiques."
+												: isManualEvaluation
+													? "Este borrador fue creado manualmente. Revisa la nota y la retroalimentación antes de publicarlo."
+													: "La nota sugerida por IA no es visible para el estudiante hasta que publiques la nota final."}
 									</p>
 									{pendingReEvaluationRequest && (
 										<div className="mt-5 p-4 rounded-xl bg-amber-50 border border-amber-100">
@@ -1159,11 +1363,102 @@ const EvaluationPage: React.FC = () => {
 										<textarea
 											value={finalFeedback}
 											onChange={(event) => setFinalFeedback(event.target.value)}
-											placeholder={feedbackDraft}
+											placeholder={
+												canCreateManualDraft
+													? "Explica el resultado y las oportunidades de mejora."
+													: feedbackDraft
+											}
 											disabled={isPublishedEvaluation || teacherActionLoading}
 											className="input-primary min-h-32"
 										/>
 									</div>
+
+									{showManualEditor &&
+										(submissionDetail?.assignment?.rubric?.criteria?.length ||
+											0) > 0 && (
+											<div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
+												<div>
+													<div className="text-sm font-bold text-gray-800">
+														Retroalimentación por criterio
+													</div>
+													<p className="text-xs text-gray-500">
+														Opcional. Puedes registrar puntuación y comentario
+														para cada criterio.
+													</p>
+												</div>
+												{submissionDetail?.assignment.rubric.criteria?.map(
+													(criterion) => {
+														const existing = existingManualCriteria[
+															criterion.id
+														] || {
+															score: "",
+															feedback: "",
+														};
+														const draft = {
+															...existing,
+															...(manualCriteria[criterion.id] || {}),
+														};
+														return (
+															<div
+																key={criterion.id}
+																className="rounded-lg border border-gray-200 bg-white p-3"
+															>
+																<div className="mb-2 flex items-center justify-between gap-3">
+																	<span className="text-sm font-bold text-gray-800">
+																		{criterion.title}
+																	</span>
+																	<span className="text-xs text-gray-500">
+																		Máx. {criterion.maxPoints}
+																	</span>
+																</div>
+																<div className="grid grid-cols-1 gap-2 sm:grid-cols-[110px_1fr]">
+																	<input
+																		type="number"
+																		min={0}
+																		max={criterion.maxPoints}
+																		step="0.1"
+																		value={draft.score}
+																		onChange={(event) =>
+																			setManualCriteria((current) => ({
+																				...current,
+																				[criterion.id]: {
+																					...draft,
+																					score: event.target.value,
+																				},
+																			}))
+																		}
+																		disabled={
+																			isPublishedEvaluation ||
+																			teacherActionLoading
+																		}
+																		placeholder="Puntos"
+																		className="input-primary"
+																	/>
+																	<input
+																		value={draft.feedback}
+																		onChange={(event) =>
+																			setManualCriteria((current) => ({
+																				...current,
+																				[criterion.id]: {
+																					...draft,
+																					feedback: event.target.value,
+																				},
+																			}))
+																		}
+																		disabled={
+																			isPublishedEvaluation ||
+																			teacherActionLoading
+																		}
+																		placeholder="Comentario opcional"
+																		className="input-primary"
+																	/>
+																</div>
+															</div>
+														);
+													},
+												)}
+											</div>
+										)}
 
 									{pendingReEvaluationRequest && (
 										<div>
@@ -1194,17 +1489,25 @@ const EvaluationPage: React.FC = () => {
 									)}
 
 									<button
-										onClick={handlePublishEvaluation}
+										onClick={
+											canCreateManualDraft
+												? handleCreateManualDraft
+												: handlePublishEvaluation
+										}
 										disabled={isPublishedEvaluation || teacherActionLoading}
 										className="btn-primary w-full disabled:bg-gray-200 disabled:text-gray-400"
 									>
 										{isPublishedEvaluation
 											? "Nota publicada"
 											: teacherActionLoading
-												? "Publicando..."
-												: pendingReEvaluationRequest
-													? "Aprobar y publicar nota"
-													: "Publicar nota final"}
+												? canCreateManualDraft
+													? "Creando borrador..."
+													: "Publicando..."
+												: canCreateManualDraft
+													? "Crear borrador manual"
+													: pendingReEvaluationRequest
+														? "Aprobar y publicar nota"
+														: "Publicar nota final"}
 									</button>
 									{pendingReEvaluationRequest && (
 										<button

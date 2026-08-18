@@ -25,10 +25,11 @@ export interface AssignmentExtension {
 
 export interface AssignmentEvaluation {
 	id: string;
+	origin?: "AI" | "MANUAL";
 	status?: string;
 	totalScore?: number;
 	generalFeedback?: string;
-	detailedFeedback?: string;
+	detailedFeedback?: unknown;
 	createdAt?: string;
 }
 
@@ -252,7 +253,9 @@ export const useAssignments = () => {
 				setDetailsLoading(true);
 				const results = await Promise.all(
 					assignmentsMissingSubmissions.map(async (assignment) => {
-						const {data} = await client.query<{assignment: TeacherAssignment}>({
+						const {data} = await client.query<{
+							assignment: TeacherAssignment;
+						}>({
 							query: GET_ASSIGNMENT_BY_ID,
 							variables: {id: assignment.id},
 							fetchPolicy: "network-only",

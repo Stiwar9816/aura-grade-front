@@ -35,10 +35,11 @@ export interface SubmissionDetail {
 	};
 	evaluation?: {
 		id: string;
+		origin?: "AI" | "MANUAL";
 		status: string;
 		totalScore: number;
 		generalFeedback?: string;
-		detailedFeedback?: string;
+		detailedFeedback?: unknown;
 		createdAt?: string;
 	};
 	assignment: {

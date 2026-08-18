@@ -44,6 +44,7 @@ export const GET_TASK_TEACHER: DocumentNode = gql`
 				}
 				evaluation {
 					id
+					origin
 					status
 					totalScore
 					generalFeedback
@@ -122,6 +123,7 @@ export const GET_ASSIGNMENT_BY_ID: DocumentNode = gql`
 				}
 				evaluation {
 					id
+					origin
 					status
 					totalScore
 					generalFeedback

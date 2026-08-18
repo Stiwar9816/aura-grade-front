@@ -45,11 +45,7 @@ import {
 	faTrashCan,
 	faUserGroup,
 } from "@fortawesome/free-solid-svg-icons";
-import {
-	notifyError,
-	notifyLoading,
-	notifySuccess,
-} from "@/utils/toastNotify";
+import {notifyError, notifyLoading, notifySuccess} from "@/utils/toastNotify";
 
 type AssignmentReminderPreview = {
 	assignmentId: string;
@@ -65,7 +61,10 @@ type AssignmentReminderSendResult = AssignmentReminderPreview & {
 	queuedCount: number;
 };
 
-const reminderResponseMessage = async (response: Response, fallback: string) => {
+const reminderResponseMessage = async (
+	response: Response,
+	fallback: string,
+) => {
 	const payload = (await response.json().catch(() => null)) as {
 		error?: unknown;
 		message?: unknown;
@@ -101,7 +100,9 @@ const formatDate = (date?: string, withTime = false) => {
 };
 
 const toDateTimeLocalValue = (date: Date) => {
-	const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+	const localDate = new Date(
+		date.getTime() - date.getTimezoneOffset() * 60_000,
+	);
 	return localDate.toISOString().slice(0, 16);
 };
 
@@ -266,7 +267,8 @@ const AssignmentDetailPage: React.FC = () => {
 		[assignment?.course?.users, submittedStudentIds],
 	);
 	const assignmentSubmissionCount = assignment?.submissionItems?.length ?? 0;
-	const fetchedSubmissionCount = teacherSubmissionsData?.submissions?.length ?? 0;
+	const fetchedSubmissionCount =
+		teacherSubmissionsData?.submissions?.length ?? 0;
 
 	React.useEffect(() => {
 		if (!focusedSubmissionId || loading || submissionsLoading) return;
@@ -388,9 +390,7 @@ const AssignmentDetailPage: React.FC = () => {
 						assignmentId,
 						studentId: extensionStudentId,
 						extendedDueDate: new Date(extensionDueDate),
-						...(extensionReason.trim()
-							? {reason: extensionReason.trim()}
-							: {}),
+						...(extensionReason.trim() ? {reason: extensionReason.trim()} : {}),
 					},
 				},
 				refetchQueries: extensionRefetchQueries,
@@ -679,144 +679,179 @@ const AssignmentDetailPage: React.FC = () => {
 														}`.trim()
 													: "Estudiante sin nombre";
 
-											return (
-												<React.Fragment key={submission.id}>
-											<tr
-												id={`submission-${submission.id}`}
-												className={`border-b border-gray-100 hover:bg-gray-50 ${
-													focusedSubmissionId === submission.id
-														? "bg-red-50/70"
-														: ""
-												}`}
-											>
-														<td className="py-4 px-4">
-															<div className="font-bold text-gray-900">
-																{studentName}
-															</div>
-															<div className="text-xs text-gray-500">
-																{submission.student?.email || "Sin correo"}
-															</div>
-														</td>
-														<td className="py-4 px-4">
-															<Badge variant={status.variant}>{status.label}</Badge>
-															{reevaluationRequest && (
-																<div className="mt-2 max-w-xs">
-																	<div className="text-[10px] font-black uppercase text-amber-700">
-																		Solicitud del estudiante
-																	</div>
-																	<p className="text-xs text-gray-600 line-clamp-2">
-																		{reevaluationRequest.reason}
-																	</p>
-																	<div className="text-[10px] text-gray-400 mt-1">
-																		{formatDate(reevaluationRequest.createdAt, true)}
-																	</div>
+												return (
+													<React.Fragment key={submission.id}>
+														<tr
+															id={`submission-${submission.id}`}
+															className={`border-b border-gray-100 hover:bg-gray-50 ${
+																focusedSubmissionId === submission.id
+																	? "bg-red-50/70"
+																	: ""
+															}`}
+														>
+															<td className="py-4 px-4">
+																<div className="font-bold text-gray-900">
+																	{studentName}
 																</div>
-															)}
-														</td>
-														<td className="py-4 px-4 text-sm text-gray-600">
-															{formatDate(submission.createdAt, true)}
-														</td>
-														<td className="py-4 px-4">
-															{typeof submission.evaluation?.totalScore ===
-															"number" ? (
-																<div className="font-black text-gray-900">
-																	{normalizeGrade(
-																		submission.evaluation.totalScore,
-																		assignment.rubric?.maxTotalScore,
-																	)?.toFixed(2)}
-																	<span className="text-xs font-bold text-gray-400">
-																		{" "}
-																		/ {STANDARD_GRADE_MAX}
-																	</span>
+																<div className="text-xs text-gray-500">
+																	{submission.student?.email || "Sin correo"}
 																</div>
-															) : (
-																<span className="text-gray-400">-</span>
-															)}
-															{submission.evaluation &&
-																!isPublishedSubmission(
-																	submission,
-																	reevaluationSubmissionIds,
-																) && (
-																	<div className="text-[10px] font-bold uppercase text-amber-600 mt-1">
-																		Sugerencia IA
-																	</div>
-																)}
-														</td>
-														<td className="py-4 px-4 text-right">
-															<button
-																onClick={() => {
-																	if (isFailed) {
-																		void retryFailedSubmission(submission.id);
-																		return;
-																	}
-																	router.push(
-																		`/evaluation?submission=${submission.id}`,
-																	);
-																}}
-																disabled={retryingSubmissionId === submission.id}
-																className={`px-3 py-1.5 text-white text-sm rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
-																	isFailed
-																		? "bg-red-500 hover:bg-red-600"
-																		: "bg-electric-500 hover:bg-electric-600"
-																}`}
-															>
-																{isFailed ? (
-																	<>
-																		<FontAwesomeIcon icon={faRotateRight} className="mr-1" />
-																		{retryingSubmissionId === submission.id
-																			? "Reintentando"
-																			: "Reintentar"}
-																	</>
-																) : reevaluationRequest ? (
-																	"Reevaluar"
-																) : isPublishedSubmission(
-																		submission,
-																		reevaluationSubmissionIds,
-																  ) ? (
-																	"Ver"
-																) : submission.evaluation ? (
-																	"Revisar"
-																) : (
-																	"Evaluar"
-																)}
-															</button>
-														</td>
-													</tr>
-													{isFailed && (
-														<tr className="border-b border-gray-100">
-															<td colSpan={5} className="px-4 pb-4">
-																<div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 p-3 text-red-800">
-																	<FontAwesomeIcon
-																		icon={faCircleExclamation}
-																		className="mt-0.5 text-red-500"
-																	/>
-																	<div className="min-w-0">
-																		<p className="text-sm font-semibold">
-																			{submission.gradingFailureReason ||
-																				"No se registró una causa detallada para este fallo."}
+															</td>
+															<td className="py-4 px-4">
+																<Badge variant={status.variant}>
+																	{status.label}
+																</Badge>
+																{reevaluationRequest && (
+																	<div className="mt-2 max-w-xs">
+																		<div className="text-[10px] font-black uppercase text-amber-700">
+																			Solicitud del estudiante
+																		</div>
+																		<p className="text-xs text-gray-600 line-clamp-2">
+																			{reevaluationRequest.reason}
 																		</p>
-																		<div className="mt-1 text-xs text-red-600">
-																			{typeof submission.gradingAttemptCount === "number"
-																				? `${submission.gradingAttemptCount} ${
-																						submission.gradingAttemptCount === 1
-																							? "intento"
-																							: "intentos"
-																					}`
-																				: "Intentos sin registro"}
-																			{submission.gradingLastAttemptAt && (
-																				<>
-																					{" · Último intento: "}
-																					{formatDate(submission.gradingLastAttemptAt, true)}
-																				</>
+																		<div className="text-[10px] text-gray-400 mt-1">
+																			{formatDate(
+																				reevaluationRequest.createdAt,
+																				true,
 																			)}
 																		</div>
 																	</div>
+																)}
+															</td>
+															<td className="py-4 px-4 text-sm text-gray-600">
+																{formatDate(submission.createdAt, true)}
+															</td>
+															<td className="py-4 px-4">
+																{typeof submission.evaluation?.totalScore ===
+																"number" ? (
+																	<div className="font-black text-gray-900">
+																		{normalizeGrade(
+																			submission.evaluation.totalScore,
+																			assignment.rubric?.maxTotalScore,
+																		)?.toFixed(2)}
+																		<span className="text-xs font-bold text-gray-400">
+																			{" "}
+																			/ {STANDARD_GRADE_MAX}
+																		</span>
+																	</div>
+																) : (
+																	<span className="text-gray-400">-</span>
+																)}
+																{submission.evaluation &&
+																	!isPublishedSubmission(
+																		submission,
+																		reevaluationSubmissionIds,
+																	) && (
+																		<div className="text-[10px] font-bold uppercase text-amber-600 mt-1">
+																			Sugerencia IA
+																		</div>
+																	)}
+															</td>
+															<td className="py-4 px-4 text-right">
+																<div className="flex justify-end gap-2">
+																	{isFailed && (
+																		<button
+																			type="button"
+																			onClick={() =>
+																				router.push(
+																					`/evaluation?submission=${submission.id}&mode=manual`,
+																				)
+																			}
+																			disabled={
+																				retryingSubmissionId === submission.id
+																			}
+																			className="px-3 py-1.5 rounded-lg border border-red-200 bg-white text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-50"
+																		>
+																			Manual
+																		</button>
+																	)}
+																	<button
+																		onClick={() => {
+																			if (isFailed) {
+																				void retryFailedSubmission(
+																					submission.id,
+																				);
+																				return;
+																			}
+																			router.push(
+																				`/evaluation?submission=${submission.id}`,
+																			);
+																		}}
+																		disabled={
+																			retryingSubmissionId === submission.id
+																		}
+																		className={`px-3 py-1.5 text-white text-sm rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+																			isFailed
+																				? "bg-red-500 hover:bg-red-600"
+																				: "bg-electric-500 hover:bg-electric-600"
+																		}`}
+																	>
+																		{isFailed ? (
+																			<>
+																				<FontAwesomeIcon
+																					icon={faRotateRight}
+																					className="mr-1"
+																				/>
+																				{retryingSubmissionId === submission.id
+																					? "Reintentando"
+																					: "Reintentar"}
+																			</>
+																		) : reevaluationRequest ? (
+																			"Reevaluar"
+																		) : isPublishedSubmission(
+																				submission,
+																				reevaluationSubmissionIds,
+																		  ) ? (
+																			"Ver"
+																		) : submission.evaluation ? (
+																			"Revisar"
+																		) : (
+																			"Evaluar"
+																		)}
+																	</button>
 																</div>
 															</td>
 														</tr>
-													)}
-												</React.Fragment>
-											);
+														{isFailed && (
+															<tr className="border-b border-gray-100">
+																<td colSpan={5} className="px-4 pb-4">
+																	<div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 p-3 text-red-800">
+																		<FontAwesomeIcon
+																			icon={faCircleExclamation}
+																			className="mt-0.5 text-red-500"
+																		/>
+																		<div className="min-w-0">
+																			<p className="text-sm font-semibold">
+																				{submission.gradingFailureReason ||
+																					"No se registró una causa detallada para este fallo."}
+																			</p>
+																			<div className="mt-1 text-xs text-red-600">
+																				{typeof submission.gradingAttemptCount ===
+																				"number"
+																					? `${submission.gradingAttemptCount} ${
+																							submission.gradingAttemptCount ===
+																							1
+																								? "intento"
+																								: "intentos"
+																						}`
+																					: "Intentos sin registro"}
+																				{submission.gradingLastAttemptAt && (
+																					<>
+																						{" · Último intento: "}
+																						{formatDate(
+																							submission.gradingLastAttemptAt,
+																							true,
+																						)}
+																					</>
+																				)}
+																			</div>
+																		</div>
+																	</div>
+																</td>
+															</tr>
+														)}
+													</React.Fragment>
+												);
 											})}
 										</tbody>
 									</table>
@@ -850,8 +885,8 @@ const AssignmentDetailPage: React.FC = () => {
 										)}
 										{Boolean(reminderPreview?.cooldownCount) && (
 											<p className="mt-2 text-xs text-amber-700">
-											{reminderPreview?.cooldownCount} ya fueron avisados durante
-											 las últimas 6 horas.
+												{reminderPreview?.cooldownCount} ya fueron avisados
+												durante las últimas 6 horas.
 											</p>
 										)}
 									</div>
@@ -873,10 +908,13 @@ const AssignmentDetailPage: React.FC = () => {
 							</Card>
 
 							<Card className="bg-white/70 border border-gray-100">
-								<SectionHeader title="Prórrogas individuales" className="mb-4" />
+								<SectionHeader
+									title="Prórrogas individuales"
+									className="mb-4"
+								/>
 								<p className="mb-4 text-sm text-gray-500">
-									Extiende la fecha de un estudiante pendiente sin cambiar el plazo
-									general del curso.
+									Extiende la fecha de un estudiante pendiente sin cambiar el
+									plazo general del curso.
 								</p>
 								{studentsWithoutSubmission.length === 0 ? (
 									<p className="rounded-xl bg-gray-50 p-3 text-sm text-gray-500">
@@ -886,7 +924,9 @@ const AssignmentDetailPage: React.FC = () => {
 									<div className="space-y-3">
 										<select
 											value={extensionStudentId}
-										onChange={(event) => selectExtensionStudent(event.target.value)}
+											onChange={(event) =>
+												selectExtensionStudent(event.target.value)
+											}
 											className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
 										>
 											<option value="">Selecciona un estudiante</option>
@@ -900,18 +940,24 @@ const AssignmentDetailPage: React.FC = () => {
 											type="datetime-local"
 											value={extensionDueDate}
 											min={toDateTimeLocalValue(
-											new Date(
-												Math.max(Date.now(), new Date(assignment.dueDate).getTime()) +
-													60_000,
-											),
+												new Date(
+													Math.max(
+														Date.now(),
+														new Date(assignment.dueDate).getTime(),
+													) + 60_000,
+												),
 											)}
-										onChange={(event) => setExtensionDueDate(event.target.value)}
+											onChange={(event) =>
+												setExtensionDueDate(event.target.value)
+											}
 											disabled={!extensionStudentId}
 											className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm disabled:bg-gray-100"
 										/>
 										<textarea
 											value={extensionReason}
-										onChange={(event) => setExtensionReason(event.target.value)}
+											onChange={(event) =>
+												setExtensionReason(event.target.value)
+											}
 											placeholder="Motivo (opcional)"
 											maxLength={500}
 											disabled={!extensionStudentId}
@@ -921,7 +967,9 @@ const AssignmentDetailPage: React.FC = () => {
 											type="button"
 											onClick={() => void saveExtension()}
 											disabled={
-											extensionSaving || !extensionStudentId || !extensionDueDate
+												extensionSaving ||
+												!extensionStudentId ||
+												!extensionDueDate
 											}
 											className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
 										>
@@ -940,7 +988,9 @@ const AssignmentDetailPage: React.FC = () => {
 											>
 												<button
 													type="button"
-											onClick={() => selectExtensionStudent(extension.student.id)}
+													onClick={() =>
+														selectExtensionStudent(extension.student.id)
+													}
 													className="min-w-0 flex-1 text-left"
 												>
 													<div className="truncate text-sm font-bold text-gray-900">
@@ -957,7 +1007,9 @@ const AssignmentDetailPage: React.FC = () => {
 												</button>
 												<button
 													type="button"
-											onClick={() => void deleteExtension(extension.student.id)}
+													onClick={() =>
+														void deleteExtension(extension.student.id)
+													}
 													disabled={extensionSaving}
 													aria-label={`Retirar prórroga de ${extension.student.name}`}
 													className="rounded-lg p-2 text-red-500 hover:bg-red-50 disabled:opacity-50"
