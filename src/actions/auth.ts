@@ -23,6 +23,20 @@ type AuthResult = {
 	user?: User;
 };
 
+export type ActiveSession = {
+	absoluteExpiresAt: string;
+	browser: string;
+	createdAt: string;
+	current: boolean;
+	deviceType: "desktop" | "mobile" | "tablet" | "unknown";
+	id: string;
+	ipAddress?: string;
+	lastActivityAt: string;
+	name: string;
+	operatingSystem: string;
+	rememberMe: boolean;
+};
+
 let pendingSessionRequest: Promise<AuthResult> | null = null;
 
 const readResponse = async (response: Response): Promise<AuthResult> => {
@@ -45,7 +59,8 @@ const responseError = (
 	if (response.status === 429) {
 		return {
 			code: "RATE_LIMITED" as const,
-			error: result.error || "Demasiados intentos. Intenta nuevamente más tarde.",
+			error:
+				result.error || "Demasiados intentos. Intenta nuevamente más tarde.",
 			retryAfter: result.retryAfter,
 		};
 	}
@@ -180,11 +195,7 @@ const requestSession = async (): Promise<AuthResult> => {
 		if (!response.ok || !result.user) {
 			return {
 				user: undefined,
-				...responseError(
-					response,
-					result,
-					"No fue posible validar la sesión.",
-				),
+				...responseError(response, result, "No fue posible validar la sesión."),
 			};
 		}
 		return {user: result.user};
@@ -260,6 +271,73 @@ export async function logoutAllAction() {
 			success: false,
 			code: "SERVICE_UNAVAILABLE" as const,
 			error: "No fue posible cerrar todas las sesiones.",
+		};
+	}
+}
+
+export async function getActiveSessionsAction() {
+	try {
+		const response = await fetch("/api/auth/sessions", {
+			method: "GET",
+			credentials: "same-origin",
+			cache: "no-store",
+		});
+		const result = (await response.json().catch(() => ({}))) as AuthResult & {
+			sessions?: ActiveSession[];
+		};
+		if (!response.ok || !result.sessions) {
+			return {
+				success: false as const,
+				...responseError(
+					response,
+					result,
+					"No fue posible cargar los dispositivos con sesión activa.",
+				),
+			};
+		}
+		return {success: true as const, sessions: result.sessions};
+	} catch {
+		return {
+			success: false as const,
+			code: "SERVICE_UNAVAILABLE" as const,
+			error: "No fue posible conectar con el servicio de sesiones.",
+		};
+	}
+}
+
+export async function revokeActiveSessionAction(sessionId: string) {
+	try {
+		const response = await fetch(
+			`/api/auth/sessions/${encodeURIComponent(sessionId)}`,
+			{
+				method: "DELETE",
+				credentials: "same-origin",
+			},
+		);
+		const result = (await response.json().catch(() => ({}))) as AuthResult & {
+			currentSession?: boolean;
+			revoked?: boolean;
+		};
+		if (!response.ok || !result.success) {
+			return {
+				success: false as const,
+				...responseError(
+					response,
+					result,
+					"No fue posible cerrar la sesión seleccionada.",
+				),
+			};
+		}
+		return {
+			currentSession: Boolean(result.currentSession),
+			revoked: Boolean(result.revoked),
+			success: true as const,
+		};
+	} catch {
+		return {
+			success: false as const,
+			code: "SERVICE_UNAVAILABLE" as const,
+			error: "No fue posible conectar con el servicio de sesiones.",
 		};
 	}
 }

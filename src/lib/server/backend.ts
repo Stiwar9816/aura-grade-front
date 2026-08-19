@@ -89,6 +89,8 @@ const backendFetch = (
 	if (bffSecret) headers.set("x-bff-secret", bffSecret);
 	const requestClientIp = clientIp(request);
 	if (requestClientIp) headers.set("x-client-ip", requestClientIp);
+	const userAgent = request.headers.get("user-agent")?.slice(0, 512);
+	if (userAgent) headers.set("x-client-user-agent", userAgent);
 	if (sessionToken) {
 		headers.set("authorization", `Bearer ${sessionToken}`);
 	}

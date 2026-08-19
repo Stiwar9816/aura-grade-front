@@ -4,6 +4,7 @@ import Layout from "@/components/Layout";
 import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
+import ActiveSessions from "@/components/Auth/ActiveSessions";
 import {useAuth, useNotificationPreferences} from "@/hooks";
 import {UPDATE_USER} from "@/gql/User";
 import {
@@ -382,6 +383,8 @@ const SettingsPage: React.FC = () => {
 							</div>
 						</div>
 					</Card>
+
+					<ActiveSessions />
 
 					<Card>
 						<SectionHeader
