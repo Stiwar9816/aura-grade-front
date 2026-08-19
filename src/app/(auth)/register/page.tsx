@@ -498,8 +498,7 @@ const RegisterPage: React.FC = () => {
 									<li className="flex items-center gap-2">
 										<span className="text-electric-500">•</span>
 										<span>
-											Puedes usar una frase con espacios; no exigimos combinaciones
-											artificiales.
+											No debe contener espacios ni otros caracteres en blanco.
 										</span>
 									</li>
 								</ul>

@@ -16,6 +16,8 @@ const BLOCKED_PASSWORDS = new Set([
 
 export const passwordPolicyError = (password: string): string | null => {
 	const normalized = password.normalize("NFC");
+	if (/\s/u.test(normalized))
+		return "La contraseña no puede contener espacios ni otros caracteres en blanco.";
 	const length = Array.from(normalized).length;
 	if (length < PASSWORD_MIN_LENGTH)
 		return `La contraseña debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`;
