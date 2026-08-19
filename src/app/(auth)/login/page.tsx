@@ -136,7 +136,7 @@ const LoginPage: React.FC = () => {
 							<p className="mt-1">
 								{twoFactorChallenge.requiresSetup
 									? "Escanea el código con Google Authenticator o Microsoft Authenticator y confirma el primer código. La sesión no se creará hasta completar este paso."
-									: "Ingresa el código actual de tu aplicación autenticadora."}
+									: "Ingresa el código actual de tu aplicación autenticadora. La verificación se conservará únicamente durante la vigencia de esta sesión."}
 							</p>
 							{twoFactorChallenge.requiresSetup &&
 								twoFactorChallenge.otpAuthUri && (

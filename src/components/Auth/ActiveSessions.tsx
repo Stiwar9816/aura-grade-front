@@ -110,7 +110,8 @@ const ActiveSessions: React.FC = () => {
 			/>
 
 			<div className="mb-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-800">
-				Aquí aparecen las sesiones de Aura Grade. Google Authenticator y
+				El OTP es obligatorio para todos los usuarios y su verificación solo se
+				conserva hasta la fecha indicada en cada sesión. Google Authenticator y
 				Microsoft Authenticator no comparten con Aura Grade la lista de
 				teléfonos que tienen copiada tu clave OTP.
 			</div>
@@ -157,6 +158,9 @@ const ActiveSessions: React.FC = () => {
 								</div>
 								<p className="mt-1 text-sm text-gray-600">
 									Última actividad: {formatDate(session.lastActivityAt)}
+								</p>
+								<p className="mt-0.5 text-xs font-semibold text-electric-700">
+									OTP válido hasta: {formatDate(session.mfaExpiresAt)}
 								</p>
 								<p className="mt-0.5 text-xs text-gray-500">
 									Inicio: {formatDate(session.createdAt)}

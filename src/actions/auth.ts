@@ -32,6 +32,7 @@ export type ActiveSession = {
 	id: string;
 	ipAddress?: string;
 	lastActivityAt: string;
+	mfaExpiresAt: string;
 	name: string;
 	operatingSystem: string;
 	rememberMe: boolean;
