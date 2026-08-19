@@ -11,7 +11,6 @@ type BackendAuthResponse = {
 	expiresAt?: string;
 	message?: string;
 	sessionToken?: string;
-	token?: string;
 	user?: User;
 	pendingApproval?: boolean;
 };
@@ -72,7 +71,7 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		const sessionToken = responseData.sessionToken || responseData.token;
+		const sessionToken = responseData.sessionToken;
 		if (!sessionToken) {
 			return NextResponse.json(
 				{error: "La respuesta de registro no contiene una sesión válida."},

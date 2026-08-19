@@ -7,14 +7,19 @@ export type AuthErrorCode =
 	| "UNAUTHENTICATED";
 
 type AuthResult = {
+	challengeToken?: string;
 	code?: AuthErrorCode;
 	error?: string;
 	expiresAt?: string;
 	message?: string;
 	pendingApproval?: boolean;
+	otpAuthUri?: string;
+	requiresTwoFactor?: boolean;
+	requiresTwoFactorSetup?: boolean;
 	retryAfter?: string;
 	revokedSessions?: number;
 	success?: boolean;
+	setupKey?: string;
 	user?: User;
 };
 
@@ -78,6 +83,17 @@ export async function loginAction(
 			body: JSON.stringify(credentials),
 		});
 		const result = await readResponse(response);
+		if (response.ok && result.requiresTwoFactor && result.challengeToken) {
+			return {
+				success: false,
+				challengeToken: result.challengeToken,
+				expiresAt: result.expiresAt,
+				otpAuthUri: result.otpAuthUri,
+				requiresTwoFactor: true,
+				requiresTwoFactorSetup: result.requiresTwoFactorSetup,
+				setupKey: result.setupKey,
+			};
+		}
 
 		if (!response.ok || !result.user) {
 			return {
@@ -92,6 +108,31 @@ export async function loginAction(
 			success: false,
 			code: "SERVICE_UNAVAILABLE" as const,
 			error: "Error de conexión con el servidor",
+		};
+	}
+}
+
+export async function verifyOtpAction(challengeToken: string, otp: string) {
+	try {
+		const response = await fetch("/api/auth/verify-otp", {
+			method: "POST",
+			headers: {"content-type": "application/json"},
+			credentials: "same-origin",
+			body: JSON.stringify({challengeToken, otp}),
+		});
+		const result = await readResponse(response);
+		if (!response.ok || !result.user) {
+			return {
+				success: false,
+				...responseError(response, result, "Código inválido o expirado."),
+			};
+		}
+		return {success: true, user: result.user};
+	} catch {
+		return {
+			success: false,
+			code: "SERVICE_UNAVAILABLE" as const,
+			error: "El servicio de segundo factor no está disponible.",
 		};
 	}
 }

@@ -73,8 +73,8 @@ export const ASSIGN_COURSES_TO_USER: DocumentNode = gql`
 `;
 
 export const RESET_PASSWORD_AUTH: DocumentNode = gql`
-	mutation ResetPasswordAuth($newPassword: String!) {
-		resetPasswordAuth(newPassword: $newPassword) {
+	mutation ResetPasswordAuth($input: ChangePasswordInput!) {
+		resetPasswordAuth(input: $input) {
 			id
 			name
 			last_name

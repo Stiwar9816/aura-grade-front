@@ -19,6 +19,10 @@ const LoginPage: React.FC = () => {
 		handleChange,
 		handleTogglePassword,
 		handleSubmit,
+		otp,
+		setOtp,
+		twoFactorChallenge,
+		cancelTwoFactor,
 	} = useLogin();
 
 	const features = [
@@ -111,6 +115,47 @@ const LoginPage: React.FC = () => {
 					</div>
 				)}
 
+				{twoFactorChallenge ? (
+					<div className="space-y-5">
+						<div className="rounded-xl border border-electric-200 bg-electric-50 p-4 text-sm text-gray-700">
+							<p className="font-bold text-gray-900">
+								{twoFactorChallenge.requiresSetup
+									? "Configura la verificación en dos pasos"
+									: "Verificación en dos pasos"}
+							</p>
+							<p className="mt-1">
+								{twoFactorChallenge.requiresSetup
+									? "Añade Aura Grade en tu aplicación autenticadora con la clave siguiente y confirma el primer código. La sesión no se creará hasta completar este paso."
+									: "Ingresa el código actual de tu aplicación autenticadora."}
+							</p>
+							{twoFactorChallenge.setupKey && (
+								<code className="mt-3 block break-all rounded-lg bg-white p-3 text-center font-mono text-base font-bold tracking-wider text-electric-700">
+									{twoFactorChallenge.setupKey}
+								</code>
+							)}
+						</div>
+						<div>
+							<label className="block text-sm font-medium text-gray-700 mb-2">
+								Código de 6 dígitos
+							</label>
+							<input
+								type="text"
+								inputMode="numeric"
+								autoComplete="one-time-code"
+								value={otp}
+								onChange={(event) =>
+									setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))
+								}
+								className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 text-center font-mono text-2xl tracking-[0.5em] outline-none transition-all focus:border-electric-500 focus:ring-2 focus:ring-electric-200"
+								placeholder="000000"
+								pattern="[0-9]{6}"
+								maxLength={6}
+								required
+							/>
+						</div>
+					</div>
+				) : (
+					<>
 				<div>
 					<label className="block text-sm font-medium text-gray-700 mb-2">
 						Correo electrónico
@@ -235,6 +280,8 @@ const LoginPage: React.FC = () => {
 						¿Olvidaste tu contraseña?
 					</Link>
 				</div>
+					</>
+				)}
 
 				<button
 					type="submit"
@@ -266,12 +313,22 @@ const LoginPage: React.FC = () => {
 									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 								/>
 							</svg>
-							Iniciando sesión...
+							{twoFactorChallenge ? "Verificando..." : "Iniciando sesión..."}
 						</span>
 					) : (
-						"Iniciar sesión"
+						twoFactorChallenge ? "Verificar código" : "Iniciar sesión"
 					)}
 				</button>
+				{twoFactorChallenge && (
+					<button
+						type="button"
+						onClick={cancelTwoFactor}
+						disabled={isLoading}
+						className="w-full rounded-xl border border-gray-300 px-4 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+					>
+						Volver al inicio de sesión
+					</button>
+				)}
 			</form>
 
 			{/* Register Link */}

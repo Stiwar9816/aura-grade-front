@@ -9,6 +9,10 @@ import {
 	UserRole,
 } from "@/interface";
 import {useAuth} from "./";
+import {
+	PASSWORD_MIN_LENGTH,
+	passwordPolicyError,
+} from "@/utils/passwordPolicy";
 
 export const useRegister = () => {
 	const router = useRouter();
@@ -104,10 +108,9 @@ export const useRegister = () => {
 		if (stepNumber === 2) {
 			if (!formData.password) {
 				newErrors.password = "La contraseña es requerida";
-			} else if (formData.password.length < 8) {
-				newErrors.password = "La contraseña debe tener al menos 8 caracteres";
-			} else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-				newErrors.password = "Debe incluir mayúsculas, minúsculas y números";
+			} else {
+				const policyError = passwordPolicyError(formData.password);
+				if (policyError) newErrors.password = policyError;
 			}
 
 			if (!formData.confirmPassword) {
@@ -177,10 +180,10 @@ export const useRegister = () => {
 
 		let score = 0;
 		if (password.length >= 8) score++;
-		if (/[a-z]/.test(password)) score++;
-		if (/[A-Z]/.test(password)) score++;
-		if (/\d/.test(password)) score++;
-		if (/[^A-Za-z0-9]/.test(password)) score++;
+		if (password.length >= 12) score++;
+		if (password.length >= PASSWORD_MIN_LENGTH) score++;
+		if (password.length >= 20) score++;
+		if (password.length >= 30) score++;
 
 		const strengths = [
 			{score: 0, label: "Muy débil", color: "bg-red-500"},

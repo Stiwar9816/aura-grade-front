@@ -8,10 +8,14 @@ import {
 import {setSessionCookie} from "@/lib/server/authSession";
 
 type BackendAuthResponse = {
+	challengeToken?: string;
 	expiresAt?: string;
 	message?: string;
+	otpAuthUri?: string;
+	requiresTwoFactor?: boolean;
+	requiresTwoFactorSetup?: boolean;
 	sessionToken?: string;
-	token?: string;
+	setupKey?: string;
 	user?: User;
 };
 
@@ -27,10 +31,7 @@ export async function POST(request: NextRequest) {
 		>;
 		const backendResponse = await fetchBackendRest(request, "auth/login", {
 			method: "POST",
-			headers: {
-				"content-type": "application/json",
-				"X-BFF-Secret": process.env.X_BFF_SECRET!,
-			},
+			headers: {"content-type": "application/json"},
 			body: JSON.stringify({
 				email: credentials.email,
 				password: credentials.password,
@@ -49,7 +50,21 @@ export async function POST(request: NextRequest) {
 			);
 		}
 
-		const sessionToken = data.sessionToken || data.token;
+		if (data.requiresTwoFactor && data.challengeToken) {
+			return NextResponse.json(
+				{
+					challengeToken: data.challengeToken,
+					expiresAt: data.expiresAt,
+					otpAuthUri: data.otpAuthUri,
+					requiresTwoFactor: true,
+					requiresTwoFactorSetup: Boolean(data.requiresTwoFactorSetup),
+					setupKey: data.setupKey,
+				},
+				{headers: responseHeaders},
+			);
+		}
+
+		const sessionToken = data.sessionToken;
 		if (!sessionToken || !data.user?.id) {
 			return NextResponse.json(
 				{error: "La respuesta de autenticación no contiene una sesión válida."},

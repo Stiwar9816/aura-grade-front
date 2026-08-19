@@ -13,6 +13,7 @@ import {
 	notifySuccess,
 	notifyWarning,
 } from "@/utils/toastNotify";
+import {passwordPolicyError} from "@/utils/passwordPolicy";
 
 const getRoleLabel = (role?: UserRole) => {
 	if (role === UserRole.STUDENT) return "Estudiante";
@@ -28,7 +29,7 @@ const ProfilePage: React.FC = () => {
 	>(UPDATE_MY_PROFILE);
 	const [resetPasswordAuthMutation, {loading: savingPassword}] = useMutation<
 		{resetPasswordAuth: User},
-		{newPassword: string}
+		{input: {newPassword: string}}
 	>(RESET_PASSWORD_AUTH);
 	const [isEditing, setIsEditing] = useState(false);
 	const [formData, setFormData] = useState({
@@ -141,16 +142,17 @@ const ProfilePage: React.FC = () => {
 
 	const handlePasswordSave = async (event?: React.FormEvent) => {
 		event?.preventDefault();
-		const newPassword = String(passwordData.newPassword || "").trim();
-		const confirmPassword = String(passwordData.confirmPassword || "").trim();
+		const newPassword = String(passwordData.newPassword || "");
+		const confirmPassword = String(passwordData.confirmPassword || "");
 
 		if (!newPassword || !confirmPassword) {
 			notifyWarning("Ingresa y confirma la nueva contraseña.");
 			return;
 		}
 
-		if (newPassword.length < 8) {
-			notifyWarning("La contraseña debe tener al menos 8 caracteres.");
+		const policyError = passwordPolicyError(newPassword);
+		if (policyError) {
+			notifyWarning(policyError);
 			return;
 		}
 
@@ -162,7 +164,7 @@ const ProfilePage: React.FC = () => {
 		const notificationId = notifyLoading("Actualizando contraseña...");
 		try {
 			const {data} = await resetPasswordAuthMutation({
-				variables: {newPassword},
+				variables: {input: {newPassword}},
 			});
 
 			if (!data?.resetPasswordAuth) {

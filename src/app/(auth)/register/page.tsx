@@ -13,6 +13,7 @@ import {
 	faUserGraduate,
 	faUserShield,
 } from "@fortawesome/free-solid-svg-icons";
+import {PASSWORD_MIN_LENGTH} from "@/utils/passwordPolicy";
 
 const RegisterPage: React.FC = () => {
 	const {
@@ -483,50 +484,23 @@ const RegisterPage: React.FC = () => {
 									<li className="flex items-center gap-2">
 										<span
 											className={
-												formData.password.length >= 8
+												formData.password.length >= PASSWORD_MIN_LENGTH
 													? "text-green-500"
 													: "text-gray-400"
 											}
 										>
-											{formData.password.length >= 8 ? "✓" : "○"}
+											{formData.password.length >= PASSWORD_MIN_LENGTH
+												? "✓"
+												: "○"}
 										</span>
-										<span>Al menos 8 caracteres</span>
+										<span>Al menos {PASSWORD_MIN_LENGTH} caracteres</span>
 									</li>
 									<li className="flex items-center gap-2">
-										<span
-											className={
-												/[a-z]/.test(formData.password)
-													? "text-green-500"
-													: "text-gray-400"
-											}
-										>
-											{/[a-z]/.test(formData.password) ? "✓" : "○"}
+										<span className="text-electric-500">•</span>
+										<span>
+											Puedes usar una frase con espacios; no exigimos combinaciones
+											artificiales.
 										</span>
-										<span>Una letra minúscula</span>
-									</li>
-									<li className="flex items-center gap-2">
-										<span
-											className={
-												/[A-Z]/.test(formData.password)
-													? "text-green-500"
-													: "text-gray-400"
-											}
-										>
-											{/[A-Z]/.test(formData.password) ? "✓" : "○"}
-										</span>
-										<span>Una letra mayúscula</span>
-									</li>
-									<li className="flex items-center gap-2">
-										<span
-											className={
-												/\d/.test(formData.password)
-													? "text-green-500"
-													: "text-gray-400"
-											}
-										>
-											{/\d/.test(formData.password) ? "✓" : "○"}
-										</span>
-										<span>Un número</span>
 									</li>
 								</ul>
 							</div>

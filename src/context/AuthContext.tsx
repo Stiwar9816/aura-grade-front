@@ -15,6 +15,7 @@ import {
 	logoutAction,
 	registerAction,
 	updateSessionUserAction,
+	verifyOtpAction,
 } from "@/actions/auth";
 import {AuthState, LoginCredentials, RegisterData, User} from "@/interface";
 import {unsubscribeFromWebPush} from "@/lib/pushNotifications";
@@ -27,6 +28,20 @@ export interface AuthContextType extends AuthState {
 			LoginCredentials,
 			"email" | "password" | "rememberMe"
 		>,
+	) => Promise<{
+		success: boolean;
+		user?: User;
+		error?: string;
+		challengeToken?: string;
+		expiresAt?: string;
+		otpAuthUri?: string;
+		requiresTwoFactor?: boolean;
+		requiresTwoFactorSetup?: boolean;
+		setupKey?: string;
+	}>;
+	verifyOtp: (
+		challengeToken: string,
+		otp: string,
 	) => Promise<{success: boolean; user?: User; error?: string}>;
 	register: (
 		data: RegisterData,
@@ -133,8 +148,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
 			try {
 				const result = await loginAction(credentials);
+				if (result.requiresTwoFactor && result.challengeToken) {
+					setAuthState((previous) => ({
+						...previous,
+						isLoading: false,
+						error: null,
+						sessionErrorCode: null,
+					}));
+					return result;
+				}
 				if (!result.user) {
-					const error = result.error || "Credenciales incorrectas";
+					const error =
+						("error" in result && result.error) || "Credenciales incorrectas";
 					setAuthState((previous) => ({
 						...previous,
 						isLoading: false,
@@ -169,6 +194,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 		},
 		[],
 	);
+
+	const verifyOtp = useCallback(async (challengeToken: string, otp: string) => {
+		setAuthState((previous) => ({
+			...previous,
+			isLoading: true,
+			error: null,
+			sessionErrorCode: null,
+		}));
+		const result = await verifyOtpAction(challengeToken, otp);
+		if (!result.user) {
+			const error = result.error || "Código inválido o expirado.";
+			setAuthState((previous) => ({
+				...previous,
+				isLoading: false,
+				error,
+				sessionErrorCode: null,
+			}));
+			return {success: false, error};
+		}
+		setAuthState({
+			user: result.user,
+			isAuthenticated: true,
+			isLoading: false,
+			error: null,
+			sessionErrorCode: null,
+		});
+		notifyOtherTabs();
+		return {success: true, user: result.user};
+	}, []);
 
 	const register = useCallback(async (data: RegisterData) => {
 		setAuthState((previous) => ({
@@ -287,8 +341,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			logout,
 			logoutAll,
 			updateUser,
+			verifyOtp,
 		}),
-		[authState, login, logout, logoutAll, register, updateUser],
+		[authState, login, logout, logoutAll, register, updateUser, verifyOtp],
 	);
 
 	return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

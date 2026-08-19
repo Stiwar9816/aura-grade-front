@@ -4,8 +4,13 @@ import type {NextRequest, NextResponse} from "next/server";
 
 const REMEMBER_ME_MAX_AGE = 60 * 60 * 24 * 30;
 
+const configuredCookieName = process.env.SESSION_COOKIE_NAME || "ag_session";
 export const SESSION_COOKIE_NAME =
-	process.env.SESSION_COOKIE_NAME || "ag_session";
+	process.env.NODE_ENV === "production"
+		? configuredCookieName.startsWith("__Host-")
+			? configuredCookieName
+			: `__Host-${configuredCookieName}`
+		: configuredCookieName;
 
 const secondsUntil = (expiresAt?: string) => {
 	if (!expiresAt) return REMEMBER_ME_MAX_AGE;
@@ -27,6 +32,7 @@ export const setSessionCookie = (
 		httpOnly: true,
 		secure: process.env.NODE_ENV === "production",
 		sameSite: "lax",
+		priority: "high",
 		path: "/",
 		...(options.rememberMe
 			? {maxAge: secondsUntil(options.expiresAt)}
@@ -39,6 +45,7 @@ export const clearSessionCookie = (response: NextResponse) => {
 		httpOnly: true,
 		secure: process.env.NODE_ENV === "production",
 		sameSite: "lax",
+		priority: "high",
 		path: "/",
 		maxAge: 0,
 	});
