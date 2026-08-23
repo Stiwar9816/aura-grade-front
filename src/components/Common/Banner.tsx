@@ -1,11 +1,5 @@
+import type { BannerProps } from "@/interface";
 import React from "react";
-
-interface BannerProps {
-	title: string;
-	description: string;
-	icon?: React.ReactNode;
-	className?: string;
-}
 
 const Banner: React.FC<BannerProps> = ({
 	title,

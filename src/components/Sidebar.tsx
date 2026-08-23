@@ -90,6 +90,14 @@ const Sidebar: React.FC = () => {
 			label: "Asignación de Cursos",
 			badge: null,
 		},
+		{
+			path: "/admin/import-users",
+			icon: <FontAwesomeIcon icon={faCloudArrowUp} />,
+			label: user?.isPlatformAdmin
+				? "Importar administradores"
+				: "Importar usuarios",
+			badge: null,
+		},
 		...(user?.isPlatformAdmin
 			? [
 					{

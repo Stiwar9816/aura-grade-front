@@ -27,6 +27,7 @@ import {
 	faRobot,
 	faUser,
 	faChartLine,
+	faPlayCircle,
 } from "@fortawesome/free-solid-svg-icons";
 
 type TeacherDashboardTab = {
@@ -584,7 +585,7 @@ const TeacherDashboard: React.FC = () => {
 																	showExpired ? "rotate-90" : ""
 																}`}
 															>
-																▶
+																<FontAwesomeIcon icon={faPlayCircle} />
 															</span>
 															<span className="font-bold text-sm uppercase tracking-wider">
 																Tareas vencidas ({expiredAssignmentsList.length}

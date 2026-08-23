@@ -2,6 +2,7 @@ import {
 	faCloudUpload,
 	faFileText,
 	faFolderOpen,
+	faPaperclip,
 	faRocket,
 	faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
@@ -133,7 +134,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 			case "docx":
 				return <FontAwesomeIcon icon={faFileText} />;
 			default:
-				return "📎";
+				return <FontAwesomeIcon icon={faPaperclip} />;
 		}
 	};
 

@@ -1,8 +1,8 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {useAssignments, useCourse, useRubrics} from "@/hooks";
 import Card from "@/components/Common/Card";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faTriangleExclamation} from "@fortawesome/free-solid-svg-icons";
+import {faCircleCheck, faTriangleExclamation} from "@fortawesome/free-solid-svg-icons";
 import {
 	notifyError,
 	notifyLoading,
@@ -10,18 +10,29 @@ import {
 	notifyWarning,
 } from "@/utils/toastNotify";
 import type {CoursesData, RubricTemplate} from "@/interface";
+import {useRouter} from "next/router";
 
 type CourseOption = CoursesData["courses"][number];
+type AssignmentDraft = {
+	title: string;
+	description: string;
+	dueDate: string;
+	courseId: string;
+	rubricId: string;
+};
+
+const ASSIGNMENT_DRAFT_STORAGE_KEY = "aura-grade:assignment-draft";
 
 const getErrorMessage = (error: unknown, fallback: string) =>
 	error instanceof Error ? error.message : fallback;
 
 const AssignmentCreator: React.FC = () => {
+	const router = useRouter();
 	const {createAssignment, createLoading} = useAssignments();
 	const {courses, loading: coursesLoading} = useCourse();
 	const {rubrics, loading: rubricsLoading} = useRubrics();
 
-	const [form, setForm] = useState({
+	const [form, setForm] = useState<AssignmentDraft>({
 		title: "",
 		description: "",
 		dueDate: "",
@@ -31,6 +42,38 @@ const AssignmentCreator: React.FC = () => {
 
 	const [isSubmitted, setIsSubmitted] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (!router.isReady) return;
+		try {
+			const stored = sessionStorage.getItem(ASSIGNMENT_DRAFT_STORAGE_KEY);
+			if (stored) {
+				const draft = JSON.parse(stored) as Partial<AssignmentDraft>;
+				// The draft is external browser state and must be restored after hydration.
+				// eslint-disable-next-line react-hooks/set-state-in-effect
+				setForm((current) => ({
+					...current,
+					title: typeof draft.title === "string" ? draft.title : current.title,
+					description:
+						typeof draft.description === "string"
+							? draft.description
+							: current.description,
+					dueDate:
+						typeof draft.dueDate === "string" ? draft.dueDate : current.dueDate,
+					courseId:
+						typeof draft.courseId === "string" ? draft.courseId : current.courseId,
+					rubricId:
+						typeof router.query.rubricId === "string"
+							? router.query.rubricId
+							: typeof draft.rubricId === "string"
+								? draft.rubricId
+								: current.rubricId,
+				}));
+			}
+		} catch {
+			sessionStorage.removeItem(ASSIGNMENT_DRAFT_STORAGE_KEY);
+		}
+	}, [router.isReady, router.query.rubricId]);
 
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -53,6 +96,7 @@ const AssignmentCreator: React.FC = () => {
 				isActive: true,
 			});
 			setIsSubmitted(true);
+			sessionStorage.removeItem(ASSIGNMENT_DRAFT_STORAGE_KEY);
 			notifySuccess(
 				`Tarea "${form.title}" publicada. Los estudiantes ya pueden verla.`,
 				{id: notificationId},
@@ -67,7 +111,7 @@ const AssignmentCreator: React.FC = () => {
 	if (isSubmitted) {
 		return (
 			<Card className="max-w-2xl mx-auto p-8 text-center bg-white/60 border border-gray-100">
-				<div className="text-6xl mb-4">🎉</div>
+				<div className="text-6xl mb-4"><FontAwesomeIcon icon={faCircleCheck} /></div>
 				<h2 className="text-2xl font-bold text-gray-900 mb-2">
 					¡Tarea Creada con Éxito!
 				</h2>
@@ -177,11 +221,37 @@ const AssignmentCreator: React.FC = () => {
 
 						{/* Rúbrica */}
 						<div className="md:col-span-2">
-							<label className="block text-sm font-bold text-gray-700 mb-2">
-								Rúbrica de Evaluación *
-							</label>
+							<div className="mb-2 flex flex-col justify-between gap-2 sm:flex-row sm:items-center">
+								<label className="block text-sm font-bold text-gray-700">
+									Rúbrica de Evaluación *
+								</label>
+								<button
+									type="button"
+									disabled={!form.title.trim() || !form.description.trim()}
+									onClick={() => {
+										sessionStorage.setItem(
+											ASSIGNMENT_DRAFT_STORAGE_KEY,
+											JSON.stringify(form),
+										);
+										void router.push({
+											pathname: "/rubrics",
+											query: {
+												copilot: "1",
+												title: form.title,
+												description: form.description,
+												returnTo: "/teacher/assignments",
+											},
+										});
+									}}
+									className="text-sm font-bold text-electric-600 hover:text-electric-700 disabled:cursor-not-allowed disabled:text-gray-400"
+								>
+									Crear rúbrica con IA desde esta tarea
+								</button>
+							</div>
 							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
-								{rubrics.map((rubric: RubricTemplate) => (
+								{rubrics
+									.filter((rubric: RubricTemplate) => rubric.status !== "ARCHIVED")
+									.map((rubric: RubricTemplate) => (
 									<div
 										key={rubric.id}
 										onClick={() => setForm({...form, rubricId: rubric.id})}
@@ -201,7 +271,7 @@ const AssignmentCreator: React.FC = () => {
 											{rubric.maxTotalScore} Puntos
 										</div>
 									</div>
-								))}
+									))}
 							</div>
 							{rubricsLoading && (
 								<p className="text-[10px] text-gray-400 mt-2 animate-pulse text-center">

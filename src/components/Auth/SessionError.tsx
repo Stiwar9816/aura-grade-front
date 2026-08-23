@@ -1,11 +1,6 @@
-import type {AuthErrorCode} from "@/actions/auth";
+import type { SessionErrorProps } from "@/interface";
 
-interface SessionErrorProps {
-	code: Extract<AuthErrorCode, "RATE_LIMITED" | "SERVICE_UNAVAILABLE">;
-	message?: string | null;
-}
-
-export const SessionError = ({code, message}: SessionErrorProps) => (
+export const SessionError = ({ code, message }: SessionErrorProps) => (
 	<div className="min-h-screen flex items-center justify-center bg-background-bone px-6">
 		<div className="max-w-md text-center rounded-2xl bg-white p-8 shadow-lg">
 			<h1 className="text-xl font-semibold text-gray-900">

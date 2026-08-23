@@ -4,6 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faExclamationTriangle,
   faFileText,
+  faHourglass,
+  faHourglassHalf,
   faSearch,
 } from "@fortawesome/free-solid-svg-icons";
 import { useConfirm } from "@/context/ConfirmContext";
@@ -78,7 +80,9 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
       {/* Loading State */}
       {loading && (
         <div className="card p-12 text-center">
-          <div className="text-4xl mb-4">⏳</div>
+          <div className="text-4xl mb-4">
+            <FontAwesomeIcon icon={faHourglassHalf} />
+          </div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">
             Cargando rúbricas...
           </h3>
@@ -113,9 +117,18 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
                     <FontAwesomeIcon icon={faFileText} />
                   </span>
                 </div>
-                <span className="shrink-0 text-sm font-semibold text-electric-600">
-                  {template.maxTotalScore} pts
-                </span>
+                <div className="text-right">
+                  <span className="block shrink-0 text-sm font-semibold text-electric-600">
+                    {template.maxTotalScore} pts
+                  </span>
+                  <span className="mt-1 block text-[10px] font-bold uppercase text-gray-400">
+                    {template.status === "DRAFT"
+                      ? "Borrador"
+                      : template.status === "ARCHIVED"
+                        ? "Archivada"
+                        : `Publicada · v${template.version}`}
+                  </span>
+                </div>
               </div>
 
               <h3 className="text-lg font-bold text-gray-900 mb-2 group-hover:text-electric-500 transition-colors line-clamp-2 min-h-[3.5rem]">
@@ -138,9 +151,9 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
                 <button
                   onClick={() => onSelectTemplate(template)}
                   className="w-full px-4 py-2.5 bg-electric-500 text-white rounded-lg hover:bg-electric-600 text-sm font-semibold transition-all shadow-sm hover:shadow-md"
-                  title="Usar plantilla"
+                  title="Abrir rúbrica"
                 >
-                  Usar
+                  {template.status === "PUBLISHED" ? "Nueva versión" : "Editar"}
                 </button>
               </div>
             </div>

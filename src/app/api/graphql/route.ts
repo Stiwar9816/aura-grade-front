@@ -61,14 +61,20 @@ export async function POST(request: NextRequest) {
 			accept: request.headers.get("accept") || "application/json",
 			"content-type": contentType,
 		});
-		if (contentType.toLowerCase().startsWith("multipart/form-data")) {
+		const isMultipart = contentType.toLowerCase().startsWith("multipart/form-data");
+		if (isMultipart) {
 			backendHeaders.set("apollo-require-preflight", "true");
 		}
+
+		const requestBody = isMultipart
+			? await request.arrayBuffer()
+			: request.body;
+
 		const backendResponse = await fetchBackendGraphql(request, {
 			method: "POST",
 			headers: backendHeaders,
 			sessionToken,
-			body: request.body,
+			body: requestBody,
 			duplex: "half",
 		});
 		const body = await backendResponse.arrayBuffer();

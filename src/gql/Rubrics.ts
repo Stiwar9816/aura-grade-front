@@ -6,6 +6,10 @@ const RUBRIC_FIELDS = gql`
 		title
 		description
 		maxTotalScore
+		academicLevel
+		status
+		source
+		version
 		user {
 			id
 		}
@@ -28,7 +32,16 @@ export const RUBRIC_BY_ID: DocumentNode = gql`
 			criteria {
 				id
 				title
+				description
 				maxPoints
+				weight
+				sortOrder
+				levels {
+					label
+					minScore
+					maxScore
+					description
+				}
 			}
 		}
 	}
@@ -60,4 +73,49 @@ export const DELETE_RUBRIC: DocumentNode = gql`
 			title
 		}
 	}
+`;
+
+export const GENERATE_RUBRIC_DRAFT: DocumentNode = gql`
+	mutation GenerateRubricDraft($input: GenerateRubricInput!) {
+		generateRubricDraft(input: $input) {
+			title
+			description
+			academicLevel
+			generationToken
+			criteria {
+				title
+				description
+				weight
+				levels {
+					label
+					minScore
+					maxScore
+					description
+				}
+			}
+		}
+	}
+`;
+
+export const SAVE_RUBRIC_DRAFT: DocumentNode = gql`
+	mutation SaveRubricDraft($input: SaveRubricDraftInput!) {
+		saveRubricDraft(input: $input) {
+			...RubricFields
+			criteria {
+				id
+				title
+				description
+				maxPoints
+				weight
+				sortOrder
+				levels {
+					label
+					minScore
+					maxScore
+					description
+				}
+			}
+		}
+	}
+	${RUBRIC_FIELDS}
 `;

@@ -1,11 +1,5 @@
 import React from "react";
-
-interface SectionHeaderProps {
-	title: string;
-	description?: string;
-	actions?: React.ReactNode;
-	className?: string;
-}
+import type { SectionHeaderProps } from "@/interface";
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({
 	title,

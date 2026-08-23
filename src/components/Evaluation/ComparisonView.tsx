@@ -1,5 +1,7 @@
 import React, {useState} from "react";
 import {ComparisonViewProps} from "@/interface";
+import { faLightbulb } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 export const ComparisonView: React.FC<ComparisonViewProps> = ({
 	studentText,
@@ -136,7 +138,9 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
 										{criterion.suggestion && (
 											<div className="bg-blue-50 p-3 rounded mt-3">
 												<div className="flex items-start gap-2">
-													<span className="text-blue-500 mt-0.5">💡</span>
+													<span className="text-blue-500 mt-0.5">
+														<FontAwesomeIcon icon={faLightbulb} />
+													</span>
 													<div>
 														<span className="font-medium text-blue-900 text-sm block">
 															Sugerencia

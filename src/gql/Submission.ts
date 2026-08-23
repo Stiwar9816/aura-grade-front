@@ -45,6 +45,7 @@ const SUBMISSION_FIELDS = gql`
 					id
 					title
 					maxPoints
+					weight
 				}
 			}
 		}
@@ -103,6 +104,7 @@ export const GET_TEACHER_EVALUATIONS: DocumentNode = gql`
 							id
 							title
 							maxPoints
+							weight
 						}
 					}
 				}

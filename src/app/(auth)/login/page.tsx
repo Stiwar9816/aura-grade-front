@@ -10,6 +10,7 @@ import {
 	faChartColumn,
 	faClock,
 	faHeadSideVirus,
+	faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
 
 const LoginPage: React.FC = () => {
@@ -119,7 +120,9 @@ const LoginPage: React.FC = () => {
 				{error && (
 					<div className="p-4 bg-red-50 border border-red-200 rounded-xl">
 						<div className="flex items-center gap-3">
-							<span className="text-red-600">⚠️</span>
+							<span className="text-red-600"><FontAwesomeIcon
+																	icon={faTriangleExclamation}
+																/></span>
 							<span className="text-red-700">{error}</span>
 						</div>
 					</div>

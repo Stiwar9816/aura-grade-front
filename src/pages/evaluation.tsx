@@ -539,12 +539,18 @@ const EvaluationPage: React.FC = () => {
 				throw new Error(
 					`La puntuación de “${criterion.title}” debe estar entre 0 y ${criterion.maxPoints}.`,
 				);
-			if (score === undefined && !feedback) return [];
+			if (score === undefined)
+				throw new Error(`Debes calificar el criterio “${criterion.title}”.`);
+			const weightedContribution = Number(
+				((score * criterion.weight) / 100).toFixed(2),
+			);
 			return [
 				{
 					criteriaId: criterion.id,
 					name: criterion.title,
 					score: score ?? 0,
+					weight: criterion.weight,
+					weightedContribution,
 					feedback,
 					suggestion: "",
 				},
@@ -641,18 +647,7 @@ const EvaluationPage: React.FC = () => {
 
 	const handleCreateManualDraft = async () => {
 		if (!submissionId || !canCreateManualDraft) return;
-		const parsedScore = Number(finalScore);
 		const feedback = finalFeedback.trim();
-		if (
-			!Number.isFinite(parsedScore) ||
-			parsedScore < 0 ||
-			parsedScore > maxScore
-		) {
-			const message = `La nota inicial debe estar entre 0 y ${maxScore}.`;
-			setPublishError(message);
-			notifyWarning(message);
-			return;
-		}
 		if (!feedback) {
 			const message = "La retroalimentación manual es obligatoria.";
 			setPublishError(message);
@@ -672,6 +667,11 @@ const EvaluationPage: React.FC = () => {
 			notifyWarning(message);
 			return;
 		}
+		const parsedScore = Number(
+			detailedFeedback
+				.reduce((sum, criterion) => sum + criterion.weightedContribution, 0)
+				.toFixed(2),
+		);
 
 		const notificationId = notifyLoading("Creando borrador manual...");
 		try {
@@ -716,7 +716,7 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
-		const parsedScore = Number(finalScore || scoreDraft);
+		let parsedScore = Number(finalScore || scoreDraft);
 		const feedbackToPublish = (finalFeedback || feedbackDraft || "").trim();
 
 		if (
@@ -758,7 +758,14 @@ const EvaluationPage: React.FC = () => {
 			| ReturnType<typeof buildManualDetailedFeedback>
 			| undefined;
 		try {
-			if (isManualEvaluation) detailedFeedback = buildManualDetailedFeedback();
+			if (isManualEvaluation) {
+				detailedFeedback = buildManualDetailedFeedback();
+				parsedScore = Number(
+					detailedFeedback
+						.reduce((sum, criterion) => sum + criterion.weightedContribution, 0)
+						.toFixed(2),
+				);
+			}
 		} catch (criterionError) {
 			const message =
 				criterionError instanceof Error
@@ -1408,7 +1415,7 @@ const EvaluationPage: React.FC = () => {
 																		{criterion.title}
 																	</span>
 																	<span className="text-xs text-gray-500">
-																		Máx. {criterion.maxPoints}
+																		{criterion.weight}% · escala 0.0–5.0
 																	</span>
 																</div>
 																<div className="grid grid-cols-1 gap-2 sm:grid-cols-[110px_1fr]">

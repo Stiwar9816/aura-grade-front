@@ -8,6 +8,8 @@ import {
 	CREATE_RUBRIC,
 	UPDATE_RUBRIC,
 	DELETE_RUBRIC,
+	GENERATE_RUBRIC_DRAFT,
+	SAVE_RUBRIC_DRAFT,
 } from "@/gql/Rubrics";
 import {
 	notifyError,
@@ -25,9 +27,36 @@ import type {
 	RubricTemplate,
 	UpdateRubricInput,
 	RubricCriteria,
+	GenerateRubricInput,
+	GeneratedRubric,
 } from "@/interface";
 import {UserRole} from "@/interface";
-import {useAuth, useCriteria} from "@/hooks";
+import {useAuth} from "@/hooks";
+
+const mapTemplateToRubric = (template: RubricTemplate): Rubric => {
+	const criteria = (template.criteria || []).map((criterion, index) => ({
+		...criterion,
+		description: criterion.description || "",
+		weight: Number(criterion.weight || 0),
+		maxPoints: 5,
+		sortOrder: criterion.sortOrder ?? index,
+		levels: criterion.levels || [],
+	}));
+	return {
+		id: template.id,
+		name: template.title,
+		description: template.description,
+		criteria,
+		totalWeight: Number(
+			criteria.reduce((sum, criterion) => sum + criterion.weight, 0).toFixed(2),
+		),
+		isActive: template.status === "PUBLISHED",
+		academicLevel: template.academicLevel,
+		status: template.status,
+		source: template.source,
+		version: template.version,
+	};
+};
 
 export const useRubrics = () => {
 	const [operationLoading, setOperationLoading] = useState(false);
@@ -39,19 +68,12 @@ export const useRubrics = () => {
 		criteria: [],
 		totalWeight: 0,
 		isActive: false,
+		academicLevel: "UNIVERSITARIO",
 	});
-const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
+	const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 		"library",
 	);
 	const [isSaving, setIsSaving] = useState(false);
-
-	const {
-		deletedCriteriaIds,
-		setDeletedCriteriaIds,
-		deleteCriterion,
-		createCriterion,
-		updateCriterion,
-	} = useCriteria();
 
 	const {user} = useAuth();
 
@@ -84,6 +106,13 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 
 	// Mutation: Delete rubric
 	const [deleteRubricMutation] = useMutation(DELETE_RUBRIC, {
+		refetchQueries: [{query: ALL_RUBRICS}],
+	});
+
+	const [generateRubricMutation, {loading: isGenerating}] = useMutation(
+		GENERATE_RUBRIC_DRAFT,
+	);
+	const [saveRubricDraftMutation] = useMutation(SAVE_RUBRIC_DRAFT, {
 		refetchQueries: [{query: ALL_RUBRICS}],
 	});
 
@@ -182,6 +211,7 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 						criteria: [],
 						totalWeight: 0,
 						isActive: false,
+						academicLevel: "UNIVERSITARIO",
 					});
 				}
 			}
@@ -198,178 +228,114 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 	const handleStartRubric = async (data: {
 		title: string;
 		description: string;
+		academicLevel: Rubric["academicLevel"];
 	}) => {
 		if (!user?.id) {
 			notifyError("No se ha identificado el usuario.");
 			return;
 		}
 
-		const notificationId = notifyLoading("Creando rúbrica...");
-		try {
-			const created = await createRubric({
-				title: data.title,
-				description: data.description,
-				maxTotalScore: 0,
-			});
+		setCurrentRubric({
+			id: "",
+			name: data.title,
+			description: data.description,
+			criteria: [],
+			totalWeight: 0,
+			isActive: false,
+			academicLevel: data.academicLevel,
+			status: "DRAFT",
+			source: "MANUAL",
+			version: 1,
+		});
+		setActiveTab("builder");
+		notifyInfo("Borrador manual iniciado. Agrega criterios antes de guardarlo.");
+	};
 
-			if (created) {
-				setCurrentRubric({
-					id: created.id,
-					name: created.title,
-					description: created.description,
-					criteria: [],
-					totalWeight: 0,
-					isActive: false,
-				});
-				setActiveTab("builder");
-				notifySuccess(
-					`Rúbrica "${created.title}" creada. Agrega criterios para completarla.`,
-					{id: notificationId},
-				);
-			} else {
-				throw new Error("El servidor no retornó la rúbrica creada.");
-			}
-		} catch (error) {
-			console.error("Error al iniciar rúbrica:", error);
-			notifyError("Error al iniciar la creación de la rúbrica.", {
+	const handleGenerateRubric = async (input: GenerateRubricInput) => {
+		const notificationId = notifyLoading("Generando rúbrica con IA...");
+		try {
+			const result = (await generateRubricMutation({variables: {input}})) as {
+				data?: {generateRubricDraft?: GeneratedRubric};
+			};
+			const generated = result.data?.generateRubricDraft;
+			if (!generated) throw new Error("La IA no devolvió un borrador válido.");
+			setCurrentRubric({
+				id: "",
+				name: generated.title,
+				description: generated.description,
+				academicLevel: generated.academicLevel,
+				criteria: generated.criteria.map((criterion, index) => ({
+					...criterion,
+					id: `ai-${Date.now()}-${index}`,
+					maxPoints: 5,
+					sortOrder: index,
+				})),
+				totalWeight: generated.criteria.reduce(
+					(sum, criterion) => sum + criterion.weight,
+					0,
+				),
+				isActive: false,
+				status: "DRAFT",
+				source: "AI",
+				version: 1,
+				generationToken: generated.generationToken,
+			});
+			setActiveTab("builder");
+			notifySuccess("Borrador generado. Revísalo antes de guardarlo.", {
 				id: notificationId,
 			});
+		} catch (error) {
+			notifyError(
+				error instanceof Error ? error.message : "No se pudo generar la rúbrica.",
+				{id: notificationId},
+			);
+			throw error;
 		}
 	};
 
-	const handleSaveRubric = async (rubricToSave: Rubric = currentRubric) => {
+	const handleSaveRubric = async (
+		rubricToSave: Rubric = currentRubric,
+	): Promise<RubricTemplate | null> => {
 		if (!user?.id) {
 			notifyError("No se ha identificado el usuario.");
-			return;
+			return null;
 		}
 
 		setIsSaving(true);
 		const notificationId = notifyLoading("Guardando rúbrica y criterios...");
 		try {
-			// 1. Save Rubric Header
-			// Check if it's a real ID (existing rubric) or temp ID (new rubric)
-			const isNewRubric = !rubricToSave.id || rubricToSave.id.length < 20;
-			let savedRubricId = "";
-
-			if (!isNewRubric) {
-				// UPDATE
-				const updatePayload = {
-					id: rubricToSave.id,
-					title: rubricToSave.name,
-					description: rubricToSave.description,
-					maxTotalScore: rubricToSave.criteria.reduce(
-						(acc, c) => acc + c.maxPoints,
-						0,
-					),
-				};
-				const updated = await updateRubric(updatePayload);
-				if (updated) savedRubricId = updated.id;
-				console.log("Rúbrica actualizada");
-			} else {
-				// CREATE
-				const createPayload = {
-					title: rubricToSave.name,
-					description: rubricToSave.description,
-					maxTotalScore: rubricToSave.criteria.reduce(
-						(acc, c) => acc + c.maxPoints,
-						0,
-					),
-				};
-				const created = await createRubric(createPayload);
-				if (created) savedRubricId = created.id;
-				console.log("Rúbrica creada", savedRubricId);
-			}
-
-			if (!savedRubricId) throw new Error("No se pudo guardar la rúbrica");
-
-			// 2. Process Criteria Deletions
-			if (deletedCriteriaIds.length > 0) {
-				await Promise.all(deletedCriteriaIds.map((id) => deleteCriterion(id)));
-				setDeletedCriteriaIds([]);
-			}
-
-			// 3. Process Criteria Upserts
-			await Promise.all(
-				rubricToSave.criteria.map(async (criterion) => {
-					const levelsPayload =
-						criterion.levels && criterion.levels.length > 0
-							? criterion.levels.map((level) => ({
-									description: level.description,
-									score: level.score,
-								}))
-							: [
-									{
-										description: criterion.description || "Criterio General",
-										score: criterion.maxPoints,
-									},
-								];
-
-					const payload = {
-						rubric: savedRubricId,
-						title: criterion.title,
-						maxPoints: criterion.maxPoints,
-						levels: levelsPayload,
-					};
-
-					const isNew = criterion.id.length < 20;
-
-					if (isNew) {
-						await createCriterion(payload);
-					} else {
-						try {
-							await updateCriterion({
-								id: criterion.id,
-								title: payload.title,
-								maxPoints: payload.maxPoints,
-								levels: payload.levels,
-							});
-						} catch (err: unknown) {
-							const errorMessage =
-								err instanceof Error ? err.message : JSON.stringify(err);
-							if (
-								errorMessage.includes("not found") ||
-								errorMessage.includes("no existe")
-							) {
-								await createCriterion(payload);
-							} else {
-								throw err;
-							}
-						}
-					}
-				}),
-			);
-
+			if (rubricToSave.totalWeight !== 100)
+				throw new Error("Los porcentajes deben sumar exactamente 100%.");
+			const result = (await saveRubricDraftMutation({
+				variables: {
+					input: {
+						...(rubricToSave.id ? {id: rubricToSave.id} : {}),
+						title: rubricToSave.name,
+						description: rubricToSave.description,
+						academicLevel: rubricToSave.academicLevel,
+						criteria: rubricToSave.criteria.map((criterion) => ({
+							title: criterion.title,
+							description: criterion.description,
+							weight: criterion.weight,
+							levels: criterion.levels.map((level) => ({
+								label: level.label,
+								description: level.description,
+							})),
+						})),
+						...(rubricToSave.generationToken
+							? {generationToken: rubricToSave.generationToken}
+							: {}),
+					},
+				},
+			})) as {data?: {saveRubricDraft?: RubricTemplate}};
+			const saved = result.data?.saveRubricDraft;
+			if (!saved) throw new Error("No se pudo guardar la rúbrica.");
+			setCurrentRubric(mapTemplateToRubric(saved));
 			await refetch();
-			const freshRubric = await loadRubric(savedRubricId);
-			if (freshRubric) {
-				setCurrentRubric({
-					id: freshRubric.id,
-					name: freshRubric.title,
-					description: freshRubric.description,
-					criteria: freshRubric.criteria
-						? freshRubric.criteria.map((c: RubricCriteria) => ({
-								id: c.id,
-								title: c.title,
-								description:
-									c.description ||
-									(c.levels && c.levels[0] ? c.levels[0].description : ""),
-								weight: c.weight || 0,
-								maxPoints: c.maxPoints,
-								levels: c.levels,
-							}))
-						: [],
-					totalWeight: freshRubric.criteria
-						? freshRubric.criteria.reduce(
-								(acc: number, c: RubricCriteria) => acc + (c.weight || 0),
-								0,
-							)
-						: 0,
-					isActive: false,
-				});
-			}
 			notifySuccess(`Rúbrica "${rubricToSave.name}" guardada correctamente.`, {
 				id: notificationId,
 			});
+			return saved;
 		} catch (error: unknown) {
 			console.error("Error al guardar:", error);
 			notifyError(
@@ -378,6 +344,7 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 					: "Error al guardar la rúbrica y sus criterios.",
 				{id: notificationId},
 			);
+			return null;
 		} finally {
 			setIsSaving(false);
 		}
@@ -387,30 +354,7 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 		try {
 			const fullRubric = await loadRubric(template.id);
 			if (fullRubric) {
-				setCurrentRubric({
-					id: fullRubric.id,
-					name: fullRubric.title,
-					description: fullRubric.description,
-					criteria: fullRubric.criteria
-						? fullRubric.criteria.map((c: RubricCriteria) => ({
-								id: c.id,
-								title: c.title,
-								description:
-									c.description ||
-									(c.levels && c.levels[0] ? c.levels[0].description : ""),
-								weight: c.weight || 0,
-								maxPoints: c.maxPoints,
-								levels: c.levels,
-							}))
-						: [],
-					totalWeight: fullRubric.criteria
-						? fullRubric.criteria.reduce(
-								(acc: number, c: RubricCriteria) => acc + (c.weight || 0),
-								0,
-							)
-						: 100,
-					isActive: true,
-				});
+				setCurrentRubric(mapTemplateToRubric(fullRubric));
 				setActiveTab("builder");
 			}
 		} catch (error) {
@@ -477,10 +421,6 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 	const handleDeleteCriteria = (id: string) => {
 		setCurrentRubric((prev) => {
 			const criteriaToDelete = prev.criteria.find((c) => c.id === id);
-			if (criteriaToDelete && id.length > 20) {
-				setDeletedCriteriaIds((ids) => [...ids, id]);
-			}
-
 			const newCriteria = prev.criteria.filter((c) => c.id !== id);
 			if (criteriaToDelete) {
 				notifyInfo(`Criterio "${criteriaToDelete.title}" eliminado del borrador.`);
@@ -512,12 +452,14 @@ const [activeTab, setActiveTab] = useState<"builder" | "library" | "create">(
 		currentRubric,
 		handleSaveRubric,
 		handleStartRubric,
+		handleGenerateRubric,
 		handleSelectTemplate,
 		handleDeleteRubric,
 		handleAddCriteria,
 		handleUpdateCriteria,
 		handleDeleteCriteria,
 		isSaving,
+		isGenerating,
 		setActiveTab,
 		setCurrentRubric,
 	};

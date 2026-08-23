@@ -9,6 +9,7 @@ import {
 	faArrowLeft,
 	faArrowRight,
 	faChalkboardTeacher,
+	faCheck,
 	faExclamationTriangle,
 	faUserGraduate,
 	faUserShield,
@@ -490,8 +491,8 @@ const RegisterPage: React.FC = () => {
 											}
 										>
 											{formData.password.length >= PASSWORD_MIN_LENGTH
-												? "✓"
-												: "○"}
+												? <FontAwesomeIcon icon={faCheck} />
+												: <FontAwesomeIcon icon={faExclamationTriangle} />}
 										</span>
 										<span>Al menos {PASSWORD_MIN_LENGTH} caracteres</span>
 									</li>

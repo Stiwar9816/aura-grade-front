@@ -1,12 +1,5 @@
 import React from "react";
-
-interface CardProps {
-	children: React.ReactNode;
-	className?: string;
-	noPadding?: boolean;
-	hoverable?: boolean;
-	onClick?: () => void;
-}
+import type { CardProps } from "@/interface";
 
 const Card: React.FC<CardProps> = ({
 	children,

@@ -58,6 +58,7 @@ export interface SubmissionDetail {
 				id: string;
 				title: string;
 				maxPoints: number;
+				weight: number;
 				levels?: {
 					description: string;
 					score: number;

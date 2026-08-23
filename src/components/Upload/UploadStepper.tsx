@@ -41,7 +41,7 @@ const UploadStepper: React.FC<UploadStepperProps> = ({
 		if (status === "completed") {
 			return (
 				<div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center">
-					<span className="text-white text-lg">✓</span>
+					<FontAwesomeIcon icon={faCheck} />
 				</div>
 			);
 		}

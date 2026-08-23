@@ -12,7 +12,6 @@ import {
   faChevronLeft,
   faChevronRight,
   faGlobe,
-  faMagnifyingGlass,
   faPen,
   faPlus,
   faPowerOff,
@@ -608,10 +607,11 @@ const InstitutionsPage = () => {
                       className="mb-1 block text-sm font-medium text-gray-700"
                       htmlFor="taxId"
                     >
-                      NIT / identificación
+                      NIT / identificación *
                     </label>
                     <input
                       id="taxId"
+                      required
                       maxLength={40}
                       className="input-primary"
                       value={form.taxId || ""}

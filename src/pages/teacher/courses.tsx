@@ -8,11 +8,14 @@ import { USER_ROLE_STUDENTS } from "@/gql/User";
 import { useCourse } from "@/hooks";
 import { UserRole, UsersStats } from "@/interface";
 import {
+  faCancel,
   faEdit,
   faGraduationCap,
   faMagnifyingGlass,
   faRemove,
   faTrash,
+  faXmark,
+  faXmarkCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import SectionHeader from "@/components/Common/SectionHeader";
@@ -380,7 +383,9 @@ const CourseManagement: React.FC = () => {
                           {(!selectedCourse.users ||
                             selectedCourse.users.length === 0) && (
                             <div className="col-span-full py-12 text-center bg-slate-50 rounded-[2rem] border-2 border-dashed border-slate-200 dark:bg-slate-900/70 dark:border-slate-700">
-                              <p className="text-4xl mb-2">🎈</p>
+                              <p className="text-4xl mb-2"><FontAwesomeIcon
+                                                  icon={faGraduationCap}
+                                                /></p>
                               <p className="text-slate-600 font-medium dark:text-slate-300">
                                 Aún no hay estudiantes en este curso.
                               </p>

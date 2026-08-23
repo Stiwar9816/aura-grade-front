@@ -1,18 +1,5 @@
+import { BadgeProps } from "@/interface";
 import React from "react";
-
-type BadgeVariant =
-	| "default"
-	| "success"
-	| "warning"
-	| "error"
-	| "info"
-	| "electric";
-
-interface BadgeProps {
-	children: React.ReactNode;
-	variant?: BadgeVariant;
-	className?: string;
-}
 
 const Badge: React.FC<BadgeProps> = ({
 	children,

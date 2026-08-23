@@ -3,17 +3,29 @@ import Layout from "@/components/Layout";
 import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faBook, faBookOpen, faChartColumn, faCloudArrowUp, faComment, faComments, faEnvelope, faLightbulb, faPlayCircle, faRobot, faSearch, faUser } from "@fortawesome/free-solid-svg-icons";
 
 const HelpPage: React.FC = () => {
 	const [activeCategory, setActiveCategory] = useState("general");
 	const [searchQuery, setSearchQuery] = useState("");
 
 	const categories = [
-		{id: "general", name: "General", icon: "📚"},
-		{id: "submissions", name: "Entregas", icon: "📤"},
-		{id: "grading", name: "Calificaciones", icon: "📊"},
-		{id: "ai", name: "IA y Evaluación", icon: "🤖"},
-		{id: "account", name: "Mi Cuenta", icon: "👤"},
+		{id: "general", name: "General", icon: <FontAwesomeIcon
+										icon={faBookOpen}
+									/>},
+		{id: "submissions", name: "Entregas", icon: <FontAwesomeIcon
+												icon={faCloudArrowUp}
+											/>},
+		{id: "grading", name: "Calificaciones", icon: <FontAwesomeIcon
+												icon={faChartColumn}
+											/>},
+		{id: "ai", name: "IA y Evaluación", icon: <FontAwesomeIcon
+												icon={faRobot}
+											/>},
+		{id: "account", name: "Mi Cuenta", icon: <FontAwesomeIcon
+												icon={faUser}
+											/>},
 	];
 
 	const faqs = {
@@ -117,7 +129,10 @@ const HelpPage: React.FC = () => {
 					{/* Header con búsqueda */}
 					<Card className="mb-6">
 						<div className="text-center mb-6">
-							<div className="text-4xl mb-4">💡</div>
+							<div className="text-4xl mb-4"><FontAwesomeIcon
+																	icon={faLightbulb}
+																	size="2xl"
+																/></div>
 							<h2 className="text-2xl font-bold text-gray-900 mb-2">
 								¿En qué podemos ayudarte?
 							</h2>
@@ -176,7 +191,9 @@ const HelpPage: React.FC = () => {
 							{/* Contacto */}
 							<Card className="mt-6 bg-gradient-to-br from-electric-50 to-cyan-50">
 								<div className="text-center">
-									<div className="text-3xl mb-3">📧</div>
+									<div className="text-3xl mb-3"><FontAwesomeIcon
+																			icon={faEnvelope}
+																		/></div>
 									<h4 className="font-bold text-gray-900 mb-2">
 										¿Necesitas más ayuda?
 									</h4>
@@ -234,7 +251,9 @@ const HelpPage: React.FC = () => {
 										))
 									) : (
 										<div className="text-center py-12">
-											<div className="text-4xl mb-4">🔍</div>
+											<div className="text-4xl mb-4"><FontAwesomeIcon
+																					icon={faSearch}
+																				/></div>
 											<h3 className="font-bold text-gray-900 mb-2">
 												No se encontraron resultados
 											</h3>
@@ -249,7 +268,9 @@ const HelpPage: React.FC = () => {
 							{/* Recursos adicionales */}
 							<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
 								<Card className="text-center hover:shadow-lg transition-shadow cursor-pointer">
-									<div className="text-3xl mb-3">📖</div>
+									<div className="text-3xl mb-3"><FontAwesomeIcon
+																			icon={faBook}
+																		/></div>
 									<h4 className="font-bold text-gray-900 mb-1">
 										Documentación
 									</h4>
@@ -259,7 +280,9 @@ const HelpPage: React.FC = () => {
 								</Card>
 
 								<Card className="text-center hover:shadow-lg transition-shadow cursor-pointer">
-									<div className="text-3xl mb-3">🎥</div>
+									<div className="text-3xl mb-3"><FontAwesomeIcon
+															icon={faPlayCircle}
+														/></div>
 									<h4 className="font-bold text-gray-900 mb-1">
 										Video Tutoriales
 									</h4>
@@ -269,7 +292,9 @@ const HelpPage: React.FC = () => {
 								</Card>
 
 								<Card className="text-center hover:shadow-lg transition-shadow cursor-pointer">
-									<div className="text-3xl mb-3">💬</div>
+									<div className="text-3xl mb-3"><FontAwesomeIcon
+																			icon={faComments}
+																		/></div>
 									<h4 className="font-bold text-gray-900 mb-1">Comunidad</h4>
 									<p className="text-sm text-gray-600">
 										Conecta con otros usuarios
