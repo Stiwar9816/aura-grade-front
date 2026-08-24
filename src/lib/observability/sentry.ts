@@ -1,5 +1,7 @@
 import type { ErrorEvent, Event, Log } from "@sentry/nextjs";
 
+export type SentrySurface = "browser" | "server" | "edge" | "bff";
+
 const sensitiveKey =
   /authorization|cookie|password|token|secret|credential|api.?key|otp|document/i;
 const sensitiveValuePatterns = [
@@ -55,11 +57,53 @@ export const sanitizeSentryEvent = <T extends Event | ErrorEvent>(event: T): T =
   return event;
 };
 
+const classifyFeature = (path: string): string => {
+  if (/\/(login|register|forgot-password|create-password)|\/api\/auth\b/.test(path)) {
+    return "auth";
+  }
+  if (/\/api\/graphql\b/.test(path)) return "graphql";
+  if (/\/notifications?\b/.test(path)) return "notifications";
+  if (/\/admin\b/.test(path)) return "admin";
+  if (/\/rubrics?\b/.test(path)) return "rubrics";
+  if (/\/courses?\b/.test(path)) return "courses";
+  if (/\/assignments?\b/.test(path)) return "assignments";
+  if (/\/(evaluation|upload|submissions?)\b/.test(path)) return "evaluation";
+  if (/\/(profile|settings)\b/.test(path)) return "account";
+  return "application";
+};
+
+export const prepareSentryEvent = <T extends Event | ErrorEvent>(
+  event: T,
+  defaultSurface: Exclude<SentrySurface, "bff">,
+): T => {
+  const path = event.request?.url || event.transaction || "";
+  const surface: SentrySurface = /\/api\//.test(path) ? "bff" : defaultSurface;
+
+  event.tags = {
+    ...event.tags,
+    surface,
+    feature: classifyFeature(path),
+  };
+
+  return sanitizeSentryEvent(event);
+};
+
 export const sanitizeSentryLog = (log: Log): Log => ({
   ...log,
   message: redactString(String(log.message)) as Log["message"],
   attributes: sanitize(log.attributes) as Log["attributes"],
 });
+
+export const prepareSentryLog = (log: Log, surface: SentrySurface): Log => {
+  const sanitized = sanitizeSentryLog(log);
+  return {
+    ...sanitized,
+    attributes: {
+      ...sanitized.attributes,
+      surface,
+    },
+  };
+};
 
 export const parseSampleRate = (value: string | undefined): number => {
   const rate = Number(value ?? 0);

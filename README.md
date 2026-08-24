@@ -72,6 +72,11 @@ subirlos. No se publican páginas ni endpoints para generar errores de prueba;
 Sentry captura únicamente los errores y logs producidos por el funcionamiento
 normal de la aplicación.
 
+Los eventos incluyen las etiquetas `surface` (`browser`, `server`, `edge` o
+`bff`) y `feature` para crear alertas precisas. Cuando existe una sesión, se
+asocia únicamente el identificador interno del usuario y su rol; no se envían
+correo, IP, cookies ni datos personales.
+
 ## 🚀 Cómo Empezar
 
 Primero, instala las dependencias:

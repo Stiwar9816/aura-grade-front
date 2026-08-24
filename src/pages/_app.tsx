@@ -8,6 +8,7 @@ import { AuthProvider } from "@/context/AuthContext";
 import PushSubscriptionSync from "@/components/Notifications/PushSubscriptionSync";
 import { ConfirmProvider } from "@/context/ConfirmContext";
 import { useAuth } from "@/hooks";
+import SentryUserSync from "@/components/Observability/SentryUserSync";
 import {
   SETTINGS_UPDATED_EVENT,
   applyStoredTheme,
@@ -48,6 +49,7 @@ export default function App({ Component, pageProps }: AppProps) {
   return (
     <ApolloProvider client={client}>
       <AuthProvider>
+        <SentryUserSync />
         <ConfirmProvider>
           <ThemeController />
           <PushSubscriptionSync />

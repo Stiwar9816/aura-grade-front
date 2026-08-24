@@ -1,8 +1,8 @@
 import * as Sentry from "@sentry/nextjs";
 import {
   parseSampleRate,
-  sanitizeSentryEvent,
-  sanitizeSentryLog,
+  prepareSentryEvent,
+  prepareSentryLog,
 } from "./src/lib/observability/sentry";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
@@ -15,6 +15,6 @@ Sentry.init({
   sendDefaultPii: false,
   enableLogs: true,
   tracesSampleRate: parseSampleRate(process.env.NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE),
-  beforeSend: sanitizeSentryEvent,
-  beforeSendLog: sanitizeSentryLog,
+  beforeSend: (event) => prepareSentryEvent(event, "edge"),
+  beforeSendLog: (log) => prepareSentryLog(log, "edge"),
 });

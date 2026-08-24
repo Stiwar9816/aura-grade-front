@@ -3,6 +3,7 @@ import { Toaster } from "sonner";
 import "@/styles/globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { ConfirmProvider } from "@/context/ConfirmContext";
+import SentryUserSync from "@/components/Observability/SentryUserSync";
 
 export const metadata: Metadata = {
   title: "Aura Grade - Clasificación asistida por IA",
@@ -20,6 +21,7 @@ export default function RootLayout({
     <html lang="es" suppressHydrationWarning data-lt-installed>
       <body className="antialiased">
         <AuthProvider>
+          <SentryUserSync />
           <ConfirmProvider>{children}</ConfirmProvider>
           <Toaster richColors closeButton position="bottom-right" />
         </AuthProvider>

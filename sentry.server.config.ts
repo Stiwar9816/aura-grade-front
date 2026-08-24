@@ -1,8 +1,8 @@
 import * as Sentry from "@sentry/nextjs";
 import {
   parseSampleRate,
-  sanitizeSentryEvent,
-  sanitizeSentryLog,
+  prepareSentryEvent,
+  prepareSentryLog,
 } from "./src/lib/observability/sentry";
 
 const dsn = process.env.NEXT_PUBLIC_SENTRY_DSN;
@@ -18,6 +18,6 @@ Sentry.init({
   integrations: [
     Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
   ],
-  beforeSend: sanitizeSentryEvent,
-  beforeSendLog: sanitizeSentryLog,
+  beforeSend: (event) => prepareSentryEvent(event, "server"),
+  beforeSendLog: (log) => prepareSentryLog(log, "server"),
 });
