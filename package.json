@@ -2,6 +2,7 @@
 	"name": "aura-grade-front",
 	"version": "1.0.0",
 	"private": true,
+	"packageManager": "pnpm@11.23.0",
 	"description": "",
 	"author": "Stiwar Asprilla <stiwar.asprilla1998@gmail.com>",
 	"license": "MIT",
@@ -13,6 +14,7 @@
 	},
 	"dependencies": {
 		"@apollo/client": "^4.1.0",
+		"@sentry/nextjs": "^10.70.0",
 		"date-fns": "^4.1.0",
 		"graphql": "^16.12.0",
 		"jspdf": "4.0.0",

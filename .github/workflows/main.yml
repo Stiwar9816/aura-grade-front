@@ -1,0 +1,55 @@
+name: Frontend CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      NEXT_PUBLIC_SENTRY_ENABLED: ${{ github.event_name == 'push' && 'true' || 'false' }}
+      NEXT_PUBLIC_SENTRY_DSN: ${{ github.event_name == 'push' && vars.NEXT_PUBLIC_SENTRY_DSN || '' }}
+      NEXT_PUBLIC_SENTRY_ENVIRONMENT: ${{ github.event_name == 'push' && 'production' || 'test' }}
+      NEXT_PUBLIC_SENTRY_RELEASE: aura-grade-front@${{ github.sha }}
+      NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE: ${{ github.event_name == 'push' && '0.05' || '0' }}
+      SENTRY_ORG: ${{ github.event_name == 'push' && vars.SENTRY_ORG || '' }}
+      SENTRY_PROJECT: ${{ github.event_name == 'push' && vars.SENTRY_PROJECT || '' }}
+      SENTRY_AUTH_TOKEN: ${{ github.event_name == 'push' && secrets.SENTRY_AUTH_TOKEN || '' }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.23.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Validate Sentry source map configuration
+        if: github.event_name == 'push'
+        run: |
+          test -n "$SENTRY_AUTH_TOKEN" || { echo "::error::Falta el secreto SENTRY_AUTH_TOKEN"; exit 1; }
+          test -n "$SENTRY_ORG" || { echo "::error::Falta la variable SENTRY_ORG"; exit 1; }
+          test -n "$SENTRY_PROJECT" || { echo "::error::Falta la variable SENTRY_PROJECT"; exit 1; }
+          test -n "$NEXT_PUBLIC_SENTRY_DSN" || { echo "::error::Falta la variable NEXT_PUBLIC_SENTRY_DSN"; exit 1; }
+
+      - run: pnpm lint
+      - run: pnpm exec tsc --noEmit
+      - run: pnpm build

@@ -49,6 +49,29 @@ Estas variables son exclusivamente de servidor y nunca deben usar el prefijo
 `NEXT_PUBLIC_`. `AURA_GRADE_BFF_SECRET` debe coincidir con
 `BFF_SHARED_SECRET` del backend.
 
+### Sentry
+
+El frontend utiliza una sola configuración de ejecución para navegador,
+servidor, Edge y rutas BFF:
+
+```dotenv
+NEXT_PUBLIC_SENTRY_ENABLED=true
+NEXT_PUBLIC_SENTRY_DSN=https://public-key@o0.ingest.sentry.io/0
+NEXT_PUBLIC_SENTRY_ENVIRONMENT=production
+NEXT_PUBLIC_SENTRY_RELEASE=aura-grade-front@<git-sha>
+NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE=0.05
+```
+
+La subida de source maps se realiza únicamente en GitHub Actions. Configura el
+secreto `SENTRY_AUTH_TOKEN` y las variables `SENTRY_ORG`, `SENTRY_PROJECT` y
+`NEXT_PUBLIC_SENTRY_DSN`. El token nunca debe usar el prefijo `NEXT_PUBLIC_`.
+
+El workflow usa `stiwardev/aura-grade-front`, asigna como release
+`aura-grade-front@<git-sha>` y elimina los source maps públicos después de
+subirlos. No se publican páginas ni endpoints para generar errores de prueba;
+Sentry captura únicamente los errores y logs producidos por el funcionamiento
+normal de la aplicación.
+
 ## 🚀 Cómo Empezar
 
 Primero, instala las dependencias:
