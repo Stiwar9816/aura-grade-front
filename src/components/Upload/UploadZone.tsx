@@ -6,8 +6,8 @@ import {
 	faRocket,
 	faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import React, {useCallback, useState, useRef} from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import React, { useCallback, useState, useRef } from "react";
 
 interface UploadZoneProps {
 	onUploadStart: (file: File) => void;
@@ -66,7 +66,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 			};
 		}
 
-		return {isValid: true};
+		return { isValid: true };
 	};
 
 	const handleFileSelect = useCallback((selectedFile: File) => {
@@ -230,7 +230,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 						<span className="w-1 h-1 bg-gray-300 rounded-full"></span>
 						<span className="flex items-center gap-1.5">
 							<span className="text-gray-500 text-xs font-bold bg-gray-100 px-1.5 rounded">
-								MAX 15MB
+								MAX 15MB · 100.000 caracteres
 							</span>
 						</span>
 					</div>

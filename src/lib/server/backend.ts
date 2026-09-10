@@ -1,17 +1,15 @@
 import "server-only";
 
-import {randomUUID} from "node:crypto";
-import {isIP} from "node:net";
+import { randomUUID } from "node:crypto";
+import { isIP } from "node:net";
 
 const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
 const TRACEPARENT_PATTERN = /^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/i;
 
 const legacyApiUrl =
-	process.env.AURA_GRADE_APP_URL ||
-	"http://localhost:3000/api";
+	process.env.AURA_GRADE_APP_URL || "http://localhost:3000/api";
 const legacyGraphqlUrl =
-	process.env.NEXT_PUBLIC_GRAPHQL_API_URL ||
-	"http://localhost:3000/graphql";
+	process.env.NEXT_PUBLIC_GRAPHQL_API_URL || "http://localhost:3000/graphql";
 
 const backendOrigin = process.env.AURA_GRADE_API_URL?.replace(/\/+$/, "");
 
@@ -34,11 +32,7 @@ const getBffSecret = () => {
 	return secret;
 };
 
-const trustedHeader = (
-	request: Request,
-	name: string,
-	pattern: RegExp,
-) => {
+const trustedHeader = (request: Request, name: string, pattern: RegExp) => {
 	const value = request.headers.get(name);
 	return value && pattern.test(value) ? value : undefined;
 };
@@ -58,9 +52,7 @@ const clientIp = (request: Request) => {
 		process.env.AURA_GRADE_TRUSTED_PROXY_HOPS || "1",
 	);
 	const trustedProxyHops =
-		Number.isInteger(configuredHops) && configuredHops > 0
-			? configuredHops
-			: 1;
+		Number.isInteger(configuredHops) && configuredHops > 0 ? configuredHops : 1;
 	const forwardedIndex = forwardedChain.length - trustedProxyHops;
 	const forwarded =
 		forwardedIndex >= 0 ? forwardedChain[forwardedIndex] : undefined;
@@ -82,7 +74,7 @@ const backendFetch = (
 	const context = getRequestContext(request);
 	const headers = new Headers(options.headers);
 	const bffSecret = getBffSecret();
-	const {sessionToken, ...requestOptions} = options;
+	const { sessionToken, ...requestOptions } = options;
 
 	headers.set("x-request-id", context.requestId);
 	if (context.traceparent) headers.set("traceparent", context.traceparent);
@@ -99,7 +91,12 @@ const backendFetch = (
 		...requestOptions,
 		headers,
 		cache: "no-store",
-	} as RequestInit & {duplex?: "half"});
+		signal: AbortSignal.any([
+			request.signal,
+			AbortSignal.timeout(60000),
+			...(options.signal ? [options.signal] : []),
+		]),
+	} as RequestInit & { duplex?: "half" });
 };
 
 export const fetchBackendRest = (
@@ -114,7 +111,7 @@ export const fetchBackendGraphql = (
 ) => backendFetch(request, backendGraphqlUrl(), options);
 
 export const forwardedBackendHeaders = (response: Response) => {
-	const headers = new Headers({"cache-control": "no-store"});
+	const headers = new Headers({ "cache-control": "no-store" });
 
 	for (const name of ["x-request-id", "traceparent", "retry-after"]) {
 		const value = response.headers.get(name);
@@ -125,6 +122,8 @@ export const forwardedBackendHeaders = (response: Response) => {
 };
 
 export const isTrustedMutationRequest = (request: Request) => {
+	const site = request.headers.get("sec-fetch-site");
+	if (site === "cross-site" || site === "same-site") return false;
 	const origin = request.headers.get("origin");
 	if (!origin) return true;
 

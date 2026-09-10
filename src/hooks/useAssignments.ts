@@ -1,11 +1,11 @@
-import {useEffect, useMemo, useState} from "react";
-import {useAssignmentActions} from "@/actions";
-import {useAuth} from "./useAuth";
-import {useReEvaluationRequests} from "./useReEvaluationRequests";
-import {SubmissionStatus, UserRole} from "@/interface";
-import {GET_ASSIGNMENT_BY_ID} from "@/gql/Assignment";
+import { useEffect, useMemo, useState } from "react";
+import { useAssignmentActions } from "@/actions";
+import { useAuth } from "./useAuth";
+import { useReEvaluationRequests } from "./useReEvaluationRequests";
+import { SubmissionStatus, UserRole } from "@/interface";
+import { GET_ASSIGNMENT_BY_ID } from "@/gql/Assignment";
 import client from "@/lib/apolloClient";
-import {normalizeGrade, getScoreTime} from "@/utils/gradeScale";
+import { normalizeGrade, getScoreTime } from "@/utils/gradeScale";
 
 export interface AssignmentStudent {
 	id: string;
@@ -203,7 +203,7 @@ const assignmentBelongsToTeacher = (
 };
 
 export const useAssignments = () => {
-	const {user} = useAuth();
+	const { user } = useAuth();
 	const [assignmentDetailsById, setAssignmentDetailsById] = useState<
 		Record<string, TeacherAssignment>
 	>({});
@@ -234,7 +234,7 @@ export const useAssignments = () => {
 		}
 
 		return teacherAssignments;
-	}, [assignments, user?.id, user?.role]);
+	}, [assignments, user]);
 
 	useEffect(() => {
 		const assignmentsMissingSubmissions = filteredAssignments.filter(
@@ -253,11 +253,11 @@ export const useAssignments = () => {
 				setDetailsLoading(true);
 				const results = await Promise.all(
 					assignmentsMissingSubmissions.map(async (assignment) => {
-						const {data} = await client.query<{
+						const { data } = await client.query<{
 							assignment: TeacherAssignment;
 						}>({
 							query: GET_ASSIGNMENT_BY_ID,
-							variables: {id: assignment.id},
+							variables: { id: assignment.id },
 							fetchPolicy: "network-only",
 						});
 
@@ -268,7 +268,7 @@ export const useAssignments = () => {
 				if (!isActive) return;
 
 				setAssignmentDetailsById((current) => {
-					const next = {...current};
+					const next = { ...current };
 					results.forEach((assignment) => {
 						if (assignment?.id) {
 							next[assignment.id] = assignment;

@@ -1,16 +1,16 @@
 "use client";
 
-import React, {useState} from "react";
+import React, { useState } from "react";
 import Link from "next/link";
-import {forgotPasswordAction} from "@/actions/auth";
-import {AuthLayout} from "@/components/Auth";
+import { forgotPasswordAction } from "@/actions/auth";
+import { AuthLayout } from "@/components/Auth";
 import {
 	faArrowLeft,
 	faCheckCircle,
 	faExclamationTriangle,
 	faInbox,
 } from "@fortawesome/free-solid-svg-icons";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 export const ForgotPasswordForm: React.FC = () => {
 	const [email, setEmail] = useState("");
@@ -32,7 +32,7 @@ export const ForgotPasswordForm: React.FC = () => {
 			setEmail(normalizedEmail);
 			setSuccessMessage(
 				result.message ||
-					"Hemos enviado una nueva clave al correo electrónico indicado.",
+					"Si tu cuenta existe y está activa, recibirás un enlace de recuperación.",
 			);
 			setIsSubmitted(true);
 			setTimeout(() => {
@@ -41,7 +41,9 @@ export const ForgotPasswordForm: React.FC = () => {
 			return;
 		}
 
-		setError(result.error || "No fue posible enviar la nueva clave.");
+		setError(
+			result.error || "No fue posible enviar la enlace de recuperación.",
+		);
 	};
 
 	return (
@@ -50,7 +52,7 @@ export const ForgotPasswordForm: React.FC = () => {
 			subtitle={
 				isSubmitted
 					? "Revisa tu bandeja de entrada para continuar"
-					: "Ingresa tu email y te enviaremos una nueva clave"
+					: "Ingresa tu email y te enviaremos una enlace de recuperación"
 			}
 		>
 			{!isSubmitted ? (
@@ -128,10 +130,10 @@ export const ForgotPasswordForm: React.FC = () => {
 											d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
 										/>
 									</svg>
-									Enviando nueva clave...
+									Enviando enlace de recuperación...
 								</span>
 							) : (
-								"Enviar nueva clave"
+								"Enviar enlace de recuperación"
 							)}
 						</button>
 					</form>
@@ -171,7 +173,7 @@ export const ForgotPasswordForm: React.FC = () => {
 							</li>
 							<li className="flex items-start gap-2">
 								<span className="text-blue-500 mt-1">2.</span>
-								<span>Busca el correo con tu nueva clave</span>
+								<span>Busca el correo con tu enlace de recuperación</span>
 							</li>
 							<li className="flex items-start gap-2">
 								<span className="text-blue-500 mt-1">3.</span>

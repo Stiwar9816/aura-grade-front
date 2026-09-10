@@ -1,14 +1,15 @@
-import {FormEvent, useEffect, useState} from "react";
-import {useRouter} from "next/router";
+import { startTransition } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/router";
 import Image from "next/image";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faCheckCircle,
 	faEye,
 	faEyeSlash,
 	faKey,
 } from "@fortawesome/free-solid-svg-icons";
-import {passwordPolicyError} from "@/utils/passwordPolicy";
+import { passwordPolicyError } from "@/utils/passwordPolicy";
 
 const CreatePasswordPage = () => {
 	const router = useRouter();
@@ -22,8 +23,9 @@ const CreatePasswordPage = () => {
 
 	useEffect(() => {
 		if (!router.isReady || typeof router.query.token !== "string") return;
-		setToken(router.query.token);
-		void router.replace("/create-password", undefined, {shallow: true});
+		const value = router.query.token;
+		startTransition(() => setToken(value));
+		void router.replace("/create-password", undefined, { shallow: true });
 	}, [router]);
 
 	const submit = async (event: FormEvent) => {
@@ -47,15 +49,18 @@ const CreatePasswordPage = () => {
 		try {
 			const response = await fetch("/api/user-invitations/accept", {
 				method: "POST",
-				headers: {"content-type": "application/json"},
-				body: JSON.stringify({token, password}),
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ token, password }),
 			});
-			const payload = (await response.json().catch(() => null)) as
-				| {error?: string; message?: string}
-				| null;
+			const payload = (await response.json().catch(() => null)) as {
+				error?: string;
+				message?: string;
+			} | null;
 			if (!response.ok) {
 				throw new Error(
-					payload?.message || payload?.error || "No fue posible crear la contraseña.",
+					payload?.message ||
+						payload?.error ||
+						"No fue posible crear la contraseña.",
 				);
 			}
 			setComplete(true);
@@ -83,10 +88,16 @@ const CreatePasswordPage = () => {
 				/>
 				{complete ? (
 					<div className="mt-8 text-center">
-						<FontAwesomeIcon icon={faCheckCircle} className="text-5xl text-emerald-500" />
-						<h1 className="mt-4 text-2xl font-bold text-gray-900">Cuenta activada</h1>
+						<FontAwesomeIcon
+							icon={faCheckCircle}
+							className="text-5xl text-emerald-500"
+						/>
+						<h1 className="mt-4 text-2xl font-bold text-gray-900">
+							Cuenta activada
+						</h1>
 						<p className="mt-2 text-gray-600">
-							Tu contraseña fue creada. Ya puedes iniciar sesión y configurar tu OTP.
+							Tu contraseña fue creada. Ya puedes iniciar sesión y configurar tu
+							OTP.
 						</p>
 						<button
 							type="button"
@@ -99,13 +110,22 @@ const CreatePasswordPage = () => {
 				) : (
 					<>
 						<div className="mt-7 text-center">
-							<FontAwesomeIcon icon={faKey} className="text-3xl text-electric-500" />
-							<h1 className="mt-3 text-2xl font-bold text-gray-900">Crea tu contraseña</h1>
+							<FontAwesomeIcon
+								icon={faKey}
+								className="text-3xl text-electric-500"
+							/>
+							<h1 className="mt-3 text-2xl font-bold text-gray-900">
+								Crea tu contraseña
+							</h1>
 							<p className="mt-2 text-sm text-gray-600">
-								Este enlace es personal, vence en 72 horas y solo funciona una vez.
+								Este enlace es personal, vence en 72 horas y solo funciona una
+								vez.
 							</p>
 						</div>
-						<form onSubmit={(event) => void submit(event)} className="mt-7 space-y-4">
+						<form
+							onSubmit={(event) => void submit(event)}
+							className="mt-7 space-y-4"
+						>
 							<label className="block text-sm font-semibold text-gray-800">
 								Nueva contraseña
 								<div className="relative mt-2">
@@ -120,7 +140,9 @@ const CreatePasswordPage = () => {
 									<button
 										type="button"
 										onClick={() => setShowPassword((current) => !current)}
-										aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+										aria-label={
+											showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+										}
 										className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500"
 									>
 										<FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
@@ -139,7 +161,8 @@ const CreatePasswordPage = () => {
 								/>
 							</label>
 							<p className="text-xs leading-5 text-gray-500">
-								Usa entre 15 y 128 caracteres, sin espacios, y evita contraseñas comunes.
+								Usa entre 15 y 128 caracteres, sin espacios, y evita contraseñas
+								comunes.
 							</p>
 							{error && (
 								<p className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">

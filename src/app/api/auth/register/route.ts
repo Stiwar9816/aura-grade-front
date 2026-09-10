@@ -1,11 +1,12 @@
-import {NextRequest, NextResponse} from "next/server";
-import type {RegisterData, User} from "@/interface";
+import { readLimitedJson, RequestBodyError } from "@/lib/server/requestBody";
+import { NextRequest, NextResponse } from "next/server";
+import type { RegisterData, User } from "@/interface";
 import {
 	fetchBackendRest,
 	forwardedBackendHeaders,
 	isTrustedMutationRequest,
 } from "@/lib/server/backend";
-import {setSessionCookie} from "@/lib/server/authSession";
+import { setSessionCookie } from "@/lib/server/authSession";
 
 type BackendAuthResponse = {
 	expiresAt?: string;
@@ -17,11 +18,14 @@ type BackendAuthResponse = {
 
 export async function POST(request: NextRequest) {
 	if (!isTrustedMutationRequest(request)) {
-		return NextResponse.json({error: "Origen no permitido."}, {status: 403});
+		return NextResponse.json(
+			{ error: "Origen no permitido." },
+			{ status: 403 },
+		);
 	}
 
 	try {
-		const data = (await request.json()) as RegisterData;
+		const data = (await readLimitedJson(request)) as RegisterData;
 		const payload: RegisterData = {
 			name: data.name,
 			last_name: data.last_name,
@@ -35,25 +39,25 @@ export async function POST(request: NextRequest) {
 		};
 		const backendResponse = await fetchBackendRest(request, "auth/register", {
 			method: "POST",
-			headers: {"content-type": "application/json"},
+			headers: { "content-type": "application/json" },
 			body: JSON.stringify(payload),
 		});
-		const responseData = (await backendResponse.json().catch(() => null)) as
-			| BackendAuthResponse
-			| null;
+		const responseData = (await backendResponse
+			.json()
+			.catch(() => null)) as BackendAuthResponse | null;
 		const responseHeaders = forwardedBackendHeaders(backendResponse);
 
 		if (!backendResponse.ok || !responseData) {
 			return NextResponse.json(
-				{error: responseData?.message || "Error en el registro"},
-				{status: backendResponse.status || 502, headers: responseHeaders},
+				{ error: responseData?.message || "Error en el registro" },
+				{ status: backendResponse.status || 502, headers: responseHeaders },
 			);
 		}
 
 		if (!responseData.user?.id) {
 			return NextResponse.json(
-				{error: "La respuesta de registro no contiene un usuario válido."},
-				{status: 502, headers: responseHeaders},
+				{ error: "La respuesta de registro no contiene un usuario válido." },
+				{ status: 502, headers: responseHeaders },
 			);
 		}
 
@@ -67,15 +71,15 @@ export async function POST(request: NextRequest) {
 						responseData.message ||
 						"Tu cuenta está pendiente de aprobación institucional.",
 				},
-				{status: 202, headers: responseHeaders},
+				{ status: 202, headers: responseHeaders },
 			);
 		}
 
 		const sessionToken = responseData.sessionToken;
 		if (!sessionToken) {
 			return NextResponse.json(
-				{error: "La respuesta de registro no contiene una sesión válida."},
-				{status: 502, headers: responseHeaders},
+				{ error: "La respuesta de registro no contiene una sesión válida." },
+				{ status: 502, headers: responseHeaders },
 			);
 		}
 
@@ -85,16 +89,21 @@ export async function POST(request: NextRequest) {
 				user: responseData.user,
 				expiresAt: responseData.expiresAt,
 			},
-			{headers: responseHeaders},
+			{ headers: responseHeaders },
 		);
 		setSessionCookie(response, sessionToken, {
 			expiresAt: responseData.expiresAt,
 		});
 		return response;
-	} catch {
+	} catch (error) {
+		if (error instanceof RequestBodyError)
+			return NextResponse.json(
+				{ error: error.message },
+				{ status: error.status, headers: { "cache-control": "no-store" } },
+			);
 		return NextResponse.json(
-			{error: "El servicio de autenticación no está disponible."},
-			{status: 502},
+			{ error: "El servicio de autenticación no está disponible." },
+			{ status: 502 },
 		);
 	}
 }

@@ -1,312 +1,191 @@
-import React, {useState} from "react";
+import { useState } from "react";
+import Head from "next/head";
+import Link from "next/link";
 import Layout from "@/components/Layout";
-import {ProtectedRoute} from "@/components/Auth";
 import Card from "@/components/Common/Card";
-import SectionHeader from "@/components/Common/SectionHeader";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBook, faBookOpen, faChartColumn, faCloudArrowUp, faComment, faComments, faEnvelope, faLightbulb, faPlayCircle, faRobot, faSearch, faUser } from "@fortawesome/free-solid-svg-icons";
+import { useAuth } from "@/hooks";
+import { helpCategories, helpFaqs, supportEmail } from "@/data/help";
 
-const HelpPage: React.FC = () => {
-	const [activeCategory, setActiveCategory] = useState("general");
-	const [searchQuery, setSearchQuery] = useState("");
-
-	const categories = [
-		{id: "general", name: "General", icon: <FontAwesomeIcon
-										icon={faBookOpen}
-									/>},
-		{id: "submissions", name: "Entregas", icon: <FontAwesomeIcon
-												icon={faCloudArrowUp}
-											/>},
-		{id: "grading", name: "Calificaciones", icon: <FontAwesomeIcon
-												icon={faChartColumn}
-											/>},
-		{id: "ai", name: "IA y Evaluación", icon: <FontAwesomeIcon
-												icon={faRobot}
-											/>},
-		{id: "account", name: "Mi Cuenta", icon: <FontAwesomeIcon
-												icon={faUser}
-											/>},
-	];
-
-	const faqs = {
-		general: [
-			{
-				question: "¿Qué es Aura Grade?",
-				answer:
-					"Aura Grade es una plataforma de evaluación educativa asistida por IA que ayuda a docentes y estudiantes en el proceso de calificación y retroalimentación.",
-			},
-			{
-				question: "¿Cómo empiezo a usar la plataforma?",
-				answer:
-					"Después de registrarte, puedes acceder a tu dashboard donde encontrarás todas las herramientas disponibles según tu rol (estudiante o docente).",
-			},
-			{
-				question: "¿Es segura mi información?",
-				answer:
-					"Sí, utilizamos encriptación de última generación y seguimos las mejores prácticas de seguridad para proteger tus datos.",
-			},
-		],
-		submissions: [
-			{
-				question: "¿Qué formatos de archivo puedo subir?",
-				answer:
-					"Actualmente soportamos PDF, DOCX, TXT y otros formatos de documentos comunes.",
-			},
-			{
-				question: "¿Cuál es el tamaño máximo de archivo?",
-				answer:
-					"El tamaño máximo por archivo es de 10MB. Para archivos más grandes, contacta a tu docente.",
-			},
-			{
-				question: "¿Puedo editar una entrega después de subirla?",
-				answer:
-					"Puedes reemplazar tu entrega antes de la fecha límite. Después de esa fecha, necesitarás permiso del docente.",
-			},
-		],
-		grading: [
-			{
-				question: "¿Cómo funciona la calificación por IA?",
-				answer:
-					"Nuestra IA analiza tu trabajo según criterios predefinidos en la rúbrica, proporcionando una evaluación objetiva y consistente.",
-			},
-			{
-				question: "¿Puedo solicitar una revisión de mi calificación?",
-				answer:
-					"Sí, puedes solicitar una revisión manual por parte de tu docente desde el panel de calificaciones.",
-			},
-			{
-				question: "¿Cuánto tiempo tarda la evaluación?",
-				answer:
-					"La evaluación por IA generalmente toma menos de 30 segundos. Las revisiones manuales dependen de la disponibilidad del docente.",
-			},
-		],
-		ai: [
-			{
-				question: "¿Qué tan precisa es la IA?",
-				answer:
-					"Nuestra IA tiene una precisión del 94% comparada con evaluaciones humanas, y mejora continuamente con cada evaluación.",
-			},
-			{
-				question: "¿La IA reemplaza a los docentes?",
-				answer:
-					"No, la IA es una herramienta de apoyo. Los docentes siempre pueden revisar y ajustar las calificaciones generadas por IA.",
-			},
-			{
-				question: "¿Cómo se entrena la IA?",
-				answer:
-					"Nuestra IA se entrena con miles de ejemplos de trabajos evaluados por docentes expertos, siguiendo estándares educativos reconocidos.",
-			},
-		],
-		account: [
-			{
-				question: "¿Cómo cambio mi contraseña?",
-				answer:
-					"Ve a Configuración > Seguridad y selecciona 'Cambiar contraseña'. Necesitarás tu contraseña actual.",
-			},
-			{
-				question: "¿Puedo cambiar mi rol?",
-				answer:
-					"No, el rol es asignado al momento del registro. Si necesitas cambiar tu rol, contacta al administrador.",
-			},
-			{
-				question: "¿Cómo elimino mi cuenta?",
-				answer:
-					"Puedes eliminar tu cuenta desde Configuración > Zona de Peligro. Esta acción es irreversible.",
-			},
-		],
-	};
-
-	const filteredFaqs = faqs[activeCategory as keyof typeof faqs].filter(
-		(faq) =>
-			faq.question.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			faq.answer.toLowerCase().includes(searchQuery.toLowerCase()),
+const normalize = (value: string) =>
+	value
+		.normalize("NFD")
+		.replace(/[\u0300-\u036f]/g, "")
+		.toLowerCase()
+		.trim();
+export default function HelpPage() {
+	const { user } = useAuth();
+	const [category, setCategory] = useState<string>("general");
+	const [query, setQuery] = useState("");
+	const search = normalize(query);
+	const results = helpFaqs.filter((faq) =>
+		search
+			? normalize(`${faq.question} ${faq.answer}`).includes(search)
+			: faq.category === category,
 	);
-
-	return (
-		<ProtectedRoute>
-			<Layout title="Ayuda y Soporte">
-				<div className="max-w-6xl mx-auto">
-					{/* Header con búsqueda */}
-					<Card className="mb-6">
-						<div className="text-center mb-6">
-							<div className="text-4xl mb-4"><FontAwesomeIcon
-																	icon={faLightbulb}
-																	size="2xl"
-																/></div>
-							<h2 className="text-2xl font-bold text-gray-900 mb-2">
-								¿En qué podemos ayudarte?
-							</h2>
-							<p className="text-gray-600">
-								Busca en nuestra base de conocimientos o contacta con soporte
-							</p>
-						</div>
-
-						<div className="relative max-w-2xl mx-auto">
-							<input
-								type="text"
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								placeholder="Buscar en ayuda..."
-								className="w-full px-4 py-3 pl-12 border-2 border-gray-300 rounded-xl focus:border-electric-500 focus:ring-2 focus:ring-electric-200 outline-none"
-							/>
-							<svg
-								className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-								/>
-							</svg>
-						</div>
+	const content = (
+		<div className="mx-auto max-w-6xl space-y-6">
+			<Card>
+				<p className="mb-2 text-sm font-semibold text-electric-600">
+					CENTRO DE AYUDA · Actualizado el 10 de septiembre de 2026
+				</p>
+				<h2 className="mb-3 text-2xl font-bold text-gray-900 md:text-3xl">
+					Resuelve tus dudas y continúa con tu trabajo
+				</h2>
+				<p className="mb-6 text-gray-600">
+					Guías de acceso, entregas y evaluación para estudiantes, docentes y
+					administradores.
+				</p>
+				<label
+					htmlFor="help-search"
+					className="mb-2 block font-medium text-gray-900"
+				>
+					Buscar en toda la ayuda
+				</label>
+				<input
+					id="help-search"
+					type="search"
+					value={query}
+					onChange={(event) => setQuery(event.target.value)}
+					placeholder="Prueba con contraseña, DOCX o calificación"
+					className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-gray-900 focus:outline-none focus:ring-2 focus:ring-electric-500"
+				/>
+			</Card>
+			<div className="grid gap-6 lg:grid-cols-[240px_minmax(0,1fr)]">
+				<aside className="space-y-6">
+					<Card>
+						<nav
+							aria-label="Categorías de ayuda"
+							className="flex flex-wrap gap-2 lg:flex-col"
+						>
+							{helpCategories.map((item) => (
+								<button
+									key={item.id}
+									type="button"
+									aria-pressed={!search && category === item.id}
+									onClick={() => {
+										setCategory(item.id);
+										setQuery("");
+									}}
+									className={`min-h-11 rounded-lg px-3 py-3 text-left text-sm font-medium focus-visible:outline-2 focus-visible:outline-electric-500 ${!search && category === item.id ? "bg-electric-50 text-electric-700" : "text-gray-700 hover:bg-gray-100"}`}
+								>
+									{item.name}
+								</button>
+							))}
+						</nav>
 					</Card>
-
-					<div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-						{/* Categorías */}
-						<div className="lg:col-span-1">
-							<Card>
-								<h3 className="font-bold text-gray-900 mb-4">Categorías</h3>
-								<div className="space-y-2">
-									{categories.map((category) => (
-										<button
-											key={category.id}
-											onClick={() => setActiveCategory(category.id)}
-											className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-												activeCategory === category.id
-													? "bg-electric-50 text-electric-600 font-semibold"
-													: "text-gray-700 hover:bg-gray-50"
-											}`}
-										>
-											<span className="text-xl">{category.icon}</span>
-											<span>{category.name}</span>
-										</button>
-									))}
-								</div>
-							</Card>
-
-							{/* Contacto */}
-							<Card className="mt-6 bg-gradient-to-br from-electric-50 to-cyan-50">
-								<div className="text-center">
-									<div className="text-3xl mb-3"><FontAwesomeIcon
-																			icon={faEnvelope}
-																		/></div>
-									<h4 className="font-bold text-gray-900 mb-2">
-										¿Necesitas más ayuda?
-									</h4>
-									<p className="text-sm text-gray-600 mb-4">
-										Nuestro equipo está aquí para ayudarte
+					<Card>
+						<h2 className="mb-2 text-lg font-bold text-gray-900">
+							Contacta a soporte
+						</h2>
+						<p className="mb-4 text-sm text-gray-600">
+							Para problemas de acceso o funcionamiento. Las consultas sobre
+							notas y plazos corresponden a tu docente.
+						</p>
+						<a
+							href={`mailto:${supportEmail}?subject=Ayuda%20con%20Aura%20Grade`}
+							className="inline-flex min-h-11 items-center break-all font-semibold text-electric-700 underline underline-offset-4"
+						>
+							{supportEmail}
+						</a>
+					</Card>
+				</aside>
+				<div className="space-y-6">
+					<Card>
+						<h2 className="text-xl font-bold text-gray-900">
+							{search
+								? "Resultados de búsqueda"
+								: helpCategories.find((item) => item.id === category)?.name}
+						</h2>
+						<p role="status" className="mb-5 mt-1 text-sm text-gray-600">
+							{results.length} preguntas {search && "en todas las categorías"}
+						</p>
+						<div className="space-y-3">
+							{results.map((faq) => (
+								<details
+									key={faq.question}
+									className="group rounded-xl border border-gray-200"
+								>
+									<summary className="cursor-pointer rounded-xl p-4 font-medium text-gray-900 focus-visible:outline-2 focus-visible:outline-electric-500">
+										{faq.question}
+									</summary>
+									<p className="border-t border-gray-100 p-4 leading-relaxed text-gray-700">
+										{faq.answer}
 									</p>
-									<button className="btn-primary w-full">
-										Contactar Soporte
-									</button>
-								</div>
-							</Card>
+								</details>
+							))}
 						</div>
-
-						{/* FAQs */}
-						<div className="lg:col-span-3">
-							<Card>
-								<SectionHeader
-									title={
-										categories.find((c) => c.id === activeCategory)?.name ||
-										"General"
-									}
-									description={`${filteredFaqs.length} preguntas frecuentes`}
-									className="mb-6"
-								/>
-
-								<div className="space-y-4">
-									{filteredFaqs.length > 0 ? (
-										filteredFaqs.map((faq, index) => (
-											<details
-												key={index}
-												className="group border border-gray-200 rounded-lg overflow-hidden"
-											>
-												<summary className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors">
-													<span className="font-medium text-gray-900 pr-4">
-														{faq.question}
-													</span>
-													<svg
-														className="w-5 h-5 text-gray-500 transform group-open:rotate-180 transition-transform flex-shrink-0"
-														fill="none"
-														stroke="currentColor"
-														viewBox="0 0 24 24"
-													>
-														<path
-															strokeLinecap="round"
-															strokeLinejoin="round"
-															strokeWidth={2}
-															d="M19 9l-7 7-7-7"
-														/>
-													</svg>
-												</summary>
-												<div className="p-4 pt-0 text-gray-600 border-t border-gray-100">
-													{faq.answer}
-												</div>
-											</details>
-										))
-									) : (
-										<div className="text-center py-12">
-											<div className="text-4xl mb-4"><FontAwesomeIcon
-																					icon={faSearch}
-																				/></div>
-											<h3 className="font-bold text-gray-900 mb-2">
-												No se encontraron resultados
-											</h3>
-											<p className="text-gray-600">
-												Intenta con otros términos de búsqueda
-											</p>
-										</div>
-									)}
-								</div>
-							</Card>
-
-							{/* Recursos adicionales */}
-							<div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
-								<Card className="text-center hover:shadow-lg transition-shadow cursor-pointer">
-									<div className="text-3xl mb-3"><FontAwesomeIcon
-																			icon={faBook}
-																		/></div>
-									<h4 className="font-bold text-gray-900 mb-1">
-										Documentación
-									</h4>
-									<p className="text-sm text-gray-600">
-										Guías completas y tutoriales
-									</p>
-								</Card>
-
-								<Card className="text-center hover:shadow-lg transition-shadow cursor-pointer">
-									<div className="text-3xl mb-3"><FontAwesomeIcon
-															icon={faPlayCircle}
-														/></div>
-									<h4 className="font-bold text-gray-900 mb-1">
-										Video Tutoriales
-									</h4>
-									<p className="text-sm text-gray-600">
-										Aprende viendo ejemplos
-									</p>
-								</Card>
-
-								<Card className="text-center hover:shadow-lg transition-shadow cursor-pointer">
-									<div className="text-3xl mb-3"><FontAwesomeIcon
-																			icon={faComments}
-																		/></div>
-									<h4 className="font-bold text-gray-900 mb-1">Comunidad</h4>
-									<p className="text-sm text-gray-600">
-										Conecta con otros usuarios
-									</p>
-								</Card>
+						{!results.length && (
+							<div className="py-6">
+								<p className="text-gray-700">
+									No encontramos resultados. Prueba con otra palabra o escribe a
+									soporte.
+								</p>
+								<button
+									type="button"
+									onClick={() => setQuery("")}
+									className="mt-3 min-h-11 text-electric-700 underline"
+								>
+									Limpiar búsqueda
+								</button>
 							</div>
-						</div>
-					</div>
+						)}
+					</Card>
+					<Card>
+						<h2 className="mb-3 text-xl font-bold text-gray-900">
+							Cómo reportar un problema
+						</h2>
+						<ol className="list-decimal space-y-2 pl-5 leading-relaxed text-gray-700">
+							<li>
+								Indica tu institución, tu rol y la pantalla donde ocurrió.
+							</li>
+							<li>
+								Describe los pasos, qué esperabas y qué ocurrió, con fecha, hora
+								y navegador.
+							</li>
+							<li>
+								Incluye el identificador de la tarea o entrega y el mensaje de
+								error. Oculta datos personales de otras personas en las
+								capturas.
+							</li>
+						</ol>
+						<p className="mt-4 rounded-lg bg-amber-50 p-4 text-sm text-amber-900">
+							Soporte nunca necesita tu contraseña, códigos del autenticador,
+							códigos de recuperación ni el enlace para restablecer tu
+							contraseña.
+						</p>
+					</Card>
 				</div>
-			</Layout>
-		</ProtectedRoute>
+			</div>
+			<footer className="flex flex-wrap gap-5 text-sm text-gray-600">
+				<Link href="/privacy" className="underline">
+					Información sobre privacidad
+				</Link>
+				<Link href="/terms" className="underline">
+					Condiciones de uso
+				</Link>
+			</footer>
+		</div>
 	);
-};
-
-export default HelpPage;
+	if (user) return <Layout title="Ayuda y soporte">{content}</Layout>;
+	return (
+		<div className="min-h-screen bg-background-bone">
+			<Head>
+				<title>Ayuda y soporte | Aura Grade</title>
+			</Head>
+			<header className="mx-auto flex max-w-6xl items-center justify-between px-4 py-5">
+				<Link href="/" className="text-xl font-bold text-gray-900">
+					Aura Grade
+				</Link>
+				<Link href="/login" className="text-electric-700 underline">
+					Iniciar sesión
+				</Link>
+			</header>
+			<main className="px-4 py-6 md:px-8">
+				<h1 className="mx-auto mb-6 max-w-6xl text-3xl font-bold text-gray-900">
+					Ayuda y soporte
+				</h1>
+				{content}
+			</main>
+		</div>
+	);
+}

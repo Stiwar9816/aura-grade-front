@@ -1,12 +1,10 @@
-import {LoginCredentials, RegisterData, User} from "@/interface";
+import { LoginCredentials, RegisterData, User } from "@/interface";
 
 export type AuthErrorCode =
-	| "FORBIDDEN"
-	| "RATE_LIMITED"
-	| "SERVICE_UNAVAILABLE"
-	| "UNAUTHENTICATED";
+	"FORBIDDEN" | "RATE_LIMITED" | "SERVICE_UNAVAILABLE" | "UNAUTHENTICATED";
 
-type AuthResult = {
+export type AuthResult = {
+	recoveryCodes?: string[];
 	challengeToken?: string;
 	code?: AuthErrorCode;
 	error?: string;
@@ -48,7 +46,7 @@ const readResponse = async (response: Response): Promise<AuthResult> => {
 			retryAfter: response.headers.get("retry-after") || undefined,
 		};
 	} catch {
-		return {retryAfter: response.headers.get("retry-after") || undefined};
+		return { retryAfter: response.headers.get("retry-after") || undefined };
 	}
 };
 
@@ -85,7 +83,7 @@ const responseError = (
 			error: result.error || fallback,
 		};
 	}
-	return {error: result.error || fallback};
+	return { error: result.error || fallback };
 };
 
 export async function loginAction(
@@ -94,7 +92,7 @@ export async function loginAction(
 	try {
 		const response = await fetch("/api/auth/login", {
 			method: "POST",
-			headers: {"content-type": "application/json"},
+			headers: { "content-type": "application/json" },
 			credentials: "same-origin",
 			body: JSON.stringify(credentials),
 		});
@@ -118,7 +116,7 @@ export async function loginAction(
 			};
 		}
 
-		return {success: true, user: result.user};
+		return { success: true, user: result.user };
 	} catch {
 		return {
 			success: false,
@@ -128,22 +126,31 @@ export async function loginAction(
 	}
 }
 
-export async function verifyOtpAction(challengeToken: string, otp: string) {
+export async function verifyOtpAction(
+	challengeToken: string,
+	otp: string,
+): Promise<AuthResult> {
 	try {
 		const response = await fetch("/api/auth/verify-otp", {
 			method: "POST",
-			headers: {"content-type": "application/json"},
+			headers: { "content-type": "application/json" },
 			credentials: "same-origin",
-			body: JSON.stringify({challengeToken, otp}),
+			body: JSON.stringify({ challengeToken, otp }),
 		});
 		const result = await readResponse(response);
+		if (response.ok && result.requiresTwoFactor)
+			return { ...result, success: false };
 		if (!response.ok || !result.user) {
 			return {
 				success: false,
 				...responseError(response, result, "Código inválido o expirado."),
 			};
 		}
-		return {success: true, user: result.user};
+		return {
+			success: true,
+			user: result.user,
+			recoveryCodes: result.recoveryCodes,
+		};
 	} catch {
 		return {
 			success: false,
@@ -157,7 +164,7 @@ export async function registerAction(data: RegisterData) {
 	try {
 		const response = await fetch("/api/auth/register", {
 			method: "POST",
-			headers: {"content-type": "application/json"},
+			headers: { "content-type": "application/json" },
 			credentials: "same-origin",
 			body: JSON.stringify(data),
 		});
@@ -199,7 +206,7 @@ const requestSession = async (): Promise<AuthResult> => {
 				...responseError(response, result, "No fue posible validar la sesión."),
 			};
 		}
-		return {user: result.user};
+		return { user: result.user };
 	} catch {
 		return {
 			user: undefined,
@@ -228,7 +235,7 @@ export async function logoutAction() {
 		});
 		const result = await readResponse(response);
 		return response.ok
-			? {success: true}
+			? { success: true }
 			: {
 					success: false,
 					...responseError(
@@ -296,7 +303,7 @@ export async function getActiveSessionsAction() {
 				),
 			};
 		}
-		return {success: true as const, sessions: result.sessions};
+		return { success: true as const, sessions: result.sessions };
 	} catch {
 		return {
 			success: false as const,
@@ -352,20 +359,20 @@ export async function updateSessionUserAction() {
 			error: result.error || "No hay sesión activa",
 		};
 	}
-	return {success: true, user: result.user};
+	return { success: true, user: result.user };
 }
 
 export async function forgotPasswordAction(email: string) {
 	try {
 		const response = await fetch("/api/auth/forgot-password", {
 			method: "POST",
-			headers: {"content-type": "application/json"},
+			headers: { "content-type": "application/json" },
 			credentials: "same-origin",
-			body: JSON.stringify({email}),
+			body: JSON.stringify({ email }),
 		});
 		const data = (await response.json().catch(() => null)) as {
 			error?: string;
-			errors?: {message?: string}[];
+			errors?: { message?: string }[];
 		} | null;
 		const graphQLError = data?.errors?.[0]?.message;
 
@@ -375,13 +382,14 @@ export async function forgotPasswordAction(email: string) {
 				error:
 					graphQLError ||
 					data?.error ||
-					"No fue posible enviar la nueva clave. Intenta nuevamente.",
+					"No fue posible solicitar el enlace. Intenta nuevamente.",
 			};
 		}
 
 		return {
 			success: true,
-			message: "Hemos enviado una nueva clave al correo electrónico indicado.",
+			message:
+				"Si el correo corresponde a una cuenta activa, recibirás un enlace de recuperación.",
 		};
 	} catch {
 		return {

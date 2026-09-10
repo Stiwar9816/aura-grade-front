@@ -13,10 +13,13 @@ export async function POST(request: NextRequest) {
 		);
 	try {
 		const input = await readLimitedJson(request);
-		const backend = await fetchBackendRest(request, "auth/forgot-password", {
+		const backend = await fetchBackendRest(request, "auth/reset-password", {
 			method: "POST",
 			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ email: input.email }),
+			body: JSON.stringify({
+				token: input.token,
+				newPassword: input.newPassword,
+			}),
 		});
 		const data = await backend.json();
 		return NextResponse.json(

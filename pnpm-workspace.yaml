@@ -13,3 +13,6 @@ ignoredBuiltDependencies:
 
 onlyBuiltDependencies:
   - core-js
+
+overrides:
+  browserslist: 4.28.7

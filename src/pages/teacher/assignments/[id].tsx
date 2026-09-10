@@ -1,8 +1,8 @@
 import React from "react";
-import {useRouter} from "next/router";
-import {useMutation, useQuery} from "@apollo/client/react";
+import { useRouter } from "next/router";
+import { useMutation, useQuery } from "@apollo/client/react";
 import Layout from "@/components/Layout";
-import {ProtectedRoute} from "@/components/Auth";
+import { ProtectedRoute } from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import Badge from "@/components/Common/Badge";
@@ -29,8 +29,8 @@ import {
 	SubmissionsData,
 	UserRole,
 } from "@/interface";
-import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import { STANDARD_GRADE_MAX, normalizeGrade } from "@/utils/gradeScale";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faArrowLeft,
 	faBell,
@@ -45,7 +45,7 @@ import {
 	faTrashCan,
 	faUserGroup,
 } from "@fortawesome/free-solid-svg-icons";
-import {notifyError, notifyLoading, notifySuccess} from "@/utils/toastNotify";
+import { notifyError, notifyLoading, notifySuccess } from "@/utils/toastNotify";
 
 type AssignmentReminderPreview = {
 	assignmentId: string;
@@ -79,13 +79,13 @@ type StatusConfig = {
 };
 
 const statusConfigByValue: Record<string, StatusConfig> = {
-	[SubmissionStatus.PENDING]: {label: "Pendiente", variant: "warning"},
-	[SubmissionStatus.IN_PROGRESS]: {label: "En progreso", variant: "info"},
-	[SubmissionStatus.REVIEW_PENDING]: {label: "En revisión", variant: "info"},
-	[SubmissionStatus.PUBLISHED]: {label: "Calificada", variant: "success"},
-	[SubmissionStatus.FAILED]: {label: "Fallida", variant: "error"},
-	SUBMITTED: {label: "Enviada", variant: "electric"},
-	GRADED: {label: "Pendiente de revisión", variant: "warning"},
+	[SubmissionStatus.PENDING]: { label: "Pendiente", variant: "warning" },
+	[SubmissionStatus.IN_PROGRESS]: { label: "En progreso", variant: "info" },
+	[SubmissionStatus.REVIEW_PENDING]: { label: "En revisión", variant: "info" },
+	[SubmissionStatus.PUBLISHED]: { label: "Calificada", variant: "success" },
+	[SubmissionStatus.FAILED]: { label: "Fallida", variant: "error" },
+	SUBMITTED: { label: "Enviada", variant: "electric" },
+	GRADED: { label: "Pendiente de revisión", variant: "warning" },
 };
 
 const formatDate = (date?: string, withTime = false) => {
@@ -95,7 +95,7 @@ const formatDate = (date?: string, withTime = false) => {
 		day: "numeric",
 		month: "short",
 		year: "numeric",
-		...(withTime ? {hour: "2-digit", minute: "2-digit"} : {}),
+		...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
 	});
 };
 
@@ -111,7 +111,7 @@ const normalizeStatusValue = (status?: string | null) =>
 
 const getStatusConfig = (status?: string): StatusConfig => {
 	const normalizedStatus = normalizeStatusValue(status);
-	if (!normalizedStatus) return {label: "Sin estado", variant: "default"};
+	if (!normalizedStatus) return { label: "Sin estado", variant: "default" };
 	return (
 		statusConfigByValue[normalizedStatus] || {
 			label: normalizedStatus,
@@ -152,7 +152,7 @@ const getSubmissionStatusConfig = (
 	reevaluationSubmissionIds: Set<string>,
 ) => {
 	if (reevaluationSubmissionIds.has(submission.id)) {
-		return {label: "Reevaluación solicitada", variant: "warning" as const};
+		return { label: "Reevaluación solicitada", variant: "warning" as const };
 	}
 
 	if (isPublishedSubmission(submission, reevaluationSubmissionIds)) {
@@ -166,7 +166,7 @@ const getSubmissionStatusConfig = (
 		status === "GRADED" ||
 		submission.evaluation
 	) {
-		return {label: "Pendiente de revisión", variant: "warning" as const};
+		return { label: "Pendiente de revisión", variant: "warning" as const };
 	}
 
 	return getStatusConfig(submission.status);
@@ -212,19 +212,24 @@ const mergeSubmissions = (...sources: AssignmentSubmission[][]) => {
 
 const AssignmentDetailPage: React.FC = () => {
 	const router = useRouter();
+	const [now, setNow] = React.useState(() => Date.now());
+	React.useEffect(() => {
+		const timer = setInterval(() => setNow(Date.now()), 60000);
+		return () => clearInterval(timer);
+	}, []);
 	const assignmentId =
 		typeof router.query.id === "string" ? router.query.id : undefined;
 	const focusedSubmissionId =
 		typeof router.query.submission === "string"
 			? router.query.submission
 			: undefined;
-	const {assignments, loading, error} = useAssignments();
+	const { assignments, loading, error } = useAssignments();
 	const {
 		getRequestBySubmissionId,
 		pendingSubmissionIds: reevaluationSubmissionIds,
 		loading: reevaluationLoading,
 	} = useReEvaluationRequests();
-	const {data: teacherSubmissionsData, loading: submissionsLoading} =
+	const { data: teacherSubmissionsData, loading: submissionsLoading } =
 		useQuery<SubmissionsData>(GET_TEACHER_SUBMISSIONS, {
 			skip: !assignmentId,
 			fetchPolicy: "cache-and-network",
@@ -275,7 +280,7 @@ const AssignmentDetailPage: React.FC = () => {
 		const frame = window.requestAnimationFrame(() => {
 			document
 				.getElementById(`submission-${focusedSubmissionId}`)
-				?.scrollIntoView({behavior: "smooth", block: "center"});
+				?.scrollIntoView({ behavior: "smooth", block: "center" });
 		});
 		return () => window.cancelAnimationFrame(frame);
 	}, [
@@ -293,7 +298,7 @@ const AssignmentDetailPage: React.FC = () => {
 		try {
 			const response = await fetch(
 				`/api/notifications/assignments/${encodeURIComponent(assignmentId)}/reminder-preview`,
-				{credentials: "same-origin", cache: "no-store"},
+				{ credentials: "same-origin", cache: "no-store" },
 			);
 			if (!response.ok) {
 				throw new Error(
@@ -316,7 +321,9 @@ const AssignmentDetailPage: React.FC = () => {
 	}, [assignmentId]);
 
 	React.useEffect(() => {
-		void loadReminderPreview();
+		React.startTransition(() => {
+			void loadReminderPreview();
+		});
 	}, [loadReminderPreview]);
 
 	const sendPendingReminders = async () => {
@@ -326,7 +333,7 @@ const AssignmentDetailPage: React.FC = () => {
 		try {
 			const response = await fetch(
 				`/api/notifications/assignments/${encodeURIComponent(assignmentId)}/reminders`,
-				{method: "POST", credentials: "same-origin"},
+				{ method: "POST", credentials: "same-origin" },
 			);
 			if (!response.ok) {
 				throw new Error(
@@ -342,14 +349,14 @@ const AssignmentDetailPage: React.FC = () => {
 				result.queuedCount === 1
 					? "Se programó 1 recordatorio."
 					: `Se programaron ${result.queuedCount} recordatorios.`,
-				{id: notificationId},
+				{ id: notificationId },
 			);
 		} catch (sendError) {
 			notifyError(
 				sendError instanceof Error
 					? sendError.message
 					: "No fue posible programar los recordatorios.",
-				{id: notificationId},
+				{ id: notificationId },
 			);
 		} finally {
 			setReminderLoading(false);
@@ -371,8 +378,8 @@ const AssignmentDetailPage: React.FC = () => {
 
 	const extensionRefetchQueries = assignmentId
 		? [
-				{query: GET_ASSIGNMENT_BY_ID, variables: {id: assignmentId}},
-				{query: GET_TASK_TEACHER},
+				{ query: GET_ASSIGNMENT_BY_ID, variables: { id: assignmentId } },
+				{ query: GET_TASK_TEACHER },
 			]
 		: [];
 
@@ -390,13 +397,15 @@ const AssignmentDetailPage: React.FC = () => {
 						assignmentId,
 						studentId: extensionStudentId,
 						extendedDueDate: new Date(extensionDueDate),
-						...(extensionReason.trim() ? {reason: extensionReason.trim()} : {}),
+						...(extensionReason.trim()
+							? { reason: extensionReason.trim() }
+							: {}),
 					},
 				},
 				refetchQueries: extensionRefetchQueries,
 				awaitRefetchQueries: true,
 			});
-			notifySuccess("La prórroga quedó aplicada.", {id: notificationId});
+			notifySuccess("La prórroga quedó aplicada.", { id: notificationId });
 			setExtensionStudentId("");
 			setExtensionDueDate("");
 			setExtensionReason("");
@@ -406,7 +415,7 @@ const AssignmentDetailPage: React.FC = () => {
 				saveError instanceof Error
 					? saveError.message
 					: "No fue posible guardar la prórroga.",
-				{id: notificationId},
+				{ id: notificationId },
 			);
 		} finally {
 			setExtensionSaving(false);
@@ -419,11 +428,11 @@ const AssignmentDetailPage: React.FC = () => {
 		setExtensionSaving(true);
 		try {
 			await removeExtension({
-				variables: {assignmentId, studentId},
+				variables: { assignmentId, studentId },
 				refetchQueries: extensionRefetchQueries,
 				awaitRefetchQueries: true,
 			});
-			notifySuccess("La prórroga fue retirada.", {id: notificationId});
+			notifySuccess("La prórroga fue retirada.", { id: notificationId });
 			if (extensionStudentId === studentId) selectExtensionStudent("");
 			await loadReminderPreview();
 		} catch (removeError) {
@@ -431,7 +440,7 @@ const AssignmentDetailPage: React.FC = () => {
 				removeError instanceof Error
 					? removeError.message
 					: "No fue posible retirar la prórroga.",
-				{id: notificationId},
+				{ id: notificationId },
 			);
 		} finally {
 			setExtensionSaving(false);
@@ -444,11 +453,11 @@ const AssignmentDetailPage: React.FC = () => {
 		setRetryingSubmissionId(submissionId);
 		try {
 			await retrySubmissionGrading({
-				variables: {id: submissionId},
+				variables: { id: submissionId },
 				refetchQueries: [
-					{query: GET_ASSIGNMENT_BY_ID, variables: {id: assignmentId}},
-					{query: GET_TASK_TEACHER},
-					{query: GET_TEACHER_SUBMISSIONS},
+					{ query: GET_ASSIGNMENT_BY_ID, variables: { id: assignmentId } },
+					{ query: GET_TASK_TEACHER },
+					{ query: GET_TEACHER_SUBMISSIONS },
 				],
 				awaitRefetchQueries: true,
 			});
@@ -460,7 +469,7 @@ const AssignmentDetailPage: React.FC = () => {
 				retryError instanceof Error
 					? retryError.message
 					: "No fue posible reintentar la evaluación.",
-				{id: notificationId},
+				{ id: notificationId },
 			);
 		} finally {
 			setRetryingSubmissionId(null);
@@ -942,7 +951,7 @@ const AssignmentDetailPage: React.FC = () => {
 											min={toDateTimeLocalValue(
 												new Date(
 													Math.max(
-														Date.now(),
+														now,
 														new Date(assignment.dueDate).getTime(),
 													) + 60_000,
 												),

@@ -1,12 +1,13 @@
+import { readLimitedBody, RequestBodyError } from "./requestBody";
 import "server-only";
 
-import {NextRequest, NextResponse} from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import {
 	fetchBackendRest,
 	forwardedBackendHeaders,
 	isTrustedMutationRequest,
 } from "./backend";
-import {clearSessionCookie, readSessionToken} from "./authSession";
+import { clearSessionCookie, readSessionToken } from "./authSession";
 
 type ProxyOptions = {
 	method: "GET" | "POST" | "PATCH" | "DELETE";
@@ -15,27 +16,36 @@ type ProxyOptions = {
 export const proxyAuthenticatedRest = async (
 	request: NextRequest,
 	path: string,
-	{method}: ProxyOptions,
+	{ method }: ProxyOptions,
 ) => {
 	if (method !== "GET" && !isTrustedMutationRequest(request)) {
-		return NextResponse.json({error: "Origen no permitido."}, {status: 403});
+		return NextResponse.json(
+			{ error: "Origen no permitido." },
+			{ status: 403 },
+		);
 	}
 
 	const sessionToken = readSessionToken(request);
 	if (!sessionToken) {
 		return NextResponse.json(
-			{error: "Sesión no válida.", code: "UNAUTHENTICATED"},
-			{status: 401, headers: {"cache-control": "no-store"}},
+			{ error: "Sesión no válida.", code: "UNAUTHENTICATED" },
+			{ status: 401, headers: { "cache-control": "no-store" } },
 		);
 	}
 
 	try {
-		const body = method === "GET" ? undefined : await request.text();
+		const body =
+			method === "GET"
+				? undefined
+				: new TextDecoder().decode(await readLimitedBody(request));
 		const backendResponse = await fetchBackendRest(request, path, {
 			method,
 			sessionToken,
 			headers: body
-				? {"content-type": request.headers.get("content-type") || "application/json"}
+				? {
+						"content-type":
+							request.headers.get("content-type") || "application/json",
+					}
 				: undefined,
 			body,
 		});
@@ -51,10 +61,15 @@ export const proxyAuthenticatedRest = async (
 		});
 		if (backendResponse.status === 401) clearSessionCookie(response);
 		return response;
-	} catch {
+	} catch (error) {
+		if (error instanceof RequestBodyError)
+			return NextResponse.json(
+				{ error: error.message },
+				{ status: error.status },
+			);
 		return NextResponse.json(
-			{error: "No fue posible conectar con el servicio administrativo."},
-			{status: 503, headers: {"cache-control": "no-store"}},
+			{ error: "No fue posible conectar con el servicio administrativo." },
+			{ status: 503, headers: { "cache-control": "no-store" } },
 		);
 	}
 };

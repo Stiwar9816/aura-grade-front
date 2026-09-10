@@ -1,19 +1,24 @@
-import React, {useEffect, useMemo, useState} from "react";
-import {useMutation} from "@apollo/client/react";
+import React, { useEffect, useMemo, useState } from "react";
+import { useMutation } from "@apollo/client/react";
 import Layout from "@/components/Layout";
-import {ProtectedRoute} from "@/components/Auth";
+import { ProtectedRoute } from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
+import RecoveryCodes from "@/components/Auth/RecoveryCodes";
 import ActiveSessions from "@/components/Auth/ActiveSessions";
-import {useAuth, useNotificationPreferences} from "@/hooks";
-import {UPDATE_USER} from "@/gql/User";
+import { useAuth, useNotificationPreferences } from "@/hooks";
+import { UPDATE_USER } from "@/gql/User";
 import {
 	DEFAULT_NOTIFICATION_PREFERENCES,
 	UpdateUserInput,
 	User,
 } from "@/interface";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faArrowsRotate, faMoon, faSun} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+	faArrowsRotate,
+	faMoon,
+	faSun,
+} from "@fortawesome/free-solid-svg-icons";
 import {
 	subscribeToWebPush,
 	supportsWebPush,
@@ -53,8 +58,8 @@ const defaultSettings: AppSettings = {
 };
 
 const SettingsPage: React.FC = () => {
-	const {user, logout} = useAuth();
-	const [updateUserMutation, {loading: deletingAccount}] = useMutation<{
+	const { user, logout } = useAuth();
+	const [updateUserMutation, { loading: deletingAccount }] = useMutation<{
 		updateUser: User;
 	}>(UPDATE_USER);
 	const {
@@ -105,7 +110,7 @@ const SettingsPage: React.FC = () => {
 	}, [settingsKey]);
 
 	const saveSettings = async (nextSettings?: AppSettings) => {
-		const settingsToSave = nextSettings || {privacy, theme};
+		const settingsToSave = nextSettings || { privacy, theme };
 		const notificationId = notifyLoading("Guardando configuración...");
 		try {
 			await savePreferences(notifications);
@@ -120,7 +125,7 @@ const SettingsPage: React.FC = () => {
 				error instanceof Error
 					? error.message
 					: "No fue posible guardar la configuración.",
-				{id: notificationId},
+				{ id: notificationId },
 			);
 		}
 	};
@@ -144,7 +149,7 @@ const SettingsPage: React.FC = () => {
 				error instanceof Error
 					? error.message
 					: "No fue posible restaurar la configuración.",
-				{id: notificationId},
+				{ id: notificationId },
 			);
 		}
 	};
@@ -157,13 +162,13 @@ const SettingsPage: React.FC = () => {
 	const handlePushToggle = async (checked: boolean) => {
 		if (checked && !supportsWebPush()) {
 			notifyWarning("Este navegador no admite Web Push en un contexto seguro.");
-			setNotifications((current) => ({...current, browserEnabled: false}));
+			setNotifications((current) => ({ ...current, browserEnabled: false }));
 			return;
 		}
 
 		if (!checked) {
 			await unsubscribeFromWebPush().catch(() => undefined);
-			setNotifications((current) => ({...current, browserEnabled: false}));
+			setNotifications((current) => ({ ...current, browserEnabled: false }));
 			notifyInfo(
 				"Web Push se desactivó para este dispositivo. Guarda para aplicarlo a tu cuenta.",
 			);
@@ -173,18 +178,18 @@ const SettingsPage: React.FC = () => {
 		const permission = await Notification.requestPermission();
 		if (permission !== "granted") {
 			notifyWarning("El navegador no concedió permiso para Web Push.");
-			setNotifications((current) => ({...current, browserEnabled: false}));
+			setNotifications((current) => ({ ...current, browserEnabled: false }));
 			return;
 		}
 
 		try {
 			await subscribeToWebPush();
-			setNotifications((current) => ({...current, browserEnabled: true}));
+			setNotifications((current) => ({ ...current, browserEnabled: true }));
 			notifyInfo(
 				"Este dispositivo quedó suscrito. Guarda para activar Web Push en tu cuenta.",
 			);
 		} catch (error) {
-			setNotifications((current) => ({...current, browserEnabled: false}));
+			setNotifications((current) => ({ ...current, browserEnabled: false }));
 			notifyError(
 				error instanceof Error
 					? error.message
@@ -215,7 +220,7 @@ const SettingsPage: React.FC = () => {
 		const notificationId = notifyLoading("Desactivando cuenta...");
 		try {
 			await updateUserMutation({
-				variables: {updateUserInput},
+				variables: { updateUserInput },
 			});
 			notifySuccess("Cuenta desactivada correctamente.", {
 				id: notificationId,
@@ -228,7 +233,7 @@ const SettingsPage: React.FC = () => {
 				error instanceof Error
 					? error.message
 					: "No se pudo desactivar la cuenta.";
-			notifyError(message, {id: notificationId});
+			notifyError(message, { id: notificationId });
 		}
 	};
 
@@ -385,6 +390,7 @@ const SettingsPage: React.FC = () => {
 					</Card>
 
 					<ActiveSessions />
+					<RecoveryCodes />
 
 					<Card>
 						<SectionHeader

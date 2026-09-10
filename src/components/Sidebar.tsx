@@ -168,11 +168,11 @@ const Sidebar: React.FC = () => {
 					¿Necesitas ayuda?
 				</h3>
 				<p className="text-xs text-gray-600 mb-2">
-					Consulta nuestra guía de evaluación con IA
+					Resuelve dudas sobre entregas, evaluaciones y tu cuenta.
 				</p>
-				<button className="w-full btn-ghost text-xs py-1.5">
-					Ver Documentación
-				</button>
+				<Link href="/help" className="w-full btn-ghost text-xs py-1.5 inline-flex items-center justify-center text-center">
+					Abrir centro de ayuda
+				</Link>
 			</div>
 		</aside>
 	);

@@ -1,11 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import {useState} from "react";
-import {QRCodeSVG} from "qrcode.react";
-import {AuthLayout} from "@/components/Auth";
-import {useLogin} from "@/hooks";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import { useState } from "react";
+import { QRCodeSVG } from "qrcode.react";
+import { AuthLayout } from "@/components/Auth";
+import { useLogin } from "@/hooks";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faChartColumn,
 	faClock,
@@ -16,6 +16,8 @@ import {
 const LoginPage: React.FC = () => {
 	const [setupKeyCopied, setSetupKeyCopied] = useState(false);
 	const {
+		recoveryCodes,
+		finishRecoverySetup,
 		formData,
 		showPassword,
 		isLoading,
@@ -40,14 +42,13 @@ const LoginPage: React.FC = () => {
 		{
 			icon: <FontAwesomeIcon icon={faHeadSideVirus} />,
 			title: "IA Especializada",
-			description:
-				"Modelos entrenados específicamente para evaluación educativa",
+			description: "Evaluación guiada por la rúbrica y revisada por tu docente",
 			gradient: "from-electric-500 to-cyan-500",
 		},
 		{
 			icon: <FontAwesomeIcon icon={faClock} />,
-			title: "Feedback Instantáneo",
-			description: "Resultados detallados en menos de 30 segundos",
+			title: "Evaluación asistida",
+			description: "Borradores de evaluación con seguimiento de estado",
 			gradient: "from-purple-500 to-pink-500",
 		},
 		{
@@ -116,270 +117,309 @@ const LoginPage: React.FC = () => {
 			</div> */}
 
 			{/* Login Form */}
-			<form onSubmit={handleSubmit} className="space-y-6">
-				{error && (
-					<div className="p-4 bg-red-50 border border-red-200 rounded-xl">
-						<div className="flex items-center gap-3">
-							<span className="text-red-600"><FontAwesomeIcon
-																	icon={faTriangleExclamation}
-																/></span>
-							<span className="text-red-700">{error}</span>
-						</div>
-					</div>
-				)}
-
-				{twoFactorChallenge ? (
-					<div className="space-y-5">
-						<div className="rounded-xl border border-electric-200 bg-electric-50 p-4 text-sm text-gray-700">
-							<p className="font-bold text-gray-900">
-								{twoFactorChallenge.requiresSetup
-									? "Configura la verificación en dos pasos"
-									: "Verificación en dos pasos"}
-							</p>
-							<p className="mt-1">
-								{twoFactorChallenge.requiresSetup
-									? "Escanea el código con Google Authenticator o Microsoft Authenticator y confirma el primer código. La sesión no se creará hasta completar este paso."
-									: "Ingresa el código actual de tu aplicación autenticadora. La verificación se conservará únicamente durante la vigencia de esta sesión."}
-							</p>
-							{twoFactorChallenge.requiresSetup &&
-								twoFactorChallenge.otpAuthUri && (
-									<div className="mt-4 flex flex-col items-center gap-3">
-										<div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
-											<QRCodeSVG
-												value={twoFactorChallenge.otpAuthUri}
-												size={196}
-												level="M"
-												title="Código QR para configurar Aura Grade en una aplicación autenticadora"
-											/>
-										</div>
-										<a
-											href={twoFactorChallenge.otpAuthUri}
-											className="font-semibold text-electric-600 underline-offset-4 hover:underline"
-										>
-											Abrir en mi aplicación autenticadora
-										</a>
-										<p className="text-center text-xs text-gray-500">
-											Si estás configurando desde este mismo teléfono, usa el
-											enlace.
-										</p>
-									</div>
-								)}
-							{twoFactorChallenge.setupKey && (
-								<div className="mt-3 rounded-lg bg-white p-3 text-center">
-									<p className="mb-2 text-xs font-medium text-gray-500">
-										También puedes ingresar esta clave manualmente
-									</p>
-									<code className="block break-all font-mono text-base font-bold tracking-wider text-electric-700">
-										{twoFactorChallenge.setupKey}
-									</code>
-									<button
-										type="button"
-										onClick={() => void copySetupKey()}
-										className="mt-2 text-xs font-semibold text-electric-600 hover:text-electric-700"
-									>
-										{setupKeyCopied ? "Clave copiada" : "Copiar clave"}
-									</button>
-								</div>
-							)}
-						</div>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Código de 6 dígitos
-							</label>
-							<input
-								type="text"
-								inputMode="numeric"
-								autoComplete="one-time-code"
-								value={otp}
-								onChange={(event) =>
-									setOtp(event.target.value.replace(/\D/g, "").slice(0, 6))
-								}
-								className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 text-center font-mono text-2xl tracking-[0.5em] outline-none transition-all focus:border-electric-500 focus:ring-2 focus:ring-electric-200"
-								placeholder="000000"
-								pattern="[0-9]{6}"
-								maxLength={6}
-								required
-							/>
-						</div>
-					</div>
-				) : (
-					<>
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Correo electrónico
-							</label>
-							<div className="relative">
-								<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-									<svg
-										className="h-5 w-5 text-gray-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-										/>
-									</svg>
-								</div>
-								<input
-									type="email"
-									name="email"
-									value={formData.email}
-									onChange={handleChange}
-									className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-electric-500 focus:ring-2 focus:ring-electric-200 outline-none transition-all"
-									placeholder="tu@email.com"
-									required
-								/>
-							</div>
-						</div>
-
-						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
-								Contraseña
-							</label>
-							<div className="relative">
-								<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-									<svg
-										className="h-5 w-5 text-gray-400"
-										fill="none"
-										stroke="currentColor"
-										viewBox="0 0 24 24"
-									>
-										<path
-											strokeLinecap="round"
-											strokeLinejoin="round"
-											strokeWidth={2}
-											d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
-										/>
-									</svg>
-								</div>
-								<input
-									type={showPassword ? "text" : "password"}
-									name="password"
-									value={formData.password}
-									onChange={handleChange}
-									className="w-full pl-10 pr-12 py-3 border-2 border-gray-300 rounded-xl focus:border-electric-500 focus:ring-2 focus:ring-electric-200 outline-none transition-all"
-									placeholder="••••••••"
-									required
-								/>
-								<button
-									type="button"
-									onClick={handleTogglePassword}
-									className="absolute inset-y-0 right-0 pr-3 flex items-center"
-								>
-									{showPassword ? (
-										<svg
-											className="h-5 w-5 text-gray-400"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
-											/>
-										</svg>
-									) : (
-										<svg
-											className="h-5 w-5 text-gray-400"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-											/>
-											<path
-												strokeLinecap="round"
-												strokeLinejoin="round"
-												strokeWidth={2}
-												d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-											/>
-										</svg>
-									)}
-								</button>
-							</div>
-						</div>
-
-						<div className="flex items-center justify-between">
-							<label className="flex items-center">
-								<input
-									type="checkbox"
-									name="rememberMe"
-									checked={formData.rememberMe}
-									onChange={handleChange}
-									className="h-4 w-4 text-electric-500 rounded border-gray-300 focus:ring-electric-200"
-								/>
-								<span className="ml-2 text-sm text-gray-700">Recordarme</span>
-							</label>
-
-							<Link
-								href="/forgot-password"
-								className="text-sm text-electric-500 hover:text-electric-600 font-medium"
-							>
-								¿Olvidaste tu contraseña?
-							</Link>
-						</div>
-					</>
-				)}
-
-				<button
-					type="submit"
-					disabled={isLoading}
-					className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-all ${
-						isLoading
-							? "bg-gray-400 cursor-not-allowed"
-							: "bg-gradient-to-r from-electric-500 to-cyan-500 hover:from-electric-600 hover:to-cyan-600 shadow-lg hover:shadow-xl"
-					}`}
+			{recoveryCodes.length > 0 ? (
+				<section
+					data-sentry-mask
+					className="space-y-4"
+					aria-label="Códigos de recuperación"
 				>
-					{isLoading ? (
-						<span className="flex items-center justify-center gap-2">
-							<svg
-								className="animate-spin h-5 w-5 text-white"
-								fill="none"
-								viewBox="0 0 24 24"
-							>
-								<circle
-									className="opacity-25"
-									cx="12"
-									cy="12"
-									r="10"
-									stroke="currentColor"
-									strokeWidth="4"
-								/>
-								<path
-									className="opacity-75"
-									fill="currentColor"
-									d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-								/>
-							</svg>
-							{twoFactorChallenge ? "Verificando..." : "Iniciando sesión..."}
-						</span>
-					) : twoFactorChallenge ? (
-						"Verificar código"
-					) : (
-						"Iniciar sesión"
-					)}
-				</button>
-				{twoFactorChallenge && (
+					<h2 className="text-xl font-bold">
+						Guarda tus códigos de recuperación
+					</h2>
+					<p>
+						Cada código permite recuperar el acceso y configurar un autenticador
+						nuevo. Se muestran una sola vez. Guárdalos en un gestor de
+						contraseñas y no los compartas.
+					</p>
+					<ul className="font-mono text-sm break-all">
+						{recoveryCodes.map((code) => (
+							<li key={code}>{code}</li>
+						))}
+					</ul>
 					<button
 						type="button"
-						onClick={cancelTwoFactor}
-						disabled={isLoading}
-						className="w-full rounded-xl border border-gray-300 px-4 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+						className="btn-primary w-full"
+						onClick={finishRecoverySetup}
 					>
-						Volver al inicio de sesión
+						Ya los guardé. Continuar
 					</button>
-				)}
-			</form>
+				</section>
+			) : (
+				<form onSubmit={handleSubmit} className="space-y-6" data-sentry-mask>
+					{error && (
+						<div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+							<div className="flex items-center gap-3">
+								<span className="text-red-600">
+									<FontAwesomeIcon icon={faTriangleExclamation} />
+								</span>
+								<span className="text-red-700">{error}</span>
+							</div>
+						</div>
+					)}
+
+					{twoFactorChallenge ? (
+						<div className="space-y-5">
+							<div className="rounded-xl border border-electric-200 bg-electric-50 p-4 text-sm text-gray-700">
+								<p className="font-bold text-gray-900">
+									{twoFactorChallenge.requiresSetup
+										? "Configura la verificación en dos pasos"
+										: "Verificación en dos pasos"}
+								</p>
+								<p className="mt-1">
+									{twoFactorChallenge.requiresSetup
+										? "Escanea el código con Google Authenticator o Microsoft Authenticator y confirma el primer código. La sesión no se creará hasta completar este paso."
+										: "Ingresa el código actual de tu aplicación autenticadora. La verificación se conservará únicamente durante la vigencia de esta sesión."}
+								</p>
+								{twoFactorChallenge.requiresSetup &&
+									twoFactorChallenge.otpAuthUri && (
+										<div className="mt-4 flex flex-col items-center gap-3">
+											<div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+												<QRCodeSVG
+													value={twoFactorChallenge.otpAuthUri}
+													size={196}
+													level="M"
+													title="Código QR para configurar Aura Grade en una aplicación autenticadora"
+												/>
+											</div>
+											<a
+												href={twoFactorChallenge.otpAuthUri}
+												className="font-semibold text-electric-600 underline-offset-4 hover:underline"
+											>
+												Abrir en mi aplicación autenticadora
+											</a>
+											<p className="text-center text-xs text-gray-500">
+												Si estás configurando desde este mismo teléfono, usa el
+												enlace.
+											</p>
+										</div>
+									)}
+								{twoFactorChallenge.setupKey && (
+									<div className="mt-3 rounded-lg bg-white p-3 text-center">
+										<p className="mb-2 text-xs font-medium text-gray-500">
+											También puedes ingresar esta clave manualmente
+										</p>
+										<code className="block break-all font-mono text-base font-bold tracking-wider text-electric-700">
+											{twoFactorChallenge.setupKey}
+										</code>
+										<button
+											type="button"
+											onClick={() => void copySetupKey()}
+											className="mt-2 text-xs font-semibold text-electric-600 hover:text-electric-700"
+										>
+											{setupKeyCopied ? "Clave copiada" : "Copiar clave"}
+										</button>
+									</div>
+								)}
+							</div>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Código del autenticador o de recuperación
+								</label>
+								<input
+									type="text"
+									inputMode={
+										twoFactorChallenge.requiresSetup ? "numeric" : "text"
+									}
+									autoComplete="one-time-code"
+									value={otp}
+									onChange={(event) =>
+										setOtp(
+											event.target.value
+												.replace(/[^a-fA-F0-9]/g, "")
+												.slice(0, 24),
+										)
+									}
+									className="w-full rounded-xl border-2 border-gray-300 px-4 py-3 text-center font-mono text-2xl tracking-[0.5em] outline-none transition-all focus:border-electric-500 focus:ring-2 focus:ring-electric-200"
+									placeholder="000000"
+									pattern={
+										twoFactorChallenge.requiresSetup
+											? "[0-9]{6}"
+											: "([0-9]{6}|[a-fA-F0-9]{24})"
+									}
+									maxLength={twoFactorChallenge.requiresSetup ? 6 : 24}
+									required
+								/>
+							</div>
+						</div>
+					) : (
+						<>
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Correo electrónico
+								</label>
+								<div className="relative">
+									<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+										<svg
+											className="h-5 w-5 text-gray-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+											/>
+										</svg>
+									</div>
+									<input
+										type="email"
+										name="email"
+										value={formData.email}
+										onChange={handleChange}
+										className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-electric-500 focus:ring-2 focus:ring-electric-200 outline-none transition-all"
+										placeholder="tu@email.com"
+										required
+									/>
+								</div>
+							</div>
+
+							<div>
+								<label className="block text-sm font-medium text-gray-700 mb-2">
+									Contraseña
+								</label>
+								<div className="relative">
+									<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+										<svg
+											className="h-5 w-5 text-gray-400"
+											fill="none"
+											stroke="currentColor"
+											viewBox="0 0 24 24"
+										>
+											<path
+												strokeLinecap="round"
+												strokeLinejoin="round"
+												strokeWidth={2}
+												d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+											/>
+										</svg>
+									</div>
+									<input
+										type={showPassword ? "text" : "password"}
+										name="password"
+										value={formData.password}
+										onChange={handleChange}
+										className="w-full pl-10 pr-12 py-3 border-2 border-gray-300 rounded-xl focus:border-electric-500 focus:ring-2 focus:ring-electric-200 outline-none transition-all"
+										placeholder="••••••••"
+										required
+									/>
+									<button
+										type="button"
+										onClick={handleTogglePassword}
+										className="absolute inset-y-0 right-0 pr-3 flex items-center"
+									>
+										{showPassword ? (
+											<svg
+												className="h-5 w-5 text-gray-400"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L6.59 6.59m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+												/>
+											</svg>
+										) : (
+											<svg
+												className="h-5 w-5 text-gray-400"
+												fill="none"
+												stroke="currentColor"
+												viewBox="0 0 24 24"
+											>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+												/>
+												<path
+													strokeLinecap="round"
+													strokeLinejoin="round"
+													strokeWidth={2}
+													d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+												/>
+											</svg>
+										)}
+									</button>
+								</div>
+							</div>
+
+							<div className="flex items-center justify-between">
+								<label className="flex items-center">
+									<input
+										type="checkbox"
+										name="rememberMe"
+										checked={formData.rememberMe}
+										onChange={handleChange}
+										className="h-4 w-4 text-electric-500 rounded border-gray-300 focus:ring-electric-200"
+									/>
+									<span className="ml-2 text-sm text-gray-700">Recordarme</span>
+								</label>
+
+								<Link
+									href="/forgot-password"
+									className="text-sm text-electric-500 hover:text-electric-600 font-medium"
+								>
+									¿Olvidaste tu contraseña?
+								</Link>
+							</div>
+						</>
+					)}
+
+					<button
+						type="submit"
+						disabled={isLoading}
+						className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-all ${
+							isLoading
+								? "bg-gray-400 cursor-not-allowed"
+								: "bg-gradient-to-r from-electric-500 to-cyan-500 hover:from-electric-600 hover:to-cyan-600 shadow-lg hover:shadow-xl"
+						}`}
+					>
+						{isLoading ? (
+							<span className="flex items-center justify-center gap-2">
+								<svg
+									className="animate-spin h-5 w-5 text-white"
+									fill="none"
+									viewBox="0 0 24 24"
+								>
+									<circle
+										className="opacity-25"
+										cx="12"
+										cy="12"
+										r="10"
+										stroke="currentColor"
+										strokeWidth="4"
+									/>
+									<path
+										className="opacity-75"
+										fill="currentColor"
+										d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+									/>
+								</svg>
+								{twoFactorChallenge ? "Verificando..." : "Iniciando sesión..."}
+							</span>
+						) : twoFactorChallenge ? (
+							"Verificar código"
+						) : (
+							"Iniciar sesión"
+						)}
+					</button>
+					{twoFactorChallenge && (
+						<button
+							type="button"
+							onClick={cancelTwoFactor}
+							disabled={isLoading}
+							className="w-full rounded-xl border border-gray-300 px-4 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+						>
+							Volver al inicio de sesión
+						</button>
+					)}
+				</form>
+			)}
 
 			{/* Register Link */}
 			<div className="mt-8 pt-8 border-t border-gray-200 text-center">

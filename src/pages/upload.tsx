@@ -1,13 +1,13 @@
-import React, {useMemo, useState} from "react";
-import {useRouter} from "next/router";
+import React, { useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import UploadZone from "@/components/Upload/UploadZone";
 import UploadStepper from "@/components/Upload/UploadStepper";
 import Card from "@/components/Common/Card";
 import Badge from "@/components/Common/Badge";
 import SectionHeader from "@/components/Common/SectionHeader";
-import {ProtectedRoute} from "@/components/Auth";
-import {UserRole} from "@/interface";
+import { ProtectedRoute } from "@/components/Auth";
+import { UserRole } from "@/interface";
 import {
 	StudentAssignmentCardData,
 	useAuth,
@@ -20,7 +20,7 @@ import {
 	notifySuccess,
 	notifyWarning,
 } from "@/utils/toastNotify";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faBookOpen,
 	faCalendarDays,
@@ -101,10 +101,16 @@ const formatFileSize = (bytes: number) => {
 	return `${(bytes / Math.pow(1024, index)).toFixed(2)} ${units[index]}`;
 };
 
+const uploadKeys = new WeakMap<File, Map<string, string>>();
+
 const createSubmissionWithFile = async (
 	file: File,
 	assignment: StudentAssignmentCardData,
 ) => {
+	const keys = uploadKeys.get(file) || new Map<string, string>();
+	const idempotencyKey = keys.get(assignment.id) || crypto.randomUUID();
+	keys.set(assignment.id, idempotencyKey);
+	uploadKeys.set(file, keys);
 	const formData = new FormData();
 
 	formData.append(
@@ -135,12 +141,13 @@ const createSubmissionWithFile = async (
 			variables: {
 				createSubmissionInput: {
 					assignmentId: assignment.id,
+					idempotencyKey,
 				},
 				file: null,
 			},
 		}),
 	);
-	formData.append("map", JSON.stringify({"0": ["variables.file"]}));
+	formData.append("map", JSON.stringify({ "0": ["variables.file"] }));
 	formData.append("0", file);
 
 	const response = await fetch("/api/graphql", {
@@ -221,7 +228,7 @@ const fetchSubmissionById = async (submissionId: string) => {
 					}
 				}
 			`,
-			variables: {submissionId},
+			variables: { submissionId },
 		}),
 	});
 
@@ -242,7 +249,7 @@ const fetchSubmissionById = async (submissionId: string) => {
 
 const UploadPage: React.FC = () => {
 	const router = useRouter();
-	const {user} = useAuth();
+	const { user } = useAuth();
 	const {
 		assignments,
 		loading: assignmentsLoading,
@@ -407,7 +414,7 @@ const UploadPage: React.FC = () => {
 					updateGradingProgress(100);
 					notifySuccess(
 						"Tu entrega fue registrada y quedó pendiente de revisión docente.",
-						{id: notificationId},
+						{ id: notificationId },
 					);
 				} else {
 					notifyInfo("Entrega registrada. La evaluación continúa en proceso.", {
@@ -421,7 +428,7 @@ const UploadPage: React.FC = () => {
 						: "No se pudo registrar la entrega.";
 				setProcessError(message);
 				setCurrentStep(0);
-				notifyError(message, {id: notificationId});
+				notifyError(message, { id: notificationId });
 			}
 		} catch (error) {
 			const message =
@@ -576,7 +583,7 @@ const UploadPage: React.FC = () => {
 														<div className="h-2 rounded-full bg-gray-200 overflow-hidden">
 															<div
 																className="h-full bg-electric-500"
-																style={{width: `${criterion.weight}%`}}
+																style={{ width: `${criterion.weight}%` }}
 															/>
 														</div>
 													</div>
@@ -770,7 +777,7 @@ const UploadPage: React.FC = () => {
 												<div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
 													<div
 														className="h-full bg-gradient-to-r from-electric-500 to-cyan-500 transition-all duration-300"
-														style={{width: `${uploadProgress}%`}}
+														style={{ width: `${uploadProgress}%` }}
 													/>
 												</div>
 												{progressDescription && (

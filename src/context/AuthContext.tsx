@@ -1,4 +1,5 @@
 "use client";
+import type { AuthResult } from "@/actions/auth";
 
 import React, {
 	createContext,
@@ -17,17 +18,14 @@ import {
 	updateSessionUserAction,
 	verifyOtpAction,
 } from "@/actions/auth";
-import {AuthState, LoginCredentials, RegisterData, User} from "@/interface";
-import {unsubscribeFromWebPush} from "@/lib/pushNotifications";
+import { AuthState, LoginCredentials, RegisterData, User } from "@/interface";
+import { unsubscribeFromWebPush } from "@/lib/pushNotifications";
 
 const AUTH_CHANNEL_NAME = "auraGrade_auth";
 
 export interface AuthContextType extends AuthState {
 	login: (
-		credentials: Pick<
-			LoginCredentials,
-			"email" | "password" | "rememberMe"
-		>,
+		credentials: Pick<LoginCredentials, "email" | "password" | "rememberMe">,
 	) => Promise<{
 		success: boolean;
 		user?: User;
@@ -39,20 +37,15 @@ export interface AuthContextType extends AuthState {
 		requiresTwoFactorSetup?: boolean;
 		setupKey?: string;
 	}>;
-	verifyOtp: (
-		challengeToken: string,
-		otp: string,
-	) => Promise<{success: boolean; user?: User; error?: string}>;
-	register: (
-		data: RegisterData,
-	) => Promise<{
+	verifyOtp: (challengeToken: string, otp: string) => Promise<AuthResult>;
+	register: (data: RegisterData) => Promise<{
 		success: boolean;
 		user?: User;
 		error?: string;
 		message?: string;
 		pendingApproval?: boolean;
 	}>;
-	logout: () => Promise<{success: boolean; error?: string}>;
+	logout: () => Promise<{ success: boolean; error?: string }>;
 	logoutAll: () => Promise<{
 		success: boolean;
 		revokedSessions?: number;
@@ -60,10 +53,12 @@ export interface AuthContextType extends AuthState {
 	}>;
 	updateUser: (
 		updates: Partial<User>,
-	) => Promise<{success: boolean; user?: User; error?: string}>;
+	) => Promise<{ success: boolean; user?: User; error?: string }>;
 }
 
-export const AuthContext = createContext<AuthContextType | undefined>(undefined);
+export const AuthContext = createContext<AuthContextType | undefined>(
+	undefined,
+);
 
 const getErrorMessage = (error: unknown, fallback: string) =>
 	error instanceof Error
@@ -83,7 +78,7 @@ const notifyOtherTabs = () => {
 	channel.close();
 };
 
-export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const [authState, setAuthState] = useState<AuthState>({
 		user: null,
 		isAuthenticated: false,
@@ -134,10 +129,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
 	const login = useCallback(
 		async (
-			credentials: Pick<
-				LoginCredentials,
-				"email" | "password" | "rememberMe"
-			>,
+			credentials: Pick<LoginCredentials, "email" | "password" | "rememberMe">,
 		) => {
 			setAuthState((previous) => ({
 				...previous,
@@ -166,7 +158,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 						error,
 						sessionErrorCode: null,
 					}));
-					return {success: false, error};
+					return { success: false, error };
 				}
 
 				setAuthState({
@@ -177,7 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					sessionErrorCode: null,
 				});
 				notifyOtherTabs();
-				return {success: true, user: result.user};
+				return { success: true, user: result.user };
 			} catch (error) {
 				const message = getErrorMessage(
 					error,
@@ -189,7 +181,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					error: message,
 					sessionErrorCode: null,
 				}));
-				return {success: false, error: message};
+				return { success: false, error: message };
 			}
 		},
 		[],
@@ -203,6 +195,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			sessionErrorCode: null,
 		}));
 		const result = await verifyOtpAction(challengeToken, otp);
+		if (result.requiresTwoFactor) {
+			setAuthState((previous) => ({
+				...previous,
+				isLoading: false,
+				error: null,
+			}));
+			return result;
+		}
 		if (!result.user) {
 			const error = result.error || "Código inválido o expirado.";
 			setAuthState((previous) => ({
@@ -211,7 +211,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 				error,
 				sessionErrorCode: null,
 			}));
-			return {success: false, error};
+			return { success: false, error };
 		}
 		setAuthState({
 			user: result.user,
@@ -221,7 +221,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			sessionErrorCode: null,
 		});
 		notifyOtherTabs();
-		return {success: true, user: result.user};
+		return {
+			success: true,
+			user: result.user,
+			recoveryCodes: result.recoveryCodes,
+		};
 	}, []);
 
 	const register = useCallback(async (data: RegisterData) => {
@@ -242,7 +246,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 					error,
 					sessionErrorCode: null,
 				}));
-				return {success: false, error};
+				return { success: false, error };
 			}
 
 			if (result.pendingApproval) {
@@ -269,7 +273,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 				sessionErrorCode: null,
 			});
 			notifyOtherTabs();
-			return {success: true, user: result.user};
+			return { success: true, user: result.user };
 		} catch (error) {
 			const message = getErrorMessage(error, "Error inesperado al registrarse");
 			setAuthState((previous) => ({
@@ -278,7 +282,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 				error: message,
 				sessionErrorCode: null,
 			}));
-			return {success: false, error: message};
+			return { success: false, error: message };
 		}
 	}, []);
 
@@ -330,7 +334,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 			sessionErrorCode: null,
 		});
 		notifyOtherTabs();
-		return {success: true, user: result.user};
+		return { success: true, user: result.user };
 	}, []);
 
 	const value = useMemo(

@@ -1,27 +1,25 @@
-import {NextRequest, NextResponse} from "next/server";
+import { readLimitedBody, RequestBodyError } from "@/lib/server/requestBody";
+import { NextRequest, NextResponse } from "next/server";
 import {
 	fetchBackendGraphql,
 	forwardedBackendHeaders,
 	isTrustedMutationRequest,
 } from "@/lib/server/backend";
-import {
-	clearSessionCookie,
-	readSessionToken,
-} from "@/lib/server/authSession";
+import { clearSessionCookie, readSessionToken } from "@/lib/server/authSession";
 
 const isUnauthenticatedError = (payload: unknown) => {
 	if (!payload || typeof payload !== "object" || !("errors" in payload)) {
 		return false;
 	}
 
-	const errors = (payload as {errors?: unknown}).errors;
+	const errors = (payload as { errors?: unknown }).errors;
 	if (!Array.isArray(errors)) return false;
 
 	return errors.some((error) => {
 		if (!error || typeof error !== "object") return false;
 		const candidate = error as {
 			message?: string;
-			extensions?: {code?: string};
+			extensions?: { code?: string };
 		};
 		const code = candidate.extensions?.code?.toUpperCase();
 		const message = candidate.message?.toLowerCase() || "";
@@ -36,7 +34,10 @@ const isUnauthenticatedError = (payload: unknown) => {
 
 export async function POST(request: NextRequest) {
 	if (!isTrustedMutationRequest(request)) {
-		return NextResponse.json({error: "Origen no permitido."}, {status: 403});
+		return NextResponse.json(
+			{ error: "Origen no permitido." },
+			{ status: 403 },
+		);
 	}
 
 	const sessionToken = readSessionToken(request);
@@ -46,11 +47,11 @@ export async function POST(request: NextRequest) {
 				errors: [
 					{
 						message: "Sesión no válida.",
-						extensions: {code: "UNAUTHENTICATED"},
+						extensions: { code: "UNAUTHENTICATED" },
 					},
 				],
 			},
-			{status: 401, headers: {"cache-control": "no-store"}},
+			{ status: 401, headers: { "cache-control": "no-store" } },
 		);
 	}
 
@@ -61,14 +62,17 @@ export async function POST(request: NextRequest) {
 			accept: request.headers.get("accept") || "application/json",
 			"content-type": contentType,
 		});
-		const isMultipart = contentType.toLowerCase().startsWith("multipart/form-data");
+		const isMultipart = contentType
+			.toLowerCase()
+			.startsWith("multipart/form-data");
 		if (isMultipart) {
 			backendHeaders.set("apollo-require-preflight", "true");
 		}
 
-		const requestBody = isMultipart
-			? await request.arrayBuffer()
-			: request.body;
+		const requestBody = await readLimitedBody(
+			request,
+			isMultipart ? 16 * 1024 * 1024 : 1024 * 1024,
+		);
 
 		const backendResponse = await fetchBackendGraphql(request, {
 			method: "POST",
@@ -104,17 +108,22 @@ export async function POST(request: NextRequest) {
 
 		if (shouldClearSession) clearSessionCookie(response);
 		return response;
-	} catch {
+	} catch (error) {
+		if (error instanceof RequestBodyError)
+			return NextResponse.json(
+				{ errors: [{ message: error.message }] },
+				{ status: error.status },
+			);
 		return NextResponse.json(
 			{
 				errors: [
 					{
 						message: "No fue posible conectar con GraphQL.",
-						extensions: {code: "SERVICE_UNAVAILABLE"},
+						extensions: { code: "SERVICE_UNAVAILABLE" },
 					},
 				],
 			},
-			{status: 503, headers: {"cache-control": "no-store"}},
+			{ status: 503, headers: { "cache-control": "no-store" } },
 		);
 	}
 }

@@ -1,13 +1,13 @@
 "use client";
 
-import {useState} from "react";
-import {useRouter} from "next/navigation";
-import {UserRole} from "@/interface";
-import {useAuth} from "./";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { UserRole } from "@/interface";
+import { useAuth } from "./";
 
 export const useLogin = () => {
 	const router = useRouter();
-	const {login: loginCore, verifyOtp, isLoading, error} = useAuth();
+	const { login: loginCore, verifyOtp, isLoading, error } = useAuth();
 	const [formData, setFormData] = useState({
 		email: "",
 		password: "",
@@ -15,6 +15,8 @@ export const useLogin = () => {
 	});
 	const [showPassword, setShowPassword] = useState(false);
 	const [otp, setOtp] = useState("");
+	const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+	const [completedRole, setCompletedRole] = useState<UserRole | null>(null);
 	const [twoFactorChallenge, setTwoFactorChallenge] = useState<{
 		challengeToken: string;
 		expiresAt?: string;
@@ -24,7 +26,7 @@ export const useLogin = () => {
 	} | null>(null);
 
 	const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-		const {name, value, type, checked} = e.target;
+		const { name, value, type, checked } = e.target;
 		setFormData((prev) => ({
 			...prev,
 			[name]: type === "checkbox" ? checked : value,
@@ -37,7 +39,21 @@ export const useLogin = () => {
 		e.preventDefault();
 		if (twoFactorChallenge) {
 			const result = await verifyOtp(twoFactorChallenge.challengeToken, otp);
-			if (result.success && result.user) redirectForRole(result.user.role);
+			if (result.requiresTwoFactor && result.challengeToken) {
+				setOtp("");
+				setTwoFactorChallenge({
+					challengeToken: result.challengeToken,
+					expiresAt: result.expiresAt,
+					otpAuthUri: result.otpAuthUri,
+					setupKey: result.setupKey,
+					requiresSetup: Boolean(result.requiresTwoFactorSetup),
+				});
+			} else if (result.success && result.user) {
+				if (result.recoveryCodes?.length) {
+					setRecoveryCodes(result.recoveryCodes);
+					setCompletedRole(result.user.role);
+				} else redirectForRole(result.user.role);
+			}
 			return;
 		}
 		const result = await loginCore(formData);
@@ -76,6 +92,11 @@ export const useLogin = () => {
 	};
 
 	return {
+		recoveryCodes,
+		finishRecoverySetup: () => {
+			setRecoveryCodes([]);
+			if (completedRole) redirectForRole(completedRole);
+		},
 		formData,
 		setFormData,
 		showPassword,

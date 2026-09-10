@@ -64,7 +64,9 @@ NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE=0.05
 
 La subida de source maps se realiza únicamente en GitHub Actions. Configura el
 secreto `SENTRY_AUTH_TOKEN` y las variables `SENTRY_ORG`, `SENTRY_PROJECT` y
-`NEXT_PUBLIC_SENTRY_DSN`. El token nunca debe usar el prefijo `NEXT_PUBLIC_`.
+`NEXT_PUBLIC_SENTRY_DSN`. Por compatibilidad, estas tres últimas también pueden
+guardarse como secrets; el workflow primero busca una variable y luego el secret
+del mismo nombre. El token nunca debe usar el prefijo `NEXT_PUBLIC_`.
 
 El workflow usa `stiwardev/aura-grade-front`, asigna como release
 `aura-grade-front@<git-sha>` y elimina los source maps públicos después de

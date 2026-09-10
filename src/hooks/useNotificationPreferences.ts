@@ -1,4 +1,5 @@
-import {useCallback, useEffect, useState} from "react";
+import { startTransition } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	DEFAULT_NOTIFICATION_PREFERENCES,
 	type NotificationPreferences,
@@ -22,7 +23,9 @@ const readCachedPreferences = (userId?: string) => {
 	try {
 		const value = window.localStorage.getItem(cacheKey(userId));
 		return value
-			? normalizedPreferences(JSON.parse(value) as Partial<NotificationPreferences>)
+			? normalizedPreferences(
+					JSON.parse(value) as Partial<NotificationPreferences>,
+				)
 			: DEFAULT_NOTIFICATION_PREFERENCES;
 	} catch {
 		return DEFAULT_NOTIFICATION_PREFERENCES;
@@ -36,7 +39,7 @@ const cachePreferences = (
 	if (typeof window === "undefined") return;
 	window.localStorage.setItem(cacheKey(userId), JSON.stringify(preferences));
 	window.dispatchEvent(
-		new CustomEvent(PREFERENCES_UPDATED_EVENT, {detail: preferences}),
+		new CustomEvent(PREFERENCES_UPDATED_EVENT, { detail: preferences }),
 	);
 };
 
@@ -59,15 +62,19 @@ export const useNotificationPreferences = (userId?: string) => {
 
 	useEffect(() => {
 		if (!userId) {
-			setPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
-			setLoading(false);
+			startTransition(() => {
+				setPreferences(DEFAULT_NOTIFICATION_PREFERENCES);
+				setLoading(false);
+			});
 			return;
 		}
 
 		let active = true;
-		setPreferences(readCachedPreferences(userId));
-		setLoading(true);
-		setError(null);
+		startTransition(() => {
+			setPreferences(readCachedPreferences(userId));
+			setLoading(true);
+			setError(null);
+		});
 
 		void fetch("/api/notifications/preferences", {
 			credentials: "same-origin",
@@ -106,7 +113,8 @@ export const useNotificationPreferences = (userId?: string) => {
 		const handleUpdate = (event: Event) => {
 			const nextPreferences = (event as CustomEvent<NotificationPreferences>)
 				.detail;
-			if (nextPreferences) setPreferences(normalizedPreferences(nextPreferences));
+			if (nextPreferences)
+				setPreferences(normalizedPreferences(nextPreferences));
 		};
 		const handleStorage = (event: StorageEvent) => {
 			if (event.key === cacheKey(userId)) {
@@ -132,7 +140,7 @@ export const useNotificationPreferences = (userId?: string) => {
 				const response = await fetch("/api/notifications/preferences", {
 					method: "PATCH",
 					credentials: "same-origin",
-					headers: {"content-type": "application/json"},
+					headers: { "content-type": "application/json" },
 					body: JSON.stringify(nextPreferences),
 				});
 				if (!response.ok) {

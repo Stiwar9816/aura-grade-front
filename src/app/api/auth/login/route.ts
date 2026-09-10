@@ -1,11 +1,12 @@
-import {NextRequest, NextResponse} from "next/server";
-import type {LoginCredentials, User} from "@/interface";
+import { readLimitedJson, RequestBodyError } from "@/lib/server/requestBody";
+import { NextRequest, NextResponse } from "next/server";
+import type { LoginCredentials, User } from "@/interface";
 import {
 	fetchBackendRest,
 	forwardedBackendHeaders,
 	isTrustedMutationRequest,
 } from "@/lib/server/backend";
-import {setSessionCookie} from "@/lib/server/authSession";
+import { setSessionCookie } from "@/lib/server/authSession";
 
 type BackendAuthResponse = {
 	challengeToken?: string;
@@ -21,32 +22,35 @@ type BackendAuthResponse = {
 
 export async function POST(request: NextRequest) {
 	if (!isTrustedMutationRequest(request)) {
-		return NextResponse.json({error: "Origen no permitido."}, {status: 403});
+		return NextResponse.json(
+			{ error: "Origen no permitido." },
+			{ status: 403 },
+		);
 	}
 
 	try {
-		const credentials = (await request.json()) as Pick<
+		const credentials = (await readLimitedJson(request)) as Pick<
 			LoginCredentials,
 			"email" | "password" | "rememberMe"
 		>;
 		const backendResponse = await fetchBackendRest(request, "auth/login", {
 			method: "POST",
-			headers: {"content-type": "application/json"},
+			headers: { "content-type": "application/json" },
 			body: JSON.stringify({
 				email: credentials.email,
 				password: credentials.password,
 				rememberMe: Boolean(credentials.rememberMe),
 			}),
 		});
-		const data = (await backendResponse.json().catch(() => null)) as
-			| BackendAuthResponse
-			| null;
+		const data = (await backendResponse
+			.json()
+			.catch(() => null)) as BackendAuthResponse | null;
 		const responseHeaders = forwardedBackendHeaders(backendResponse);
 
 		if (!backendResponse.ok || !data) {
 			return NextResponse.json(
-				{error: data?.message || "Credenciales incorrectas"},
-				{status: backendResponse.status || 502, headers: responseHeaders},
+				{ error: data?.message || "Credenciales incorrectas" },
+				{ status: backendResponse.status || 502, headers: responseHeaders },
 			);
 		}
 
@@ -60,31 +64,38 @@ export async function POST(request: NextRequest) {
 					requiresTwoFactorSetup: Boolean(data.requiresTwoFactorSetup),
 					setupKey: data.setupKey,
 				},
-				{headers: responseHeaders},
+				{ headers: responseHeaders },
 			);
 		}
 
 		const sessionToken = data.sessionToken;
 		if (!sessionToken || !data.user?.id) {
 			return NextResponse.json(
-				{error: "La respuesta de autenticación no contiene una sesión válida."},
-				{status: 502, headers: responseHeaders},
+				{
+					error: "La respuesta de autenticación no contiene una sesión válida.",
+				},
+				{ status: 502, headers: responseHeaders },
 			);
 		}
 
 		const response = NextResponse.json(
-			{success: true, user: data.user, expiresAt: data.expiresAt},
-			{headers: responseHeaders},
+			{ success: true, user: data.user, expiresAt: data.expiresAt },
+			{ headers: responseHeaders },
 		);
 		setSessionCookie(response, sessionToken, {
 			rememberMe: Boolean(credentials.rememberMe),
 			expiresAt: data.expiresAt,
 		});
 		return response;
-	} catch {
+	} catch (error) {
+		if (error instanceof RequestBodyError)
+			return NextResponse.json(
+				{ error: error.message },
+				{ status: error.status, headers: { "cache-control": "no-store" } },
+			);
 		return NextResponse.json(
-			{error: "El servicio de autenticación no está disponible."},
-			{status: 502},
+			{ error: "El servicio de autenticación no está disponible." },
+			{ status: 502 },
 		);
 	}
 }
