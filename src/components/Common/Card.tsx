@@ -9,17 +9,20 @@ const Card: React.FC<CardProps> = ({
 	onClick,
 }) => {
 	const baseStyles =
-		"bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden";
-	const paddingStyles = noPadding ? "" : "p-6";
+		"bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden";
+	const paddingStyles = noPadding ? "" : "p-4 sm:p-5";
 	const interactionStyles =
 		hoverable || onClick
-			? "hover:border-electric-500 hover:shadow-md transition-all duration-300 cursor-pointer active:scale-[0.98]"
+			? "hover:border-electric-400 transition-colors duration-200 cursor-pointer"
 			: "";
 
 	return (
 		<div
 			className={`${baseStyles} ${paddingStyles} ${interactionStyles} ${className}`}
 			onClick={onClick}
+            role={onClick ? "button" : undefined}
+            tabIndex={onClick ? 0 : undefined}
+            onKeyDown={onClick ? (event) => { if (event.target === event.currentTarget && (event.key === "Enter" || event.key === " ")) { event.preventDefault(); onClick(); } } : undefined}
 		>
 			{children}
 		</div>

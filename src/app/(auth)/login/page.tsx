@@ -41,7 +41,7 @@ const LoginPage: React.FC = () => {
 	const features = [
 		{
 			icon: <FontAwesomeIcon icon={faHeadSideVirus} />,
-			title: "IA Especializada",
+			title: "Criterios visibles",
 			description: "Evaluación guiada por la rúbrica y revisada por tu docente",
 			gradient: "from-electric-500 to-cyan-500",
 		},
@@ -53,8 +53,8 @@ const LoginPage: React.FC = () => {
 		},
 		{
 			icon: <FontAwesomeIcon icon={faChartColumn} />,
-			title: "Análisis Profundo",
-			description: "Insights pedagógicos para mejorar el aprendizaje",
+			title: "Seguimiento académico",
+			description: "Notas y observaciones para orientar tu aprendizaje",
 			gradient: "from-green-500 to-emerald-500",
 		},
 	];
@@ -147,7 +147,7 @@ const LoginPage: React.FC = () => {
 			) : (
 				<form onSubmit={handleSubmit} className="space-y-6" data-sentry-mask>
 					{error && (
-						<div className="p-4 bg-red-50 border border-red-200 rounded-xl">
+						<div role="alert" className="p-4 bg-red-50 border border-red-200 rounded-xl">
 							<div className="flex items-center gap-3">
 								<span className="text-red-600">
 									<FontAwesomeIcon icon={faTriangleExclamation} />
@@ -212,7 +212,7 @@ const LoginPage: React.FC = () => {
 								)}
 							</div>
 							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-2">
+								<label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-2">
 									Código del autenticador o de recuperación
 								</label>
 								<input
@@ -220,7 +220,7 @@ const LoginPage: React.FC = () => {
 									inputMode={
 										twoFactorChallenge.requiresSetup ? "numeric" : "text"
 									}
-									autoComplete="one-time-code"
+									id="otp" autoComplete="one-time-code"
 									value={otp}
 									onChange={(event) =>
 										setOtp(
@@ -244,13 +244,13 @@ const LoginPage: React.FC = () => {
 					) : (
 						<>
 							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-2">
+								<label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
 									Correo electrónico
 								</label>
 								<div className="relative">
 									<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
 										<svg
-											className="h-5 w-5 text-gray-400"
+											className="h-5 w-5 text-gray-500"
 											fill="none"
 											stroke="currentColor"
 											viewBox="0 0 24 24"
@@ -265,7 +265,7 @@ const LoginPage: React.FC = () => {
 									</div>
 									<input
 										type="email"
-										name="email"
+										autoComplete="email" id="email" name="email"
 										value={formData.email}
 										onChange={handleChange}
 										className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-electric-500 focus:ring-2 focus:ring-electric-200 outline-none transition-all"
@@ -276,13 +276,13 @@ const LoginPage: React.FC = () => {
 							</div>
 
 							<div>
-								<label className="block text-sm font-medium text-gray-700 mb-2">
+								<label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
 									Contraseña
 								</label>
 								<div className="relative">
 									<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
 										<svg
-											className="h-5 w-5 text-gray-400"
+											className="h-5 w-5 text-gray-500"
 											fill="none"
 											stroke="currentColor"
 											viewBox="0 0 24 24"
@@ -297,7 +297,7 @@ const LoginPage: React.FC = () => {
 									</div>
 									<input
 										type={showPassword ? "text" : "password"}
-										name="password"
+										autoComplete="current-password" id="password" name="password"
 										value={formData.password}
 										onChange={handleChange}
 										className="w-full pl-10 pr-12 py-3 border-2 border-gray-300 rounded-xl focus:border-electric-500 focus:ring-2 focus:ring-electric-200 outline-none transition-all"
@@ -306,12 +306,13 @@ const LoginPage: React.FC = () => {
 									/>
 									<button
 										type="button"
-										onClick={handleTogglePassword}
-										className="absolute inset-y-0 right-0 pr-3 flex items-center"
+										aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                        aria-pressed={showPassword} onClick={handleTogglePassword}
+										className="absolute inset-y-0 right-0 min-w-11 flex items-center justify-center"
 									>
 										{showPassword ? (
 											<svg
-												className="h-5 w-5 text-gray-400"
+												className="h-5 w-5 text-gray-500"
 												fill="none"
 												stroke="currentColor"
 												viewBox="0 0 24 24"
@@ -325,7 +326,7 @@ const LoginPage: React.FC = () => {
 											</svg>
 										) : (
 											<svg
-												className="h-5 w-5 text-gray-400"
+												className="h-5 w-5 text-gray-500"
 												fill="none"
 												stroke="currentColor"
 												viewBox="0 0 24 24"
@@ -376,7 +377,7 @@ const LoginPage: React.FC = () => {
 						className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-all ${
 							isLoading
 								? "bg-gray-400 cursor-not-allowed"
-								: "bg-gradient-to-r from-electric-500 to-cyan-500 hover:from-electric-600 hover:to-cyan-600 shadow-lg hover:shadow-xl"
+								: "bg-electric-500 hover:bg-electric-600"
 						}`}
 					>
 						{isLoading ? (

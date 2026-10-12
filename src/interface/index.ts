@@ -12,3 +12,4 @@ export * from "./Notification.interface";
 export * from "./Auth.interface";
 export * from "./Common.interface";
 export * from "./Activity.interface";
+export * from "./Operations.interface";

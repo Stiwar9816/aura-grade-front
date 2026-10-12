@@ -229,7 +229,7 @@ const SubmissionTracker: React.FC = () => {
 											<div className="text-sm text-gray-600">
 												{submission.studentEmail}
 											</div>
-											<div className="text-xs text-gray-400 mt-1">
+											<div className="text-xs text-gray-500 mt-1">
 												{getTimeSince(submission.submittedAt)}
 											</div>
 										</div>
@@ -270,7 +270,7 @@ const SubmissionTracker: React.FC = () => {
 												)}
 											</div>
 										) : (
-											<span className="text-gray-400">-</span>
+											<span className="text-gray-500">-</span>
 										)}
 									</td>
 									<td className="py-4 px-4">
@@ -294,7 +294,7 @@ const SubmissionTracker: React.FC = () => {
 												</div>
 											</div>
 										) : (
-											<div className="text-gray-400">—</div>
+											<div className="text-gray-500">—</div>
 										)}
 									</td>
 									<td className="py-4 px-4">

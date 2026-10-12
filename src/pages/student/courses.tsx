@@ -10,12 +10,12 @@ import {
 	StudentCourseReport,
 	useStudentAcademicData,
 } from "@/hooks";
+import {STANDARD_GRADE_MAX} from "@/utils/gradeScale";
 import {UserRole} from "@/interface";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faArrowTrendUp,
 	faBookOpen,
-	faChartPie,
 	faCircleCheck,
 	faClock,
 	faFileLines,
@@ -24,7 +24,7 @@ import {
 const getStatusBadge = (status: StudentAssignmentCardData["status"]) => {
 	switch (status) {
 		case "graded":
-			return {label: "Calificada", variant: "success" as const};
+			return {label: "Publicada", variant: "success" as const};
 		case "submitted":
 		case "review_pending":
 			return {label: "En revisión", variant: "warning" as const};
@@ -57,7 +57,7 @@ const formatDate = (date: string) =>
 	});
 
 const CourseProgressBar: React.FC<{value: number}> = ({value}) => (
-	<div className="h-3 bg-gray-100 rounded-full overflow-hidden">
+	<div role="progressbar" aria-label="Tareas calificadas" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(value)} className="h-2 bg-gray-100 rounded-full overflow-hidden">
 		<div
 			className="h-full bg-electric-500 rounded-full transition-all"
 			style={{width: `${Math.min(value, 100)}%`}}
@@ -93,8 +93,8 @@ const StudentCoursesPage: React.FC = () => {
 			<Layout title="Mis cursos" hideHeader>
 				<div className="max-w-7xl mx-auto space-y-8">
 					<SectionHeader
-						title="Mis cursos"
-						description="Consulta tus cursos registrados y el avance progresivo de tus notas."
+						as="h1" title="Mis cursos"
+						description="Consulta las notas publicadas y cuántas tareas tienen evaluación."
 					/>
 
 					{error && (
@@ -123,7 +123,7 @@ const StudentCoursesPage: React.FC = () => {
 								icon={faBookOpen}
 								className="text-5xl text-gray-300 mb-4"
 							/>
-							<h2 className="text-xl font-black text-gray-900 mb-2">
+							<h2 className="text-xl font-semibold text-gray-900 mb-2">
 								No tienes cursos registrados
 							</h2>
 							<p className="text-gray-500">
@@ -132,7 +132,12 @@ const StudentCoursesPage: React.FC = () => {
 						</Card>
 					) : (
 						<div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-							<div className="space-y-4">
+                            <label className="lg:hidden text-sm font-medium text-gray-700">Curso
+                                <select className="input-primary mt-2" value={selectedCourse?.id || ""} onChange={(event) => setSelectedCourseId(event.target.value)}>
+                                    {courses.map(course => <option key={course.id} value={course.id}>{course.code} · {course.name}</option>)}
+                                </select>
+                            </label>
+							<div className="hidden lg:block space-y-4">
 								{courses.map((course) => (
 									<Card
 										key={course.id}
@@ -146,18 +151,18 @@ const StudentCoursesPage: React.FC = () => {
 									>
 										<div className="flex items-start justify-between gap-3 mb-4">
 											<div>
-												<div className="text-xs font-black text-electric-600 uppercase tracking-widest">
+												<div className="text-xs font-semibold text-electric-600 uppercase tracking-widest">
 													{course.code}
 												</div>
-												<h3 className="text-lg font-black text-gray-900">
+												<h3 className="text-lg font-semibold text-gray-900">
 													{course.name}
 												</h3>
 											</div>
 											<Badge variant="electric">
-												{course.currentPercentage}%
+												{course.gradedAssignments}/{course.totalAssignments} calificadas
 											</Badge>
 										</div>
-										<CourseProgressBar value={course.currentPercentage} />
+										<CourseProgressBar value={course.totalAssignments ? course.gradedAssignments / course.totalAssignments * 100 : 0} />
 										<div className="flex justify-between text-xs text-gray-500 mt-3">
 											<span>{course.gradedAssignments} calificadas</span>
 											<span>{course.reviewPendingAssignments} en revisión</span>
@@ -170,26 +175,24 @@ const StudentCoursesPage: React.FC = () => {
 								{selectedCourse && (
 									<div className="space-y-6">
 										<Card className="bg-white/70 border border-gray-100">
-											<div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-6">
+											<div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
 												<div>
-													<div className="text-xs font-black text-electric-600 uppercase tracking-widest mb-1">
+													<div className="text-xs font-semibold text-electric-600 uppercase tracking-widest mb-1">
 														{selectedCourse.code}
 													</div>
-													<h2 className="text-2xl font-black text-gray-900">
+													<h2 className="text-2xl font-semibold text-gray-900">
 														{selectedCourse.name}
 													</h2>
 													<p className="text-sm text-gray-500 mt-2">
-														La nota actual se calcula con las tareas
-														calificadas. Las tareas pendientes se integran
-														progresivamente al recibir evaluación.
+														Promedio simple de las tareas calificadas. Las entregas sin nota no se incluyen. No equivale a una nota final ponderada del curso.
 													</p>
 												</div>
-												<div className="text-right">
-													<div className="text-4xl font-black text-electric-600">
-														{selectedCourse.currentGrade}
+												<div className="flex items-baseline gap-3 sm:block sm:text-right">
+													<div className="text-4xl font-semibold text-electric-600">
+														{selectedCourse.gradedAssignments ? selectedCourse.currentGrade : "—"}
 													</div>
-													<div className="text-xs font-bold text-gray-400 uppercase">
-														Promedio actual /10
+													<div className="text-xs font-bold text-gray-500 uppercase">
+														Promedio publicado /{STANDARD_GRADE_MAX}
 													</div>
 													<div className="text-xs text-gray-500 mt-1">
 														{selectedCourse.currentPercentage}% con{" "}
@@ -199,47 +202,48 @@ const StudentCoursesPage: React.FC = () => {
 												</div>
 											</div>
 
-											<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-												<div className="p-4 rounded-xl bg-gray-50">
+											<div className="mb-4"><p className="mb-2 text-xs text-gray-600">{selectedCourse.gradedAssignments} de {selectedCourse.totalAssignments} tareas calificadas</p><CourseProgressBar value={selectedCourse.totalAssignments ? selectedCourse.gradedAssignments / selectedCourse.totalAssignments * 100 : 0} /></div>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+												<div className="p-3 rounded-lg bg-gray-50">
 													<FontAwesomeIcon
 														icon={faFileLines}
 														className="text-gray-500 mb-2"
 													/>
-													<div className="text-2xl font-black text-gray-900">
+													<div className="text-2xl font-semibold text-gray-900">
 														{selectedCourse.totalAssignments}
 													</div>
 													<div className="text-xs text-gray-500">Tareas</div>
 												</div>
-												<div className="p-4 rounded-xl bg-blue-50">
+												<div className="p-3 rounded-lg bg-blue-50">
 													<FontAwesomeIcon
 														icon={faCircleCheck}
 														className="text-blue-500 mb-2"
 													/>
-													<div className="text-2xl font-black text-blue-600">
+													<div className="text-2xl font-semibold text-blue-600">
 														{selectedCourse.deliveredAssignments}
 													</div>
 													<div className="text-xs text-gray-500">
 														Entregadas
 													</div>
 												</div>
-												<div className="p-4 rounded-xl bg-green-50">
+												<div className="p-3 rounded-lg bg-green-50">
 													<FontAwesomeIcon
 														icon={faArrowTrendUp}
 														className="text-green-500 mb-2"
 													/>
-													<div className="text-2xl font-black text-green-600">
+													<div className="text-2xl font-semibold text-green-600">
 														{selectedCourse.gradedAssignments}
 													</div>
 													<div className="text-xs text-gray-500">
 														Calificadas
 													</div>
 												</div>
-												<div className="p-4 rounded-xl bg-yellow-50">
+												<div className="p-3 rounded-lg bg-yellow-50">
 													<FontAwesomeIcon
 														icon={faClock}
 														className="text-yellow-500 mb-2"
 													/>
-													<div className="text-2xl font-black text-yellow-600">
+													<div className="text-2xl font-semibold text-yellow-600">
 														{selectedCourse.reviewPendingAssignments}
 													</div>
 													<div className="text-xs text-gray-500">
@@ -252,14 +256,8 @@ const StudentCoursesPage: React.FC = () => {
 										<Card className="bg-white/70 border border-gray-100">
 											<SectionHeader
 												title="Reporte de notas"
-												description="Porcentaje obtenido por tarea y aporte al promedio progresivo."
+												description="Notas publicadas por tarea. Las entregas en revisión aún no tienen nota definitiva."
 												className="mb-6"
-												actions={
-													<div className="flex items-center gap-2 text-sm font-bold text-electric-600">
-														<FontAwesomeIcon icon={faChartPie} />
-														{selectedCourse.currentPercentage}%
-													</div>
-												}
 											/>
 
 											{selectedCourse.assignments.length === 0 ? (
@@ -267,7 +265,18 @@ const StudentCoursesPage: React.FC = () => {
 													No hay tareas creadas para este curso.
 												</div>
 											) : (
-												<div className="overflow-x-auto">
+												<>
+                                                <ul className="divide-y divide-gray-200 md:hidden">
+                                                    {selectedCourse.assignments.map(assignment => {
+                                                        const status = getStatusBadge(assignment.status);
+                                                        return <li key={assignment.id} className="py-4 first:pt-0">
+                                                            <div className="flex items-start justify-between gap-3"><h3 className="text-sm font-semibold text-gray-900">{assignment.title}</h3><span className="shrink-0 text-sm font-semibold tabular-nums text-gray-900">{assignment.score !== undefined ? `${assignment.score.toFixed(1)} / ${assignment.maxScore}` : '—'}</span></div>
+                                                            <p className="mt-2 text-xs text-gray-600">Vence el {formatDate(assignment.dueDate)}</p>
+                                                            <div className="mt-3 flex items-center justify-between gap-3"><Badge variant={status.variant}>{status.label}</Badge><button className="min-h-11 px-3 text-sm font-semibold text-electric-700" onClick={() => handleOpenAssignment(assignment)}>{getActionLabel(assignment.status)} →</button></div>
+                                                        </li>;
+                                                    })}
+                                                </ul>
+                                                <div className="hidden md:block overflow-x-auto">
 													<table className="w-full">
 														<thead>
 															<tr className="border-b border-gray-200">
@@ -328,14 +337,14 @@ const StudentCoursesPage: React.FC = () => {
 																		</td>
 																		<td className="py-4 px-4">
 																			{assignment.score !== undefined ? (
-																				<span className="font-black text-gray-900">
+																				<span className="font-semibold text-gray-900">
 																					{assignment.score.toFixed(1)}
-																					<span className="text-xs text-gray-400">
+																					<span className="text-xs text-gray-500">
 																						/{assignment.maxScore}
 																					</span>
 																				</span>
 																			) : (
-																				<span className="text-gray-400">-</span>
+																				<span className="text-gray-500">-</span>
 																			)}
 																		</td>
 
@@ -344,7 +353,7 @@ const StudentCoursesPage: React.FC = () => {
 																				onClick={() =>
 																					handleOpenAssignment(assignment)
 																				}
-																				className="px-3 py-1.5 bg-electric-500 text-white text-sm rounded-lg hover:bg-electric-600 transition-colors disabled:bg-gray-200 disabled:text-gray-400"
+																				className="px-3 py-1.5 bg-electric-500 text-white text-sm rounded-lg hover:bg-electric-600 transition-colors disabled:bg-gray-200 disabled:text-gray-500"
 																			>
 																				{getActionLabel(assignment.status)}
 																			</button>
@@ -355,6 +364,7 @@ const StudentCoursesPage: React.FC = () => {
 														</tbody>
 													</table>
 												</div>
+                                                </>
 											)}
 										</Card>
 									</div>

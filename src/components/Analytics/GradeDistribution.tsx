@@ -20,17 +20,17 @@ export const GradeDistribution: React.FC<GradeDistributionProps> = ({
 			{/* Header */}
 			<div className="flex justify-between items-start mb-8">
 				<div>
-					<h3 className="text-2xl font-black text-gray-900">Distribución</h3>
+					<h3 className="text-2xl font-semibold text-gray-900">Distribución</h3>
 					<p className="text-gray-500 font-medium text-sm mt-1">
 						Rendimiento grupal por rangos
 					</p>
 				</div>
 				<div className="text-right">
-					<p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
+					<p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-1">
 						Aprobación
 					</p>
 					<div
-						className={`text-3xl font-black ${getApprovalColor(approvalRate)}`}
+						className={`text-3xl font-semibold ${getApprovalColor(approvalRate)}`}
 					>
 						{approvalRate}
 					</div>
@@ -51,11 +51,11 @@ export const GradeDistribution: React.FC<GradeDistributionProps> = ({
 								</span>
 							</div>
 							<div className="flex items-center gap-2">
-								<span className="text-xs font-bold text-gray-400">
+								<span className="text-xs font-bold text-gray-500">
 									{grade.range}
 								</span>
 								<div className="h-4 w-px bg-gray-200"></div>
-								<span className="font-black text-gray-900 text-sm">
+								<span className="font-semibold text-gray-900 text-sm">
 									{grade.percentage}%
 								</span>
 							</div>

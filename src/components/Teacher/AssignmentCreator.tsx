@@ -213,7 +213,7 @@ const AssignmentCreator: React.FC = () => {
 								))}
 							</select>
 							{coursesLoading && (
-								<p className="text-[10px] text-gray-400 mt-1 animate-pulse">
+								<p className="text-xs text-gray-500 mt-1 animate-pulse">
 									Cargando cursos...
 								</p>
 							)}
@@ -243,7 +243,7 @@ const AssignmentCreator: React.FC = () => {
 											},
 										});
 									}}
-									className="text-sm font-bold text-electric-600 hover:text-electric-700 disabled:cursor-not-allowed disabled:text-gray-400"
+									className="text-sm font-bold text-electric-600 hover:text-electric-700 disabled:cursor-not-allowed disabled:text-gray-500"
 								>
 									Crear rúbrica con IA desde esta tarea
 								</button>
@@ -267,14 +267,14 @@ const AssignmentCreator: React.FC = () => {
 										<div className="text-xs text-gray-500 line-clamp-2">
 											{rubric.description}
 										</div>
-										<div className="mt-2 text-[10px] font-bold text-electric-500 uppercase">
+										<div className="mt-2 text-xs font-bold text-electric-500 uppercase">
 											{rubric.maxTotalScore} Puntos
 										</div>
 									</div>
 									))}
 							</div>
 							{rubricsLoading && (
-								<p className="text-[10px] text-gray-400 mt-2 animate-pulse text-center">
+								<p className="text-xs text-gray-500 mt-2 animate-pulse text-center">
 									Cargando rúbricas...
 								</p>
 							)}

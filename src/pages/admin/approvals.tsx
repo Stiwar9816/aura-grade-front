@@ -120,7 +120,7 @@ const ApprovalsPage = () => {
           <Card className="text-center">
             <FontAwesomeIcon
               icon={faClock}
-              className="mb-3 text-3xl text-gray-400"
+              className="mb-3 text-3xl text-gray-500"
             />
             <h2 className="text-lg font-semibold text-gray-900">
               No hay solicitudes pendientes

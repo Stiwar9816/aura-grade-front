@@ -43,9 +43,9 @@ const AnalyticsPage: React.FC = () => {
 	return (
 		<ProtectedRoute requiredRole={UserRole.TEACHER}>
 			<Layout title="Analíticas" hideHeader>
-				<SectionHeader
+				<SectionHeader as="h1"
 					title="Analíticas"
-					description="Monitoreo predictivo y análisis de brechas pedagógicas"
+					description="Resultados publicados, distribución de notas y tareas que requieren seguimiento"
 					className="mb-8"
 				/>
 				<div className="max-w-7xl mx-auto">
@@ -123,19 +123,19 @@ const AnalyticsPage: React.FC = () => {
 							].map((stat, i) => (
 								<div
 									key={i}
-									className="group relative bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 overflow-hidden"
+									className="group relative bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-xl  transition-all duration-500 overflow-hidden"
 								>
 									<div className="absolute top-0 right-0 p-4">
 										<span className="text-4xl">{stat.icon}</span>
 									</div>
 
 									<div className="relative z-10">
-										<p className="text-[10px] font-bold text-gray-500 uppercase tracking-[0.15em] mb-1">
+										<p className="text-xs font-bold text-gray-500 uppercase tracking-[0.15em] mb-1">
 											{stat.label}
 										</p>
 										<div className="flex items-end justify-between">
 											<div>
-												<h4 className="text-3xl font-black text-gray-900">
+												<h4 className="text-3xl font-semibold text-gray-900">
 													{stat.value}
 												</h4>
 											</div>

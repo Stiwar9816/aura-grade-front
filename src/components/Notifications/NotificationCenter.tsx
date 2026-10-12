@@ -71,7 +71,7 @@ const NotificationCenter = () => {
 			>
 				<FontAwesomeIcon icon={faBell} />
 				{unreadCount > 0 && (
-					<span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[11px] font-bold text-white">
+					<span className="absolute -right-1 -top-1 flex min-h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-xs font-bold text-white">
 						{unreadCount > 99 ? "99+" : unreadCount}
 					</span>
 				)}
@@ -92,7 +92,7 @@ const NotificationCenter = () => {
 							type="button"
 							onClick={() => void markAllAsRead()}
 							disabled={unreadCount === 0}
-							className="flex items-center gap-2 text-xs font-medium text-electric-600 disabled:cursor-not-allowed disabled:text-gray-400"
+							className="flex items-center gap-2 text-xs font-medium text-electric-600 disabled:cursor-not-allowed disabled:text-gray-500"
 						>
 							<FontAwesomeIcon icon={faCheckDouble} />
 							Marcar todas
@@ -109,7 +109,7 @@ const NotificationCenter = () => {
 
 						{!loading && items.length === 0 && !error && (
 							<div className="px-6 py-10 text-center">
-								<div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-400">
+								<div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 text-gray-500">
 									<FontAwesomeIcon icon={faBell} />
 								</div>
 								<p className="font-medium text-gray-800">No tienes notificaciones</p>
@@ -156,7 +156,7 @@ const NotificationCenter = () => {
 									<span className="mt-0.5 block text-sm leading-5 text-gray-600">
 										{notification.body}
 									</span>
-									<span className="mt-1 block text-xs text-gray-400">
+									<span className="mt-1 block text-xs text-gray-500">
 										{formatDistanceToNow(new Date(notification.createdAt), {
 											addSuffix: true,
 											locale: es,
@@ -172,7 +172,7 @@ const NotificationCenter = () => {
 								type="button"
 								onClick={() => void loadMore()}
 								disabled={loading}
-								className="w-full px-4 py-3 text-sm font-medium text-electric-600 hover:bg-gray-50 disabled:text-gray-400"
+								className="w-full px-4 py-3 text-sm font-medium text-electric-600 hover:bg-gray-50 disabled:text-gray-500"
 							>
 								{loading ? "Cargando..." : "Ver anteriores"}
 							</button>
