@@ -76,8 +76,8 @@ const CreatePasswordPage = () => {
 	};
 
 	return (
-		<main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-indigo-950 to-purple-950 p-5">
-			<section className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl sm:p-9">
+		<main className="flex min-h-screen items-center justify-center bg-background-bone p-5">
+			<section className="w-full max-w-md rounded-xl border border-gray-200 bg-white p-7 shadow-sm sm:p-9">
 				<Image
 					src="/logo.png"
 					alt="Aura Grade"
@@ -97,7 +97,7 @@ const CreatePasswordPage = () => {
 						</h1>
 						<p className="mt-2 text-gray-600">
 							Tu contraseña fue creada. Ya puedes iniciar sesión y configurar tu
-							OTP.
+							verificación en dos pasos.
 						</p>
 						<button
 							type="button"

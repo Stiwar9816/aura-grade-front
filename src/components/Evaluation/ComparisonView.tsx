@@ -87,7 +87,7 @@ export const ComparisonView: React.FC<ComparisonViewProps> = ({
 					</div>
 				) : (
 					<div className="space-y-6">
-						<div className="bg-gradient-to-r from-electric-50 to-cyan-50 rounded-xl p-6">
+						<div className="bg-electric-50 rounded-xl p-6">
 							<div className="flex items-center gap-3 mb-6">
 								<div className="w-10 h-10 bg-gradient-to-r from-deep-purple to-purple-600 rounded-full flex items-center justify-center">
 									<span className="text-white text-xl">AI</span>

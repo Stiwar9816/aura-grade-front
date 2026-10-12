@@ -130,7 +130,7 @@ const UploadWithStepper: React.FC = () => {
 
 					<UploadZone onUploadStart={simulateUploadProcess} />
 
-					<div className="mt-8 p-6 bg-gradient-to-r from-electric-50 to-cyan-50 rounded-2xl border border-electric-200">
+					<div className="mt-8 p-6 bg-electric-50 rounded-2xl border border-electric-200">
 						<h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
 							<span>💭</span>
 							<span>¿Qué sucederá después de subir?</span>
@@ -185,7 +185,7 @@ const UploadWithStepper: React.FC = () => {
 						{/* Progress Line */}
 						<div className="absolute top-5 left-0 right-0 h-1 bg-gray-200">
 							<div
-								className="h-1 bg-gradient-to-r from-electric-500 to-cyan-500 transition-all duration-1000"
+								className="h-1 bg-electric-500 transition-all duration-1000"
 								style={{
 									width: `${((currentStep - 1) / (steps.length - 1)) * 100}%`,
 								}}
@@ -284,7 +284,7 @@ const UploadWithStepper: React.FC = () => {
 							</div>
 							<div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
 								<div
-									className="h-full bg-gradient-to-r from-electric-500 to-cyan-500 transition-all duration-500"
+									className="h-full bg-electric-500 transition-all duration-500"
 									style={{width: `${(currentStep / steps.length) * 100}%`}}
 								/>
 							</div>

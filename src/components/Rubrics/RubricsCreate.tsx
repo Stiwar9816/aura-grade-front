@@ -109,7 +109,7 @@ export const RubricsCreate: React.FC<RubricsCreateProps> = ({
 						placeholder="Describe objetivos, producto esperado, requisitos y evidencias..."
 						maxLength={12000}
 					/>
-					<div className="mt-1 text-right text-xs text-gray-400">
+					<div className="mt-1 text-right text-xs text-gray-500">
 						{data.description.length}/12000
 					</div>
 				</div>

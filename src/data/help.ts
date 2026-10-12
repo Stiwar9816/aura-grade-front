@@ -4,6 +4,7 @@ export const helpCategories = [
 	{ id: "grading", name: "Evaluación e IA" },
 	{ id: "account", name: "Acceso y seguridad" },
 	{ id: "notifications", name: "Notificaciones" },
+	{ id: "support", name: "Guía y feedback" },
 ] as const;
 export const helpFaqs = [
 	{
@@ -137,6 +138,24 @@ export const helpFaqs = [
 		question: "¿Por qué no recibo notificaciones del navegador?",
 		answer:
 			"Los avisos dependen de tus preferencias, los permisos del navegador y la compatibilidad del dispositivo. Comprueba el permiso del sitio y el modo No molestar. Consulta siempre tus tareas y evaluaciones en la plataforma; un aviso no sustituye esa información.",
+	},
+	{
+		category: "support",
+		question: "¿Cómo envío un comentario sin salir de Aura Grade?",
+		answer:
+			"Usa Enviar comentario en la barra superior. Elige si es un problema, una sugerencia o una pregunta; describe lo ocurrido y agrega el identificador de la tarea, entrega o curso si aplica. La pantalla actual se incluye automáticamente. Nunca escribas contraseñas, códigos de autenticación o documentos personales.",
+	},
+	{
+		category: "support",
+		question: "¿Cómo funciona la guía de primeros pasos?",
+		answer:
+			"La guía muestra tareas distintas para estudiantes, docentes y administradores. Tu progreso se guarda en la cuenta y continúa en otros dispositivos. Puedes ocultarla por ahora y retomarla desde el aviso compacto que queda en el panel.",
+	},
+	{
+		category: "support",
+		question: "¿Qué muestra el panel operativo para administradores?",
+		answer:
+			"Muestra entregas en proceso o fallidas, feedback abierto y evaluaciones publicadas. Un administrador institucional sólo ve información de su institución; el administrador de plataforma también puede consultar las colas, eventos pendientes y fallos recientes de notificaciones. Los reintentos y cambios de estado quedan registrados en auditoría.",
 	},
 ];
 export const supportEmail = "soporte@auragrade.co";

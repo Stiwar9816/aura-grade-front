@@ -12,14 +12,12 @@ import {
 	useAuth,
 	useStudentAcademicData,
 } from "@/hooks";
+import {STANDARD_GRADE_MAX} from "@/utils/gradeScale";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faBookOpen,
 	faChartLine,
-	faCheckCircle,
-	faClock,
-	faGraduationCap,
-} from "@fortawesome/free-solid-svg-icons";
+			} from "@fortawesome/free-solid-svg-icons";
 
 const StudentDashboard: React.FC = () => {
 	const router = useRouter();
@@ -31,7 +29,6 @@ const StudentDashboard: React.FC = () => {
 		pendingCount,
 		gradedCount,
 		averageGrade,
-		averagePercentage,
 		deliveredCount,
 		reviewPendingCount,
 		loading,
@@ -51,14 +48,14 @@ const StudentDashboard: React.FC = () => {
 		router.push("/evaluation");
 	};
 
-	const visibleAssignments = assignments.slice(0, 6);
+	const visibleAssignments = [...assignments].sort((a, b) => Number(!["pending", "overdue"].includes(a.status)) - Number(!["pending", "overdue"].includes(b.status))).slice(0, 6);
 
 	return (
 		<ProtectedRoute requiredRole={UserRole.STUDENT}>
 			<Layout title="Panel de inicio" hideHeader>
 				<div className="max-w-6xl mx-auto">
 					<Banner
-						title={`Hola, Alumno(a) ${user?.name || ""}`}
+						title={`Hola, ${user?.name || "estudiante"}`}
 						description={
 							loading
 								? "Cargando tu información académica..."
@@ -77,7 +74,7 @@ const StudentDashboard: React.FC = () => {
 						icon={
 							<FontAwesomeIcon icon={faBookOpen} className="text-white mb-3" />
 						}
-						className="mb-8"
+						className="mb-5"
 					/>
 
 					{error && (
@@ -88,87 +85,44 @@ const StudentDashboard: React.FC = () => {
 						</Card>
 					)}
 
-					<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-						<Card className="text-center">
-							<FontAwesomeIcon
-								icon={faClock}
-								className="text-yellow-500 mb-3"
-							/>
-							<div className="text-3xl font-bold text-yellow-600 mb-2">
-								{loading ? "-" : pendingCount}
-							</div>
-							<div className="text-gray-900 font-medium">Pendientes</div>
-							<div className="text-sm text-gray-600 mt-1">
-								Tareas por entregar
-							</div>
-						</Card>
-						<Card className="text-center">
-							<FontAwesomeIcon
-								icon={faGraduationCap}
-								className="text-green-500 mb-3"
-							/>
-							<div className="text-3xl font-bold text-green-600 mb-2">
-								{loading ? "-" : averageGrade}
-							</div>
-							<div className="text-gray-900 font-medium">Promedio actual</div>
-							<div className="text-sm text-gray-600 mt-1">
-								{averagePercentage}% con {gradedCount} calificada
-								{gradedCount !== 1 ? "s" : ""}
-							</div>
-						</Card>
-						<Card className="text-center">
-							<FontAwesomeIcon
-								icon={faBookOpen}
-								className="text-electric-500 mb-3"
-							/>
-							<div className="text-3xl font-bold text-electric-600 mb-2">
-								{loading ? "-" : courses.length}
-							</div>
-							<div className="text-gray-900 font-medium">Mis cursos</div>
-							<div className="text-sm text-gray-600 mt-1">
-								Cursos registrados
-							</div>
-						</Card>
-						<Card className="text-center">
-							<FontAwesomeIcon
-								icon={faCheckCircle}
-								className="text-blue-500 mb-3"
-							/>
-							<div className="text-3xl font-bold text-blue-600 mb-2">
-								{loading ? "-" : deliveredCount}
-							</div>
-							<div className="text-gray-900 font-medium">Entregadas</div>
-							<div className="text-sm text-gray-600 mt-1">
-								{reviewPendingCount} en revisión docente
-							</div>
-						</Card>
-					</div>
+					<dl className="mb-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                      {[
+                        {label: "Por entregar", value: pendingCount, detail: "Tareas pendientes"},
+                        {label: "Promedio publicado", value: gradedCount ? `${averageGrade} / ${STANDARD_GRADE_MAX}` : "—", detail: `${gradedCount} tareas calificadas`},
+                        {label: "Cursos", value: courses.length, detail: "Cursos registrados"},
+                        {label: "Entregadas", value: deliveredCount, detail: `${reviewPendingCount} en revisión docente`},
+                      ].map((metric) => <div key={metric.label} className="rounded-xl border border-gray-200 bg-white p-4">
+                        <dt className="text-xs font-medium text-gray-600">{metric.label}</dt>
+                        <dd className="mt-2 text-2xl font-semibold tabular-nums text-gray-900">{loading ? "—" : metric.value}</dd>
+                        <dd className="mt-1 text-xs text-gray-500">{metric.detail}</dd>
+                      </div>)}
+                    </dl>
 
 					<div className="mb-12">
 						<SectionHeader
-							title="Mis Tareas"
-							description="Tareas activas y resultados registrados desde la base de datos"
+							title="Mis tareas"
+							description="Primero, las tareas por entregar. Consulta la rúbrica antes de enviar."
 							actions={
-								<div className="flex gap-3">
+								<div className="flex flex-wrap gap-2">
 									<button
 										onClick={() => router.push("/student/courses")}
-										className="px-5 py-2.5 bg-gray-100 text-gray-700 text-sm font-bold rounded-2xl hover:bg-gray-200 transition-colors"
+										className="btn-ghost text-sm"
 									>
 										Ver cursos
 									</button>
 									<button
 										onClick={() => router.push("/upload")}
-										className="px-5 py-2.5 bg-electric-500 text-white text-sm font-bold rounded-2xl hover:bg-electric-600 shadow-lg shadow-electric-500/20 hover:shadow-electric-500/30 transition-all active:scale-95"
+										className="btn-primary text-sm"
 									>
 										Nueva entrega
 									</button>
 								</div>
 							}
-							className="mb-8"
+							className="mb-5"
 						/>
 
 						{loading ? (
-							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 								{[1, 2, 3].map((item) => (
 									<Card key={item} className="h-72 bg-white/70">
 										<div className="animate-pulse space-y-4">
@@ -195,7 +149,7 @@ const StudentDashboard: React.FC = () => {
 								</p>
 							</Card>
 						) : (
-							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
 								{visibleAssignments.map((assignment) => (
 									<AssignmentCard
 										key={assignment.id}
@@ -208,7 +162,7 @@ const StudentDashboard: React.FC = () => {
 					</div>
 
 					<Card>
-						<SectionHeader title="Feedback Reciente" className="mb-6" />
+						<SectionHeader title="Retroalimentación publicada" className="mb-6" />
 
 						{recentFeedback.length === 0 ? (
 							<div className="text-center py-10">
@@ -217,7 +171,7 @@ const StudentDashboard: React.FC = () => {
 									className="text-4xl text-gray-300 mb-4"
 								/>
 								<p className="text-gray-500">
-									Aún no hay feedback calificado para mostrar.
+									Las observaciones de tu docente aparecerán aquí cuando publique una evaluación.
 								</p>
 							</div>
 						) : (
@@ -225,7 +179,7 @@ const StudentDashboard: React.FC = () => {
 								{recentFeedback.map((assignment) => (
 									<div
 										key={assignment.id}
-										className="p-4 bg-green-50 border border-green-200 rounded-xl"
+										className="p-4 bg-gray-50 border border-gray-200 rounded-xl"
 									>
 										<div className="flex items-start justify-between gap-4">
 											<div>

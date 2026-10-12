@@ -1,4 +1,7 @@
 import "@/styles/globals.css";
+import Head from "next/head";
+import {useRouter} from "next/router";
+import {publicPages, siteOrigin} from "@/lib/site";
 import type { AppProps } from "next/app";
 import { ApolloProvider } from "@apollo/client/react";
 import { Toaster } from "sonner";
@@ -46,6 +49,8 @@ const ThemeController = () => {
 };
 
 export default function App({ Component, pageProps }: AppProps) {
+  const {pathname} = useRouter();
+  const publicPage = publicPages[pathname];
   return (
     <ApolloProvider client={client}>
       <AuthProvider>
@@ -53,6 +58,14 @@ export default function App({ Component, pageProps }: AppProps) {
         <ConfirmProvider>
           <ThemeController />
           <PushSubscriptionSync />
+          <Head>
+            <title>{publicPage?.title || 'Tu espacio académico | AuraGrade'}</title>
+            <meta name="robots" key="robots" content={publicPage && siteOrigin ? 'index, follow' : 'noindex, nofollow'} />
+            {publicPage && <meta name="description" content={publicPage.description} />}
+            {publicPage && <meta property="og:title" content={publicPage.title} />}
+            {publicPage && <meta property="og:description" content={publicPage.description} />}
+            {publicPage && siteOrigin && <link rel="canonical" href={`${siteOrigin}${pathname}`} />}
+          </Head>
           <Component {...pageProps} />
           <Toaster richColors closeButton position="bottom-right" />
         </ConfirmProvider>

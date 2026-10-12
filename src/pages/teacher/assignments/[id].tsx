@@ -504,7 +504,7 @@ const AssignmentDetailPage: React.FC = () => {
 							<div className="text-3xl text-red-500 mb-4">
 								<FontAwesomeIcon icon={faCircleExclamation} />
 							</div>
-							<h1 className="text-2xl font-black text-gray-900 mb-2">
+							<h1 className="text-2xl font-semibold text-gray-900 mb-2">
 								No se pudo cargar la tarea
 							</h1>
 							<p className="text-gray-600 mb-6">
@@ -580,7 +580,7 @@ const AssignmentDetailPage: React.FC = () => {
 								<div className="text-sm font-bold text-gray-500">Entregas</div>
 								<FontAwesomeIcon icon={faUserGroup} className="text-blue-500" />
 							</div>
-							<div className="text-3xl font-black text-gray-900">
+							<div className="text-3xl font-semibold text-gray-900">
 								{submissions.length}
 							</div>
 						</Card>
@@ -594,7 +594,7 @@ const AssignmentDetailPage: React.FC = () => {
 									className="text-yellow-500"
 								/>
 							</div>
-							<div className="text-3xl font-black text-yellow-600">
+							<div className="text-3xl font-semibold text-yellow-600">
 								{pendingSubmissions.length}
 							</div>
 						</Card>
@@ -606,7 +606,7 @@ const AssignmentDetailPage: React.FC = () => {
 									className="text-green-500"
 								/>
 							</div>
-							<div className="text-3xl font-black text-green-600">
+							<div className="text-3xl font-semibold text-green-600">
 								{assignment.average > 0 ? assignment.average.toFixed(2) : "-"}
 							</div>
 						</Card>
@@ -620,7 +620,7 @@ const AssignmentDetailPage: React.FC = () => {
 									className="text-electric-500"
 								/>
 							</div>
-							<div className="text-3xl font-black text-electric-600">
+							<div className="text-3xl font-semibold text-electric-600">
 								{completionRate}%
 							</div>
 						</Card>
@@ -712,13 +712,13 @@ const AssignmentDetailPage: React.FC = () => {
 																</Badge>
 																{reevaluationRequest && (
 																	<div className="mt-2 max-w-xs">
-																		<div className="text-[10px] font-black uppercase text-amber-700">
+																		<div className="text-xs font-semibold uppercase text-amber-700">
 																			Solicitud del estudiante
 																		</div>
 																		<p className="text-xs text-gray-600 line-clamp-2">
 																			{reevaluationRequest.reason}
 																		</p>
-																		<div className="text-[10px] text-gray-400 mt-1">
+																		<div className="text-xs text-gray-500 mt-1">
 																			{formatDate(
 																				reevaluationRequest.createdAt,
 																				true,
@@ -733,25 +733,25 @@ const AssignmentDetailPage: React.FC = () => {
 															<td className="py-4 px-4">
 																{typeof submission.evaluation?.totalScore ===
 																"number" ? (
-																	<div className="font-black text-gray-900">
+																	<div className="font-semibold text-gray-900">
 																		{normalizeGrade(
 																			submission.evaluation.totalScore,
 																			assignment.rubric?.maxTotalScore,
 																		)?.toFixed(2)}
-																		<span className="text-xs font-bold text-gray-400">
+																		<span className="text-xs font-bold text-gray-500">
 																			{" "}
 																			/ {STANDARD_GRADE_MAX}
 																		</span>
 																	</div>
 																) : (
-																	<span className="text-gray-400">-</span>
+																	<span className="text-gray-500">-</span>
 																)}
 																{submission.evaluation &&
 																	!isPublishedSubmission(
 																		submission,
 																		reevaluationSubmissionIds,
 																	) && (
-																		<div className="text-[10px] font-bold uppercase text-amber-600 mt-1">
+																		<div className="text-xs font-bold uppercase text-amber-600 mt-1">
 																			Sugerencia IA
 																		</div>
 																	)}
@@ -1040,7 +1040,7 @@ const AssignmentDetailPage: React.FC = () => {
 											className="mt-1 text-electric-500"
 										/>
 										<div>
-											<div className="text-xs font-bold uppercase text-gray-400">
+											<div className="text-xs font-bold uppercase text-gray-500">
 												Fecha límite
 											</div>
 											<div className="font-bold text-gray-900">
@@ -1049,7 +1049,7 @@ const AssignmentDetailPage: React.FC = () => {
 										</div>
 									</div>
 									<div>
-										<div className="text-xs font-bold uppercase text-gray-400">
+										<div className="text-xs font-bold uppercase text-gray-500">
 											Curso
 										</div>
 										<div className="font-bold text-gray-900">
@@ -1057,7 +1057,7 @@ const AssignmentDetailPage: React.FC = () => {
 										</div>
 									</div>
 									<div>
-										<div className="text-xs font-bold uppercase text-gray-400">
+										<div className="text-xs font-bold uppercase text-gray-500">
 											Rúbrica
 										</div>
 										<div className="font-bold text-gray-900">

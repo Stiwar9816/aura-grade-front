@@ -233,7 +233,7 @@ const CourseManagement: React.FC = () => {
   return (
     <ProtectedRoute requiredRoles={COURSE_MANAGEMENT_ROLES}>
       <Layout title="Gestión de Cursos" hideHeader>
-        <SectionHeader
+        <SectionHeader as="h1"
           title="Gestión de Cursos"
           description={
             canManageCourseCatalog
@@ -276,7 +276,7 @@ const CourseManagement: React.FC = () => {
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <p className="text-xs font-black text-electric-600 uppercase tracking-widest mb-1">
+                        <p className="text-xs font-semibold text-electric-600 uppercase tracking-widest mb-1">
                           {course.code_course}
                         </p>
                         <h4 className="font-bold text-gray-900 text-lg">
@@ -298,7 +298,7 @@ const CourseManagement: React.FC = () => {
                     <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                       <div className="flex justify-between items-center mb-6">
                         <div>
-                          <h2 className="text-xl font-black text-slate-900 dark:text-slate-50">
+                          <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-50">
                             {selectedCourse.course_name}
                           </h2>
                           <p className="text-slate-600 font-normal dark:text-slate-300">
@@ -340,7 +340,7 @@ const CourseManagement: React.FC = () => {
 
                       {/* Current Students List */}
                       <div className="space-y-4">
-                        <h4 className="text-sm font-black text-slate-500 uppercase tracking-widest flex items-center gap-2 dark:text-slate-300">
+                        <h4 className="text-sm font-semibold text-slate-500 uppercase tracking-widest flex items-center gap-2 dark:text-slate-300">
                           Estudiantes en este curso (
                           {selectedCourse.users?.length || 0})
                         </h4>
@@ -351,7 +351,7 @@ const CourseManagement: React.FC = () => {
                               className="flex items-center justify-between gap-3 p-4 rounded-2xl border border-slate-200 bg-slate-50/90 shadow-sm transition-all hover:border-electric-200 hover:bg-white hover:shadow-md dark:border-slate-700 dark:bg-slate-800/70 dark:hover:border-blue-500/60 dark:hover:bg-slate-800"
                             >
                               <div className="flex min-w-0 items-center gap-3">
-                                <div className="w-11 h-11 shrink-0 rounded-full bg-gradient-to-br from-electric-500 to-cyan-500 flex items-center justify-center text-white font-black text-sm shadow-md shadow-electric-500/20 ring-2 ring-white dark:ring-slate-900">
+                                <div className="w-11 h-11 shrink-0 rounded-full bg-electric-500 flex items-center justify-center text-white font-semibold text-sm shadow-md shadow-electric-500/20 ring-2 ring-white dark:ring-slate-900">
                                   {student.name[0] +
                                     (student.last_name
                                       ? student.last_name[0]
@@ -403,7 +403,7 @@ const CourseManagement: React.FC = () => {
                     <div className="text-6xl mb-6 text-slate-300 dark:text-slate-600">
                       <FontAwesomeIcon icon={faGraduationCap} />
                     </div>
-                    <h3 className="text-xl font-black text-slate-900 mb-2 dark:text-slate-50">
+                    <h3 className="text-xl font-semibold text-slate-900 mb-2 dark:text-slate-50">
                       Selecciona un curso
                     </h3>
                     <p className="text-slate-600 font-medium max-w-xs text-center px-6 dark:text-slate-300">
@@ -422,12 +422,12 @@ const CourseManagement: React.FC = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-md animate-in fade-in duration-300">
             <Card className="w-full max-w-md shadow-2xl animate-in zoom-in-95 duration-300">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-xl font-black text-gray-900">
+                <h2 className="text-xl font-semibold text-gray-900">
                   {isEditing ? "Editar Curso" : "Crear Nuevo Curso"}
                 </h2>
                 <button
                   onClick={() => setShowModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors text-2xl"
+                  className="text-gray-500 hover:text-gray-600 transition-colors text-2xl"
                 >
                   ✕
                 </button>
@@ -482,7 +482,7 @@ const CourseManagement: React.FC = () => {
             <Card className="w-full max-w-2xl shadow-2xl animate-in zoom-in-95 duration-300 max-h-[90vh] flex flex-col">
               <div className="flex justify-between items-center mb-6 shrink-0">
                 <div>
-                  <h2 className="text-xl font-black text-gray-900">
+                  <h2 className="text-xl font-semibold text-gray-900">
                     Asignar Estudiantes
                   </h2>
                   <p className="text-sm text-gray-500">
@@ -491,7 +491,7 @@ const CourseManagement: React.FC = () => {
                 </div>
                 <button
                   onClick={() => setShowStudentModal(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors text-2xl"
+                  className="text-gray-500 hover:text-gray-600 transition-colors text-2xl"
                 >
                   ✕
                 </button>
