@@ -1,15 +1,26 @@
 "use client";
 
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {useRouter} from "next/navigation";
-import {DocumentType, RegisterFormData, UserRole} from "@/interface";
+import {
+	DocumentType,
+	Institution,
+	RegisterFormData,
+	UserRole,
+} from "@/interface";
 import {useAuth} from "./";
+import {
+	PASSWORD_MIN_LENGTH,
+	passwordPolicyError,
+} from "@/utils/passwordPolicy";
 
 export const useRegister = () => {
 	const router = useRouter();
 	const {register: registerCore, isLoading, error: authError} = useAuth();
 	const [serverError, setServerError] = useState<string | null>(null);
 	const [step, setStep] = useState<number>(1);
+	const [institutions, setInstitutions] = useState<Institution[]>([]);
+	const [institutionsLoading, setInstitutionsLoading] = useState(true);
 	const [formData, setFormData] = useState<RegisterFormData>({
 		name: "",
 		last_name: "",
@@ -20,6 +31,7 @@ export const useRegister = () => {
 		password: "",
 		confirmPassword: "",
 		userType: UserRole.STUDENT,
+		institutionId: "",
 		acceptTerms: false,
 	});
 	const [errors, setErrors] = useState<
@@ -28,6 +40,38 @@ export const useRegister = () => {
 	const [showPassword, setShowPassword] = useState<boolean>(false);
 
 	const displayError: string | null = serverError || authError;
+
+	useEffect(() => {
+		let active = true;
+		void fetch("/api/institutions", {cache: "no-store"})
+			.then(async (response) => {
+				const result = (await response.json()) as {
+					error?: string;
+					institutions?: Institution[];
+				};
+				if (!response.ok) {
+					throw new Error(
+						result.error || "No fue posible cargar las instituciones.",
+					);
+				}
+				if (active) setInstitutions(result.institutions || []);
+			})
+			.catch((error: unknown) => {
+				if (active) {
+					setServerError(
+						error instanceof Error
+							? error.message
+							: "No fue posible cargar las instituciones.",
+					);
+				}
+			})
+			.finally(() => {
+				if (active) setInstitutionsLoading(false);
+			});
+		return () => {
+			active = false;
+		};
+	}, []);
 
 	const validateStep = (stepNumber: number): boolean => {
 		const newErrors: Partial<Record<keyof RegisterFormData, string>> = {};
@@ -56,15 +100,17 @@ export const useRegister = () => {
 			}
 			if (!formData.userType)
 				newErrors.userType = "Debes seleccionar un tipo de usuario";
+			if (!formData.institutionId) {
+				newErrors.institutionId = "Debes seleccionar tu institución";
+			}
 		}
 
 		if (stepNumber === 2) {
 			if (!formData.password) {
 				newErrors.password = "La contraseña es requerida";
-			} else if (formData.password.length < 8) {
-				newErrors.password = "La contraseña debe tener al menos 8 caracteres";
-			} else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-				newErrors.password = "Debe incluir mayúsculas, minúsculas y números";
+			} else {
+				const policyError = passwordPolicyError(formData.password);
+				if (policyError) newErrors.password = policyError;
 			}
 
 			if (!formData.confirmPassword) {
@@ -112,9 +158,12 @@ export const useRegister = () => {
 			email: formData.email,
 			password: formData.password,
 			role: formData.userType,
+			institutionId: formData.institutionId,
 		});
 
-		if (result.success && result.user) {
+		if (result.success && result.pendingApproval) {
+			router.push("/registration-pending");
+		} else if (result.success && result.user) {
 			const role = result.user.role;
 			const dest =
 				role === UserRole.ADMIN || role === UserRole.TEACHER
@@ -131,10 +180,10 @@ export const useRegister = () => {
 
 		let score = 0;
 		if (password.length >= 8) score++;
-		if (/[a-z]/.test(password)) score++;
-		if (/[A-Z]/.test(password)) score++;
-		if (/\d/.test(password)) score++;
-		if (/[^A-Za-z0-9]/.test(password)) score++;
+		if (password.length >= 12) score++;
+		if (password.length >= PASSWORD_MIN_LENGTH) score++;
+		if (password.length >= 20) score++;
+		if (password.length >= 30) score++;
 
 		const strengths = [
 			{score: 0, label: "Muy débil", color: "bg-red-500"},
@@ -172,6 +221,8 @@ export const useRegister = () => {
 
 	return {
 		formData,
+		institutions,
+		institutionsLoading,
 		setFormData,
 		step,
 		setStep,

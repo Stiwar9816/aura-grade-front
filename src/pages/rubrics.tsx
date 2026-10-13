@@ -1,4 +1,5 @@
 import {useEffect, type ReactNode} from "react";
+import {useRouter} from "next/router";
 import Layout from "@/components/Layout";
 import {
 	RubricBuilder,
@@ -7,14 +8,13 @@ import {
 } from "@/components/Rubrics";
 import {ProtectedRoute} from "@/components/Auth";
 import {useRubrics} from "@/hooks";
-import {exportToPDF, exportToCSV} from "@/utils";
+import {exportToPDF} from "@/utils";
 import {UserRole} from "@/interface";
 import {notifyError, notifySuccess} from "@/utils/toastNotify";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {
 	faBook,
 	faChartLine,
-	faFileCsv,
 	faFilePdf,
 	faFileText,
 	faGears,
@@ -23,6 +23,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 
 export const RubricsPage = () => {
+	const router = useRouter();
 	const {
 		rubrics,
 		loading,
@@ -31,28 +32,20 @@ export const RubricsPage = () => {
 		activeTab,
 		setActiveTab,
 		handleStartRubric,
+		handleGenerateRubric,
 		handleSaveRubric,
 		handleSelectTemplate,
 		handleAddCriteria,
 		handleUpdateCriteria,
 		handleDeleteCriteria,
 		handleDeleteRubric,
+		isSaving,
+		isGenerating,
 	} = useRubrics();
 
-	const handleExportCSV = () => {
+	const handleExportPDF = async () => {
 		try {
-			exportToCSV(currentRubric);
-			notifySuccess("Rúbrica exportada en CSV.");
-		} catch (error) {
-			notifyError(
-				error instanceof Error ? error.message : "No se pudo exportar el CSV.",
-			);
-		}
-	};
-
-	const handleExportPDF = () => {
-		try {
-			exportToPDF(currentRubric);
+			await exportToPDF(currentRubric);
 			notifySuccess("Rúbrica exportada en PDF.");
 		} catch (error) {
 			notifyError(
@@ -61,15 +54,32 @@ export const RubricsPage = () => {
 		}
 	};
 
-	// Redirect if on builder without rubric
+	// Redirect only when there is no saved or local draft to edit.
 	useEffect(() => {
 		if (
 			activeTab === "builder" &&
-			(!currentRubric.id || currentRubric.id === "")
+			!currentRubric.name.trim()
 		) {
 			setActiveTab("library");
 		}
-	}, [activeTab, currentRubric.id, setActiveTab]);
+	}, [activeTab, currentRubric.name, setActiveTab]);
+
+	useEffect(() => {
+		if (router.isReady && router.query.copilot === "1") setActiveTab("create");
+	}, [router.isReady, router.query.copilot, setActiveTab]);
+
+	const handleSaveAndReturn = async () => {
+		const saved = await handleSaveRubric();
+		if (
+			saved &&
+			router.query.returnTo === "/teacher/assignments"
+		) {
+			await router.push({
+				pathname: "/teacher/assignments",
+				query: {rubricId: saved.id},
+			});
+		}
+	};
 
 	const tabs: {
 		id: "create" | "library" | "builder";
@@ -98,19 +108,12 @@ export const RubricsPage = () => {
 			<Layout title="Gestor de Rúbricas">
 				<div className="max-w-7xl mx-auto">
 					<div className="mb-8">
-						{currentRubric.id && currentRubric.id !== "" && (
+						{currentRubric.name.trim() && (
 							<div className="flex flex-col md:flex-row md:items-end justify-end gap-4 mb-6">
 								<div className="flex gap-3">
 									<>
 										<button
-											onClick={handleExportCSV}
-											className="p-2 text-xl text-gray-500 hover:text-blue-600 hover:bg-electric-50 rounded-lg transition-all"
-											title="Exportar CSV"
-										>
-											<FontAwesomeIcon icon={faFileCsv} />
-										</button>
-										<button
-											onClick={handleExportPDF}
+											onClick={() => void handleExportPDF()}
 											className="p-2 text-xl text-gray-500 hover:text-blue-600 hover:bg-electric-50 rounded-lg transition-all"
 											title="Exportar PDF"
 										>
@@ -118,10 +121,15 @@ export const RubricsPage = () => {
 										</button>
 
 										<button
-											onClick={() => handleSaveRubric()}
-											className="btn-primary"
+										onClick={() => void handleSaveAndReturn()}
+											disabled={isSaving || currentRubric.totalWeight !== 100}
+											className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
 										>
-											Guardar Rúbrica
+											{isSaving
+												? "Guardando..."
+												: router.query.returnTo === "/teacher/assignments"
+													? "Guardar y volver a la tarea"
+													: "Guardar Rúbrica"}
 										</button>
 									</>
 								</div>
@@ -134,7 +142,7 @@ export const RubricsPage = () => {
 									.filter(
 										(tab) =>
 											tab.id !== "builder" ||
-											(currentRubric.id && currentRubric.id !== ""),
+											currentRubric.name.trim(),
 									)
 									.map((tab) => (
 										<button
@@ -199,14 +207,10 @@ export const RubricsPage = () => {
 									</div>
 									<div>
 										<div className="text-2xl font-bold text-gray-900">
-											{currentRubric.criteria.reduce(
-												(acc: number, c: {maxPoints: number}) =>
-													acc + c.maxPoints,
-												0,
-											)}
+											5.0
 										</div>
 										<div className="text-sm text-gray-600">
-											Puntuación máxima
+											Escala máxima
 										</div>
 									</div>
 								</div>
@@ -235,7 +239,21 @@ export const RubricsPage = () => {
 					)}
 
 					{activeTab === "create" && (
-						<RubricsCreate onStart={handleStartRubric} />
+						<RubricsCreate
+							onStart={handleStartRubric}
+							onGenerate={handleGenerateRubric}
+							isGenerating={isGenerating}
+							initialData={{
+								title:
+									typeof router.query.title === "string"
+										? router.query.title
+										: undefined,
+								description:
+									typeof router.query.description === "string"
+										? router.query.description
+										: undefined,
+							}}
+						/>
 					)}
 				</div>
 			</Layout>

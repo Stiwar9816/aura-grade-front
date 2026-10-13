@@ -13,6 +13,10 @@ export const convertTemplateToRubric = (template: RubricTemplate): Rubric => {
 		createdAt: new Date().toISOString(),
 		updatedAt: new Date().toISOString(),
 		isActive: true,
+		academicLevel: template.academicLevel,
+		status: template.status,
+		source: template.source,
+		version: template.version,
 	};
 };
 

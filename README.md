@@ -40,9 +40,44 @@ Aura Grade tiene como objetivo cerrar la brecha entre la evaluación tradicional
 Asegúrate de crear un archivo `.env.local` basado en `.env.example` (si existe) o incluir la siguiente variable para la conexión con la API:
 
 ```bash
-NEXT_PUBLIC_GRAPHQL_API_URL=http://localhost:3000/graphql # Ajusta esto a la URL de tu backend
-NEXT_PUBLIC_API_URL=http://localhost:3000/api # Ajusta esto a la URL de tu backend
+AURA_GRADE_API_URL=http://localhost:3000 # Origen privado del backend
+AURA_GRADE_BFF_SECRET=un-secreto-compartido-de-al-menos-32-caracteres
+SESSION_COOKIE_NAME=ag_session
 ```
+
+Estas variables son exclusivamente de servidor y nunca deben usar el prefijo
+`NEXT_PUBLIC_`. `AURA_GRADE_BFF_SECRET` debe coincidir con
+`BFF_SHARED_SECRET` del backend.
+
+### Sentry
+
+El frontend utiliza una sola configuración de ejecución para navegador,
+servidor, Edge y rutas BFF:
+
+```dotenv
+NEXT_PUBLIC_SENTRY_ENABLED=true
+NEXT_PUBLIC_SENTRY_DSN=https://public-key@o0.ingest.sentry.io/0
+NEXT_PUBLIC_SENTRY_ENVIRONMENT=production
+NEXT_PUBLIC_SENTRY_RELEASE=aura-grade-front@<git-sha>
+NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE=0.05
+```
+
+La subida de source maps se realiza únicamente en GitHub Actions. Configura el
+secreto `SENTRY_AUTH_TOKEN` y las variables `SENTRY_ORG`, `SENTRY_PROJECT` y
+`NEXT_PUBLIC_SENTRY_DSN`. Por compatibilidad, estas tres últimas también pueden
+guardarse como secrets; el workflow primero busca una variable y luego el secret
+del mismo nombre. El token nunca debe usar el prefijo `NEXT_PUBLIC_`.
+
+El workflow usa `stiwardev/aura-grade-front`, asigna como release
+`aura-grade-front@<git-sha>` y elimina los source maps públicos después de
+subirlos. No se publican páginas ni endpoints para generar errores de prueba;
+Sentry captura únicamente los errores y logs producidos por el funcionamiento
+normal de la aplicación.
+
+Los eventos incluyen las etiquetas `surface` (`browser`, `server`, `edge` o
+`bff`) y `feature` para crear alertas precisas. Cuando existe una sesión, se
+asocia únicamente el identificador interno del usuario y su rol; no se envían
+correo, IP, cookies ni datos personales.
 
 ## 🚀 Cómo Empezar
 

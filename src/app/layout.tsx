@@ -1,20 +1,33 @@
-import type {Metadata} from "next";
+import {publicPages, siteOrigin} from "@/lib/site";
+import type { Metadata } from "next";
+import { Toaster } from "sonner";
 import "@/styles/globals.css";
+import { AuthProvider } from "@/context/AuthContext";
+import { ConfirmProvider } from "@/context/ConfirmContext";
+import SentryUserSync from "@/components/Observability/SentryUserSync";
 
 export const metadata: Metadata = {
-	title: "Aura Grade - Clasificación asistida por IA",
-	description:
-		"Una plataforma progresiva para la gestión educativa eficiente y escalable, potenciada por IA.",
+ title: publicPages['/'].title,
+ description: publicPages['/'].description,
+ manifest: '/site.webmanifest',
+ ...(siteOrigin ? {metadataBase: new URL(siteOrigin)} : {}),
+ robots: {index: Boolean(siteOrigin), follow: true},
 };
 
 export default function RootLayout({
-	children,
+  children,
 }: Readonly<{
-	children: React.ReactNode;
+  children: React.ReactNode;
 }>) {
-	return (
-		<html lang="es" suppressHydrationWarning data-lt-installed>
-			<body className="antialiased">{children}</body>
-		</html>
-	);
+  return (
+    <html lang="es" suppressHydrationWarning data-lt-installed>
+      <body className="antialiased">
+        <AuthProvider>
+          <SentryUserSync />
+          <ConfirmProvider>{children}</ConfirmProvider>
+          <Toaster richColors closeButton position="bottom-right" />
+        </AuthProvider>
+      </body>
+    </html>
+  );
 }

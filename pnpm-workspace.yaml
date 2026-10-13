@@ -1,9 +1,18 @@
 packages:
   - .
 
+allowBuilds:
+  '@sentry/cli': true
+  core-js: true
+  sharp: true
+  unrs-resolver: true
+
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
 
 onlyBuiltDependencies:
   - core-js
+
+overrides:
+  browserslist: 4.28.7

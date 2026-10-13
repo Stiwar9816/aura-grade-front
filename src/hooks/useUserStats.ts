@@ -1,3 +1,4 @@
+import {useMemo} from "react";
 import {useAuth} from "@/hooks";
 import {useUserStatsActions} from "@/actions";
 import {UserRole} from "@/interface";
@@ -15,7 +16,7 @@ export const useUserStats = () => {
 	const {user: currentUser} = useAuth();
 	const {userStats, loading, error} = useUserStatsActions(currentUser);
 
-	const calculateStats = (): DashboardStats => {
+	const stats = useMemo((): DashboardStats => {
 		if (!userStats || !currentUser) {
 			return {
 				totalStudents: 0,
@@ -157,10 +158,10 @@ export const useUserStats = () => {
 			averageGrade,
 			completionRate,
 		};
-	};
+	}, [userStats, currentUser]);
 
 	return {
-		stats: calculateStats(),
+		stats,
 		loading,
 		error,
 		refetch: () => {}, // Agregar si necesitas refetch manual

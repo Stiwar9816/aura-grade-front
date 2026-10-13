@@ -1,13 +1,14 @@
-import React, {useMemo, useState} from "react";
-import {useRouter} from "next/router";
+import React, { useMemo, useState } from "react";
+import { useRouter } from "next/router";
 import Layout from "@/components/Layout";
 import UploadZone from "@/components/Upload/UploadZone";
+import {getSubmissionStage} from "@/utils/submissionStage";
 import UploadStepper from "@/components/Upload/UploadStepper";
 import Card from "@/components/Common/Card";
 import Badge from "@/components/Common/Badge";
 import SectionHeader from "@/components/Common/SectionHeader";
-import {ProtectedRoute} from "@/components/Auth";
-import {UserRole} from "@/interface";
+import { ProtectedRoute } from "@/components/Auth";
+import { UserRole } from "@/interface";
 import {
 	StudentAssignmentCardData,
 	useAuth,
@@ -16,10 +17,11 @@ import {
 import {
 	notifyError,
 	notifyInfo,
+	notifyLoading,
 	notifySuccess,
 	notifyWarning,
 } from "@/utils/toastNotify";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faBookOpen,
 	faCalendarDays,
@@ -47,52 +49,6 @@ type CreatedSubmission = {
 	};
 };
 
-type GradingStage = {
-	progress: number;
-	step: number;
-	label: string;
-	description: string;
-};
-
-const GRADING_STAGES: GradingStage[] = [
-	{
-		progress: 10,
-		step: 1,
-		label: "Entrega recibida",
-		description: "El backend creó la entrega y registró el archivo.",
-	},
-	{
-		progress: 30,
-		step: 2,
-		label: "Archivo procesado",
-		description: "El documento está siendo preparado para evaluación.",
-	},
-	{
-		progress: 40,
-		step: 3,
-		label: "IA iniciada",
-		description: "El motor de IA está calificando con la rúbrica.",
-	},
-	{
-		progress: 80,
-		step: 3,
-		label: "Resultado preliminar",
-		description: "La IA generó el borrador de retroalimentación.",
-	},
-	{
-		progress: 90,
-		step: 3,
-		label: "Guardando resultado",
-		description: "El backend está persistiendo la evaluación.",
-	},
-	{
-		progress: 100,
-		step: 4,
-		label: "Borrador listo",
-		description: "La calificación quedó lista para revisión docente.",
-	},
-];
-
 const formatFileSize = (bytes: number) => {
 	if (bytes === 0) return "0 Bytes";
 	const units = ["Bytes", "KB", "MB", "GB"];
@@ -100,27 +56,16 @@ const formatFileSize = (bytes: number) => {
 	return `${(bytes / Math.pow(1024, index)).toFixed(2)} ${units[index]}`;
 };
 
-const getAuthToken = () => {
-	if (typeof window === "undefined") return "";
-
-	const storedUser = localStorage.getItem("auraGrade_user");
-	if (!storedUser) return "";
-
-	try {
-		return JSON.parse(storedUser).token || "";
-	} catch {
-		return "";
-	}
-};
+const uploadKeys = new WeakMap<File, Map<string, string>>();
 
 const createSubmissionWithFile = async (
 	file: File,
 	assignment: StudentAssignmentCardData,
-	userId: string,
 ) => {
-	const graphqlUrl =
-		process.env.NEXT_PUBLIC_GRAPHQL_API_URL || "http://localhost:3000/graphql";
-	const token = getAuthToken();
+	const keys = uploadKeys.get(file) || new Map<string, string>();
+	const idempotencyKey = keys.get(assignment.id) || crypto.randomUUID();
+	keys.set(assignment.id, idempotencyKey);
+	uploadKeys.set(file, keys);
 	const formData = new FormData();
 
 	formData.append(
@@ -151,18 +96,18 @@ const createSubmissionWithFile = async (
 			variables: {
 				createSubmissionInput: {
 					assignmentId: assignment.id,
-					studentId: userId,
+					idempotencyKey,
 				},
 				file: null,
 			},
 		}),
 	);
-	formData.append("map", JSON.stringify({"0": ["variables.file"]}));
+	formData.append("map", JSON.stringify({ "0": ["variables.file"] }));
 	formData.append("0", file);
 
-	const response = await fetch(graphqlUrl, {
+	const response = await fetch("/api/graphql", {
 		method: "POST",
-		headers: token ? {authorization: `Bearer ${token}`} : undefined,
+		credentials: "same-origin",
 		body: formData,
 	});
 
@@ -181,49 +126,13 @@ const createSubmissionWithFile = async (
 	return payload.data?.createSubmission as CreatedSubmission | null;
 };
 
-const getStageByProgress = (progress: number) =>
-	GRADING_STAGES.reduce(
-		(currentStage, stage) =>
-			progress >= stage.progress ? stage : currentStage,
-		GRADING_STAGES[0],
-	);
-
-const getBackendProgress = (submission: CreatedSubmission | null) => {
-	if (!submission) return 0;
-	if (typeof submission.gradingProgress === "number") {
-		return submission.gradingProgress;
-	}
-	if (typeof submission.progress === "number") {
-		return submission.progress;
-	}
-	if (submission.evaluation) return 100;
-
-	switch (submission.status) {
-		case "FAILED":
-			return 100;
-		case "REVIEW_PENDING":
-		case "GRADED":
-		case "PUBLISHED":
-			return 100;
-		case "IN_PROGRESS":
-			return 40;
-		case "PENDING":
-			return 30;
-		default:
-			return 10;
-	}
-};
-
 const fetchSubmissionById = async (submissionId: string) => {
-	const graphqlUrl =
-		process.env.NEXT_PUBLIC_GRAPHQL_API_URL || "http://localhost:3000/graphql";
-	const token = getAuthToken();
-	const response = await fetch(graphqlUrl, {
+	const response = await fetch("/api/graphql", {
 		method: "POST",
 		headers: {
 			"content-type": "application/json",
-			...(token ? {authorization: `Bearer ${token}`} : {}),
 		},
+		credentials: "same-origin",
 		body: JSON.stringify({
 			query: `
 				query Submission($submissionId: ID!) {
@@ -241,7 +150,7 @@ const fetchSubmissionById = async (submissionId: string) => {
 					}
 				}
 			`,
-			variables: {submissionId},
+			variables: { submissionId },
 		}),
 	});
 
@@ -262,7 +171,7 @@ const fetchSubmissionById = async (submissionId: string) => {
 
 const UploadPage: React.FC = () => {
 	const router = useRouter();
-	const {user} = useAuth();
+	const { user } = useAuth();
 	const {
 		assignments,
 		loading: assignmentsLoading,
@@ -270,7 +179,6 @@ const UploadPage: React.FC = () => {
 	} = useStudentAcademicData();
 	const [selectedAssignmentId, setSelectedAssignmentId] = useState<string>("");
 	const [currentStep, setCurrentStep] = useState<number>(0);
-	const [uploadProgress, setUploadProgress] = useState<number>(0);
 	const [progressLabel, setProgressLabel] = useState<string>("");
 	const [progressDescription, setProgressDescription] = useState<string>("");
 	const [file, setFile] = useState<File | null>(null);
@@ -316,8 +224,8 @@ const UploadPage: React.FC = () => {
 		},
 		{
 			id: 2,
-			title: "Enviando entrega",
-			description: "El backend recibe el archivo completo",
+			title: "Entrega recibida",
+			description: "Archivo registrado",
 			icon: <FontAwesomeIcon icon={faSearch} />,
 		},
 		{
@@ -334,40 +242,30 @@ const UploadPage: React.FC = () => {
 		},
 	];
 
-	const updateGradingProgress = (progress: number) => {
-		const boundedProgress = Math.min(100, Math.max(0, progress));
-		const stage = getStageByProgress(boundedProgress);
-
-		setUploadProgress(boundedProgress);
-		setCurrentStep(stage.step);
-		setProgressLabel(stage.label);
-		setProgressDescription(stage.description);
-	};
+ const updateSubmissionStage = (submission: CreatedSubmission | null) => {
+  const stage = getSubmissionStage(submission);
+  setCurrentStep(stage.step);
+  setProgressLabel(stage.label);
+  setProgressDescription(stage.description);
+ };
 
 	const waitForBackendEvaluation = async (submissionId: string) => {
-		let localProgressIndex = 1;
 		let latestSubmission: CreatedSubmission | null = null;
 
 		for (let attempt = 0; attempt < 30; attempt += 1) {
 			latestSubmission = await fetchSubmissionById(submissionId);
-			const backendProgress = getBackendProgress(latestSubmission);
-			const fallbackProgress =
-				GRADING_STAGES[Math.min(localProgressIndex, GRADING_STAGES.length - 2)]
-					.progress;
-
-			updateGradingProgress(Math.max(backendProgress, fallbackProgress));
+            if (!latestSubmission) throw new Error("No fue posible confirmar el estado. Consulta tus entregas en Resultados antes de reenviar el archivo.");
+			updateSubmissionStage(latestSubmission);
 			setCreatedSubmission(latestSubmission);
 
 			if (latestSubmission?.status === "FAILED") {
-				throw new Error("El backend marcó la evaluación como fallida.");
+				throw new Error("No fue posible completar la evaluación. Intenta de nuevo o contacta con soporte.");
 			}
 
-			if (latestSubmission?.evaluation) {
-				updateGradingProgress(100);
+			if (getSubmissionStage(latestSubmission).complete) {
 				return latestSubmission;
 			}
 
-			localProgressIndex += 1;
 			await new Promise((resolve) => setTimeout(resolve, 2500));
 		}
 
@@ -401,37 +299,55 @@ const UploadPage: React.FC = () => {
 			setFile(selectedFile);
 			setCreatedSubmission(null);
 			setProcessError(null);
-			updateGradingProgress(10);
-			notifyInfo(`Enviando "${selectedFile.name}" para evaluación.`);
-
-			const submission = await createSubmissionWithFile(
-				selectedFile,
-				selectedAssignment,
-				user.id,
+			updateSubmissionStage(null);
+			const notificationId = notifyLoading(
+				`Enviando "${selectedFile.name}" para evaluación...`,
 			);
 
-			setCreatedSubmission(submission);
-			updateGradingProgress(getBackendProgress(submission));
-
-			const finalSubmission = submission?.evaluation
-				? submission
-				: submission?.id
-					? await waitForBackendEvaluation(submission.id)
-					: null;
-
-			setCreatedSubmission(finalSubmission || submission);
-
-			if (finalSubmission?.evaluation) {
-				updateGradingProgress(100);
-				notifySuccess(
-					"Tu entrega fue registrada y quedó pendiente de revisión docente.",
+			try {
+				const submission = await createSubmissionWithFile(
+					selectedFile,
+					selectedAssignment,
 				);
+
+				if (!submission?.id) throw new Error("No se recibió confirmación de la entrega. Revisa tus entregas antes de intentar de nuevo.");
+                if (submission.status === "FAILED") throw new Error("Tu entrega se registró, pero no fue posible completar la evaluación. Consulta el estado en Resultados.");
+                setCreatedSubmission(submission);
+				updateSubmissionStage(submission);
+
+				const finalSubmission = getSubmissionStage(submission).complete
+					? submission
+					: submission?.id
+						? await waitForBackendEvaluation(submission.id)
+						: null;
+
+				setCreatedSubmission(finalSubmission || submission);
+
+				if (getSubmissionStage(finalSubmission).complete) {
+                    updateSubmissionStage(finalSubmission);
+					notifySuccess(
+						"Tu entrega fue registrada. Consulta su estado en Resultados.",
+						{ id: notificationId },
+					);
+				} else {
+					notifyInfo("Entrega registrada. La evaluación continúa en proceso.", {
+						id: notificationId,
+					});
+				}
+			} catch (error) {
+				const message =
+					error instanceof Error
+						? error.message
+						: "No se pudo registrar la entrega.";
+				setProcessError(message);
+				setCurrentStep(0);
+				notifyError(message, { id: notificationId });
 			}
 		} catch (error) {
 			const message =
 				error instanceof Error
 					? error.message
-					: "No se pudo registrar la entrega.";
+					: "No se pudo preparar la entrega.";
 			setProcessError(message);
 			setCurrentStep(0);
 			notifyError(message);
@@ -440,7 +356,6 @@ const UploadPage: React.FC = () => {
 
 	const resetProcess = () => {
 		setCurrentStep(0);
-		setUploadProgress(0);
 		setProgressLabel("");
 		setProgressDescription("");
 		setFile(null);
@@ -451,8 +366,8 @@ const UploadPage: React.FC = () => {
 	return (
 		<ProtectedRoute requiredRole={UserRole.STUDENT}>
 			<Layout title="Centro de Entregas" hideHeader>
-				<div className="max-w-6xl mx-auto space-y-2">
-					<SectionHeader
+				<div className="max-w-6xl mx-auto space-y-6">
+					<SectionHeader as="h1"
 						title="Centro de entregas"
 						description="Selecciona una tarea, revisa su rúbrica y sube el archivo correspondiente."
 					/>
@@ -470,10 +385,10 @@ const UploadPage: React.FC = () => {
 						<Card className="lg:col-span-1 bg-white/70 border border-gray-100">
 							<SectionHeader title="Tarea" className="mb-6" />
 
-							<label className="block text-sm font-bold text-gray-700 mb-2">
+							<label htmlFor="assignment-choice" className="block text-sm font-bold text-gray-700 mb-2">
 								Selecciona la entrega
 							</label>
-							<select
+							<select id="assignment-choice"
 								value={effectiveSelectedAssignmentId}
 								onChange={(event) => {
 									setSelectedAssignmentId(event.target.value);
@@ -499,7 +414,7 @@ const UploadPage: React.FC = () => {
 									<div>
 										<div className="flex items-start justify-between gap-3">
 											<div>
-												<h3 className="font-black text-gray-900">
+												<h3 className="font-semibold text-gray-900">
 													{selectedAssignment.title}
 												</h3>
 												<p className="text-sm text-gray-500 mt-1">
@@ -535,7 +450,7 @@ const UploadPage: React.FC = () => {
 											className="text-electric-500"
 										/>
 										<div>
-											<div className="text-xs font-bold uppercase text-gray-400">
+											<div className="text-xs font-bold uppercase text-gray-500">
 												Fecha límite
 											</div>
 											<div className="text-sm font-bold text-gray-900">
@@ -558,7 +473,7 @@ const UploadPage: React.FC = () => {
 												icon={faGraduationCap}
 												className="text-green-500"
 											/>
-											<h4 className="font-black text-gray-900">
+											<h4 className="font-semibold text-gray-900">
 												Peso de la rúbrica
 											</h4>
 										</div>
@@ -573,14 +488,14 @@ const UploadPage: React.FC = () => {
 															<span className="text-sm font-bold text-gray-800">
 																{criterion.name}
 															</span>
-															<span className="text-xs font-black text-electric-600">
+															<span className="text-xs font-semibold text-electric-600">
 																{criterion.weight}%
 															</span>
 														</div>
 														<div className="h-2 rounded-full bg-gray-200 overflow-hidden">
 															<div
 																className="h-full bg-electric-500"
-																style={{width: `${criterion.weight}%`}}
+																style={{ width: `${criterion.weight}%` }}
 															/>
 														</div>
 													</div>
@@ -595,7 +510,7 @@ const UploadPage: React.FC = () => {
 
 									{selectedAssignment.submissionHistory.length > 0 && (
 										<div>
-											<h4 className="font-black text-gray-900 mb-3">
+											<h4 className="font-semibold text-gray-900 mb-3">
 												Historial de entregas
 											</h4>
 											<div className="space-y-2">
@@ -655,13 +570,13 @@ const UploadPage: React.FC = () => {
 						</Card>
 
 						<div className="lg:col-span-2 space-y-6">
-							<UploadStepper
+							{currentStep > 0 && <UploadStepper
 								steps={steps}
 								currentStep={currentStep}
-								progressPercent={uploadProgress}
+								progressPercent={currentStep === 4 ? 100 : undefined}
 								progressLabel={progressLabel}
 								progressDescription={progressDescription}
-							/>
+							/>}
 
 							{processError && (
 								<Card className="bg-red-50 border-red-100">
@@ -674,7 +589,7 @@ const UploadPage: React.FC = () => {
 							{selectedAssignmentExpired && (
 								<Card className="bg-amber-50 border-amber-100">
 									<p className="text-sm text-amber-700 font-medium">
-										La fecha límite de esta tarea ya pasó. El backend no permite
+										La fecha límite de esta tarea ya pasó. No se pueden
 										registrar nuevas entregas para esta asignación.
 									</p>
 								</Card>
@@ -726,17 +641,17 @@ const UploadPage: React.FC = () => {
 										</div>
 
 										<h2 className="text-2xl font-bold text-gray-900 mb-2">
-											{steps[Math.max(currentStep - 1, 0)].title}
+											{progressLabel || steps[Math.max(currentStep - 1, 0)].title}
 										</h2>
 										<p className="text-gray-600 mb-8 max-w-md">
-											{steps[Math.max(currentStep - 1, 0)].description}
+											{progressDescription || steps[Math.max(currentStep - 1, 0)].description}
 										</p>
 
 										{file && (
 											<div className="w-full max-w-2xl bg-gray-50 rounded-xl p-4 mb-6">
 												<div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-left">
 													<div className="md:col-span-2">
-														<div className="text-xs font-bold uppercase text-gray-400">
+														<div className="text-xs font-bold uppercase text-gray-500">
 															Archivo
 														</div>
 														<div className="font-bold text-gray-900 truncate">
@@ -744,7 +659,7 @@ const UploadPage: React.FC = () => {
 														</div>
 													</div>
 													<div>
-														<div className="text-xs font-bold uppercase text-gray-400">
+														<div className="text-xs font-bold uppercase text-gray-500">
 															Tamaño
 														</div>
 														<div className="font-bold text-gray-900">
@@ -752,7 +667,7 @@ const UploadPage: React.FC = () => {
 														</div>
 													</div>
 													<div>
-														<div className="text-xs font-bold uppercase text-gray-400">
+														<div className="text-xs font-bold uppercase text-gray-500">
 															Tipo
 														</div>
 														<div className="font-bold text-gray-900">
@@ -763,28 +678,6 @@ const UploadPage: React.FC = () => {
 											</div>
 										)}
 
-										{currentStep > 0 && currentStep < 4 && (
-											<div className="w-full max-w-md mb-6">
-												<div className="flex justify-between text-sm text-gray-600 mb-2">
-													<span>
-														{progressLabel || "Procesando entrega..."}
-													</span>
-													<span>{uploadProgress}%</span>
-												</div>
-												<div className="w-full h-3 bg-gray-200 rounded-full overflow-hidden">
-													<div
-														className="h-full bg-gradient-to-r from-electric-500 to-cyan-500 transition-all duration-300"
-														style={{width: `${uploadProgress}%`}}
-													/>
-												</div>
-												{progressDescription && (
-													<p className="text-xs text-gray-500 mt-2">
-														{progressDescription}
-													</p>
-												)}
-											</div>
-										)}
-
 										{currentStep === 4 && (
 											<div className="w-full max-w-2xl">
 												<div className="bg-green-50 border border-green-200 rounded-xl p-6">
@@ -792,14 +685,12 @@ const UploadPage: React.FC = () => {
 														Entrega registrada
 													</h3>
 													<p className="text-gray-600 mb-6">
-														Tu trabajo quedó registrado. La nota y la
-														retroalimentación aparecerán cuando el docente
-														publique el resultado final.
+                                                        Tu trabajo quedó registrado. Consulta la nota y las observaciones en Resultados cuando el docente las publique.
 													</p>
 													<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 														<div className="text-center p-4 bg-white rounded-lg">
 															<div className="text-2xl font-bold text-green-600">
-																En revisión
+                                                                {createdSubmission?.status === "PUBLISHED" ? "Publicado" : "En revisión"}
 															</div>
 															<div className="text-sm text-gray-600">
 																Resultado docente
@@ -807,7 +698,7 @@ const UploadPage: React.FC = () => {
 														</div>
 														<div className="text-center p-4 bg-white rounded-lg">
 															<div className="text-2xl font-bold text-electric-600">
-																{createdSubmission?.status || "Registrada"}
+																Registrada
 															</div>
 															<div className="text-sm text-gray-600">
 																Estado

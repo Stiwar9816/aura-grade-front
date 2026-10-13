@@ -38,7 +38,7 @@ export const StudentPerformance: React.FC<StudentPerformanceProps> = ({
 		<div className="card p-8 bg-white/80 backdrop-blur-md rounded-[2.5rem] shadow-xl border border-white h-full">
 			<div className="flex flex-col gap-6 mb-8">
 				<div>
-					<h3 className="text-2xl font-black text-gray-900">Semaforización</h3>
+					<h3 className="text-2xl font-semibold text-gray-900">Semaforización</h3>
 					<p className="text-gray-500 font-medium text-sm mt-1">
 						Detección temprana de brechas cognitivas
 					</p>
@@ -85,7 +85,7 @@ export const StudentPerformance: React.FC<StudentPerformanceProps> = ({
 						<div className="flex items-start justify-between mb-4">
 							<div className="flex items-center gap-4">
 								<div
-									className="w-12 h-12 rounded-full flex items-center justify-center text-white font-black text-lg shadow-lg"
+									className="w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-lg shadow-lg"
 									style={{backgroundColor: getGradeHSL(student.grade)}}
 								>
 									{student.name.charAt(0)}
@@ -104,7 +104,7 @@ export const StudentPerformance: React.FC<StudentPerformanceProps> = ({
 														: "bg-green-500"
 											}`}
 										></div>
-										<span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+										<span className="text-xs font-semibold text-gray-500 uppercase tracking-widest">
 											Prioridad{" "}
 											{student.riskLevel === "high" ? "Crítica" : "Baja"}
 										</span>
@@ -112,10 +112,10 @@ export const StudentPerformance: React.FC<StudentPerformanceProps> = ({
 								</div>
 							</div>
 							<div className="text-right">
-								<div className="text-2xl font-black text-gray-900 leading-none">
+								<div className="text-2xl font-semibold text-gray-900 leading-none">
 									{Number(student.grade).toFixed(2)}
 								</div>
-								<div className="text-[10px] font-bold text-gray-400 uppercase mt-1">
+								<div className="text-xs font-bold text-gray-500 uppercase mt-1">
 									Puntuación Total
 								</div>
 							</div>

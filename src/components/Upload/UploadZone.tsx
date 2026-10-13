@@ -2,11 +2,12 @@ import {
 	faCloudUpload,
 	faFileText,
 	faFolderOpen,
+	faPaperclip,
 	faRocket,
 	faTriangleExclamation,
 } from "@fortawesome/free-solid-svg-icons";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import React, {useCallback, useState, useRef} from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import React, { useCallback, useState, useRef } from "react";
 
 interface UploadZoneProps {
 	onUploadStart: (file: File) => void;
@@ -40,20 +41,22 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 		}
 
 		// Validar tipo por extensión
-		const validExtensions = [".docx", ".doc"];
+		const validExtensions = [".docx"];
 		const fileExtension = "." + file.name.split(".").pop()?.toLowerCase();
 
 		if (!validExtensions.includes(fileExtension)) {
 			return {
 				isValid: false,
-				error: "Formato no soportado. Use DOCX o DOC",
+				error: "Formato no soportado. Usa un archivo DOCX",
 			};
 		}
 
 		// Validar tipo MIME
 		const validMimeTypes = [
 			"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-			"application/msword",
+			"application/octet-stream",
+			"application/zip",
+			"application/x-zip-compressed",
 		];
 
 		if (!validMimeTypes.includes(file.type) && file.type !== "") {
@@ -63,7 +66,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 			};
 		}
 
-		return {isValid: true};
+		return { isValid: true };
 	};
 
 	const handleFileSelect = useCallback((selectedFile: File) => {
@@ -129,10 +132,9 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 		const extension = fileName.split(".").pop()?.toLowerCase();
 		switch (extension) {
 			case "docx":
-			case "doc":
 				return <FontAwesomeIcon icon={faFileText} />;
 			default:
-				return "📎";
+				return <FontAwesomeIcon icon={faPaperclip} />;
 		}
 	};
 
@@ -156,15 +158,15 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 	const zoneTitle = isDragging
 		? "¡Suelta tu archivo aquí!"
 		: disabled
-			? "Selecciona una tarea primero"
+			? assignmentTitle ? "Entrega no disponible" : "Selecciona una tarea primero"
 			: file
 				? "Archivo listo"
 				: "Arrastra y suelta tu trabajo";
 	const zoneSubtitle = file
 		? `"${file.name}" seleccionado`
 		: disabled
-			? "El centro de entregas necesita saber a qué tarea corresponde el archivo"
-			: "o haz clic para seleccionar archivos";
+			? assignmentTitle ? "Revisa el estado y la fecha límite de esta tarea." : "Elige la tarea a la que corresponde tu documento."
+			: "También puedes elegir el documento desde tu dispositivo.";
 
 	return (
 		<div className="card p-8">
@@ -184,48 +186,38 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 				onDrop={onDrop}
 				onDragOver={onDragOver}
 				onDragLeave={onDragLeave}
-				onClick={!file ? triggerFileInput : undefined}
-				className={`relative border-2 rounded-3xl p-12 text-center cursor-pointer transition-all duration-500 overflow-hidden ${
+								className={`relative border-2 rounded-xl p-5 sm:p-8 text-center transition-colors duration-200 overflow-hidden ${
 					disabled
-						? "border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed"
+						? "border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed"
 						: isDragging
-							? "border-electric-500 bg-electric-50/50 backdrop-blur-md shadow-2xl shadow-electric-500/20 scale-[1.01]"
+							? "border-electric-500 bg-electric-50"
 							: error
 								? "border-red-500 bg-red-50/50 backdrop-blur-md"
 								: file
-									? "border-green-500 bg-green-900/50 backdrop-blur-md shadow-lg shadow-green-500/10"
-									: "border-gray-200 bg-white/40 backdrop-blur-sm hover:border-electric-400 hover:bg-white/60 hover:shadow-xl hover:shadow-electric-500/5 group"
+									? "border-electric-300 bg-electric-50"
+									: "border-gray-300 bg-white hover:border-electric-400"
 				}`}
 			>
-				{/* Background Aura Glow (Only visible on hover/drag) */}
-				<div className="absolute -top-24 -left-24 w-48 h-48 bg-electric-500/10 rounded-full blur-3xl group-hover:bg-electric-500/20 transition-colors duration-500 -z-10"></div>
-				<div className="absolute -bottom-24 -right-24 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl group-hover:bg-cyan-500/20 transition-colors duration-500 -z-10"></div>
 				<input
 					ref={fileInputRef}
-					type="file"
+					type="file" aria-label="Archivo DOCX de la entrega" disabled={disabled}
 					onChange={handleFileInputChange}
-					accept=".docx,.doc"
+					accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 					className="hidden"
 				/>
 
 				<div className="space-y-4">
-					<div className="text-6xl mb-4">{zoneIcon}</div>
+					<div className="text-4xl text-electric-600 mb-4">{zoneIcon}</div>
 
 					<div>
 						<h3 className="text-xl font-bold text-gray-900 mb-2">
 							{zoneTitle}
 						</h3>
-						<p className="text-gray-600">{zoneSubtitle}</p>
+						<p className="text-sm text-gray-600">{zoneSubtitle}</p>
+                        {!file && <button type="button" disabled={disabled} onClick={triggerFileInput} className="btn-ghost mt-4">Seleccionar archivo DOCX</button>}
 					</div>
 
 					<div className="inline-flex flex-wrap items-center gap-3 px-5 py-1.5 bg-white/60 backdrop-blur-sm border border-gray-200 rounded-2xl shadow-sm text-gray-600">
-						<span className="flex items-center gap-1.5">
-							<span className="text-blue-500">
-								<FontAwesomeIcon icon={faFileText} />
-							</span>{" "}
-							.DOC
-						</span>
-						<span className="w-1 h-1 bg-gray-300 rounded-full"></span>
 						<span className="flex items-center gap-1.5">
 							<span className="text-blue-500">
 								<FontAwesomeIcon icon={faFileText} />
@@ -235,7 +227,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 						<span className="w-1 h-1 bg-gray-300 rounded-full"></span>
 						<span className="flex items-center gap-1.5">
 							<span className="text-gray-500 text-xs font-bold bg-gray-100 px-1.5 rounded">
-								MAX 15MB
+								MAX 15MB · 100.000 caracteres
 							</span>
 						</span>
 					</div>
@@ -244,7 +236,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 
 			{/* Error Message */}
 			{error && (
-				<div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+				<div role="alert" className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl">
 					<div className="flex items-center gap-3">
 						<div className="p-2 bg-red-100 rounded-lg">
 							<span className="text-red-600 text-xl">
@@ -286,7 +278,7 @@ const UploadZone: React.FC<UploadZoneProps> = ({
 									setFile(null);
 									setError("");
 								}}
-								className="p-2 text-gray-400 hover:text-gray-600"
+								className="p-2 text-gray-500 hover:text-gray-600"
 							>
 								✕
 							</button>

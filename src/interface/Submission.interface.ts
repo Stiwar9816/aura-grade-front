@@ -21,6 +21,9 @@ export interface SubmissionDetail {
 	fileUrl?: string; // Adding fileUrl as it is in the fragment
 	extractedText: string;
 	status: SubmissionStatus;
+	gradingAttemptCount?: number;
+	gradingFailureReason?: string;
+	gradingLastAttemptAt?: string;
 	createdAt: string;
 	updatedAt: string;
 	student: {
@@ -32,10 +35,11 @@ export interface SubmissionDetail {
 	};
 	evaluation?: {
 		id: string;
+		origin?: "AI" | "MANUAL";
 		status: string;
 		totalScore: number;
 		generalFeedback?: string;
-		detailedFeedback?: string;
+		detailedFeedback?: unknown;
 		createdAt?: string;
 	};
 	assignment: {
@@ -54,6 +58,7 @@ export interface SubmissionDetail {
 				id: string;
 				title: string;
 				maxPoints: number;
+				weight: number;
 				levels?: {
 					description: string;
 					score: number;

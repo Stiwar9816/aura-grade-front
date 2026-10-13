@@ -1,4 +1,4 @@
-import {useState} from "react";
+import {useRef, useState} from "react";
 import Link from "next/link";
 import {useRouter} from "next/router";
 import {useAuth} from "@/hooks";
@@ -15,6 +15,7 @@ export const UserMenu = () => {
 	const {user, logout} = useAuth();
 	const router = useRouter();
 	const [isOpen, setIsOpen] = useState(false);
+ const trigger = useRef<HTMLButtonElement>(null);
 
 	const getInitials = () => {
 		if (!user) return "U";
@@ -26,11 +27,11 @@ export const UserMenu = () => {
 	const getRoleColor = () => {
 		switch (user?.role) {
 			case UserRole.STUDENT:
-				return "bg-green-500 text-white";
+				return "bg-electric-50 text-electric-700";
 			case UserRole.TEACHER:
 				return "bg-electric-500 text-white";
 			case UserRole.ADMIN:
-				return "bg-purple-500 text-white";
+				return "bg-purple-50 text-purple-800";
 			default:
 				return "bg-gray-100 text-gray-900";
 		}
@@ -49,9 +50,9 @@ export const UserMenu = () => {
 		}
 	};
 
-	const handleLogout = () => {
+	const handleLogout = async () => {
 		setIsOpen(false);
-		logout();
+		await logout();
 		router.push("/login");
 	};
 
@@ -72,9 +73,10 @@ export const UserMenu = () => {
 	}
 
 	return (
-		<div className="relative">
+		<div className="relative" onKeyDown={(event) => {if (event.key === 'Escape') {setIsOpen(false); trigger.current?.focus();}}} onBlur={(event) => {if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false);}}>
 			<button
-				onClick={() => setIsOpen(!isOpen)}
+				ref={trigger} type="button" aria-expanded={isOpen} aria-controls="account-links" aria-label={`Menú de cuenta de ${user.name}`}
+                onClick={() => setIsOpen(!isOpen)}
 				className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-100 transition-colors"
 			>
 				<div className="text-right hidden md:block">
@@ -88,7 +90,7 @@ export const UserMenu = () => {
 					</div>
 				</div>
 
-				<div className="w-10 h-10 bg-gradient-to-r from-electric-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-semibold">
+				<div className="w-10 h-10 bg-electric-500 rounded-full flex items-center justify-center text-white font-semibold">
 					{getInitials()}
 				</div>
 			</button>
@@ -102,10 +104,10 @@ export const UserMenu = () => {
 					/>
 
 					{/* Menu */}
-					<div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 animate-slideIn">
+					<div id="account-links" className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 animate-slideIn">
 						<div className="p-4 border-b border-gray-100">
 							<div className="flex items-center gap-3">
-								<div className="w-14 h-10 bg-gradient-to-r from-electric-500 to-cyan-500 rounded-full flex items-center justify-center text-white font-bold">
+								<div className="w-14 h-10 bg-electric-500 rounded-full flex items-center justify-center text-white font-bold">
 									{getInitials()}
 								</div>
 								<div>

@@ -1,13 +1,14 @@
-import {Submission, SubmissionDetail, SubmissionStatus} from "@/interface";
-import {SubmissionActions} from "@/actions/submission.actions";
+import { useEffect, useState } from "react";
+import { Submission, SubmissionDetail, SubmissionStatus } from "@/interface";
+import { SubmissionActions } from "@/actions/submission.actions";
 import {
 	AssignmentSubmission,
 	ProcessedTeacherAssignment,
 	useAssignments,
 } from "./useAssignments";
-import {useReEvaluationRequests} from "./useReEvaluationRequests";
-import {getScoreTime, normalizeGrade} from "@/utils/gradeScale";
-import {isPendingReEvaluationRequest} from "@/utils/reevaluationRequests";
+import { useReEvaluationRequests } from "./useReEvaluationRequests";
+import { getScoreTime, normalizeGrade } from "@/utils/gradeScale";
+import { isPendingReEvaluationRequest } from "@/utils/reevaluationRequests";
 
 const normalizeStatusValue = (status?: string | null) =>
 	status?.toUpperCase().replace(/[-\s]+/g, "_") || "";
@@ -41,7 +42,13 @@ const getTeacherReviewStatus = (
 };
 
 export const useSubmission = () => {
-	const {GetTeacherSubmissions, loading, error, refetch} = SubmissionActions();
+	const [now, setNow] = useState(() => Date.now());
+	useEffect(() => {
+		const timer = setInterval(() => setNow(Date.now()), 60000);
+		return () => clearInterval(timer);
+	}, []);
+	const { GetTeacherSubmissions, loading, error, refetch } =
+		SubmissionActions();
 	const {
 		assignments,
 		loading: assignmentsLoading,
@@ -63,8 +70,7 @@ export const useSubmission = () => {
 		// Calcular si necesita atención
 		const daysSinceSubmission = s.createdAt
 			? Math.floor(
-					(Date.now() - new Date(s.createdAt).getTime()) /
-						(1000 * 60 * 60 * 24),
+					(now - new Date(s.createdAt).getTime()) / (1000 * 60 * 60 * 24),
 				)
 			: 0;
 

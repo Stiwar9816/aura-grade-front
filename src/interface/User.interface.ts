@@ -3,6 +3,11 @@ export interface AuthState {
 	isAuthenticated: boolean;
 	isLoading: boolean;
 	error: string | null;
+	sessionErrorCode:
+		| "RATE_LIMITED"
+		| "SERVICE_UNAVAILABLE"
+		| "UNAUTHENTICATED"
+		| null;
 }
 
 export interface LoginCredentials {
@@ -20,6 +25,7 @@ export interface RegisterData {
 	email: string;
 	password: string;
 	role: UserRole;
+	institutionId: string;
 }
 
 export enum UserRole {
@@ -40,14 +46,8 @@ export enum DocumentType {
 export interface ProtectedRouteProps {
 	children: React.ReactNode;
 	requiredRole?: UserRole;
+	requiredRoles?: UserRole[];
 	redirectTo?: string;
-}
-
-export interface AuthToastProps {
-	type: "success" | "error" | "info" | "welcome";
-	message: string;
-	onClose: () => void;
-	duration?: number;
 }
 
 export interface AuthLayoutProps {
@@ -74,7 +74,64 @@ export interface RegisterFormData {
 	password: string;
 	confirmPassword: string;
 	userType: UserRole;
+	institutionId: string;
 	acceptTerms: boolean;
+}
+
+export enum InstitutionApprovalStatus {
+	PENDING = "PENDING",
+	APPROVED = "APPROVED",
+	REJECTED = "REJECTED",
+}
+
+export interface Institution {
+	id: string;
+	name: string;
+	legalName?: string | null;
+	taxId?: string | null;
+	contactEmail?: string | null;
+	phone?: string | null;
+	address?: string | null;
+	city?: string | null;
+	website?: string | null;
+	logoUrl?: string | null;
+	isActive: boolean;
+	createdAt?: string;
+	updatedAt?: string;
+}
+
+export type InstitutionInput = Omit<
+	Institution,
+	"id" | "isActive" | "createdAt" | "updatedAt"
+>;
+
+export interface AuditLog {
+	id: string;
+	actorUserId?: string | null;
+	actorName: string;
+	actorEmail?: string | null;
+	institutionId: string;
+	ipAddress?: string | null;
+	action: string;
+	resource: string;
+	eventKey: string;
+	outcome: "SUCCESS" | "DENIED" | "FAILED";
+	errorCode?: string | null;
+	durationMs?: number | null;
+	occurredAt: string;
+	resourceId?: string | null;
+	changes?: Record<string, unknown> | null;
+	requestId?: string | null;
+	path?: string | null;
+	createdAt: string;
+}
+
+export interface AuditLogPage {
+	items: AuditLog[];
+	total: number;
+	page: number;
+	limit: number;
+	totalPages: number;
 }
 
 export interface User {
@@ -83,9 +140,12 @@ export interface User {
 	last_name: string;
 	email: string;
 	role: UserRole;
-	token?: string;
 	phone: number;
 	isActive?: boolean;
+	isPlatformAdmin?: boolean;
+	approvalStatus?: InstitutionApprovalStatus;
+	institution?: Institution;
+	institutionId?: string;
 	document_type?: string | null;
 	document_num?: number | null;
 	courses?: {id: string}[];
@@ -102,6 +162,20 @@ export interface UpdateUserInput {
 	last_name?: string | null;
 	name?: string | null;
 	phone?: number | null;
+}
+
+export interface UpdateOwnProfileInput {
+	name?: string | null;
+	last_name?: string | null;
+	email?: string | null;
+	phone?: number | null;
+	document_type?: string | null;
+	document_num?: number | null;
+}
+
+export interface AssignCoursesInput {
+	userId: string;
+	courseIds: string[];
 }
 
 export interface UsersStats {

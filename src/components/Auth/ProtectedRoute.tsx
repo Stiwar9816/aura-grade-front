@@ -2,39 +2,34 @@ import React, {useEffect} from "react";
 import {useRouter} from "next/router";
 import {useAuth} from "@/hooks";
 import {ProtectedRouteProps, UserRole} from "@/interface";
+import {SessionError} from "./SessionError";
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 	children,
 	requiredRole,
+	requiredRoles,
 	redirectTo = "/login",
 }) => {
 	const router = useRouter();
-	const {user, isAuthenticated, isLoading} = useAuth();
+	const {user, isAuthenticated, isLoading, error, sessionErrorCode} = useAuth();
 
 	useEffect(() => {
 		if (!isLoading) {
 			if (!isAuthenticated) {
 				// No autenticado, redirigir a login
 				router.push(redirectTo);
-			} else if (requiredRole && user) {
-				// Comparar roles directamente sin normalizar
-				const userRole = user.role;
-				const normalizedRequired = requiredRole;
-
-				// Administrador tiene acceso a rutas de teacher
-				const hasAccess =
-					userRole === normalizedRequired ||
-					(normalizedRequired === UserRole.TEACHER &&
-						userRole === UserRole.ADMIN);
+			} else if ((requiredRole || requiredRoles?.length) && user) {
+				const allowedRoles = requiredRoles || [requiredRole as UserRole];
+				const hasAccess = allowedRoles.includes(user.role);
 
 				if (!hasAccess) {
+					const userRole = user.role;
 					// Rol incorrecto, redirigir al dashboard apropiado
 					if (userRole === UserRole.STUDENT) {
 						router.push("/student");
-					} else if (
-						userRole === UserRole.TEACHER ||
-						userRole === UserRole.ADMIN
-					) {
+					} else if (userRole === UserRole.ADMIN) {
+						router.push("/admin/approvals");
+					} else if (userRole === UserRole.TEACHER) {
 						router.push("/teacher");
 					} else {
 						router.push("/");
@@ -42,7 +37,15 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 				}
 			}
 		}
-	}, [isAuthenticated, isLoading, user, requiredRole, router, redirectTo]);
+	}, [
+		isAuthenticated,
+		isLoading,
+		user,
+		requiredRole,
+		requiredRoles,
+		router,
+		redirectTo,
+	]);
 
 	if (isLoading) {
 		return (
@@ -55,17 +58,21 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 		);
 	}
 
+	if (
+		sessionErrorCode === "SERVICE_UNAVAILABLE" ||
+		sessionErrorCode === "RATE_LIMITED"
+	) {
+		return <SessionError code={sessionErrorCode} message={error} />;
+	}
+
 	if (!isAuthenticated) {
 		return null;
 	}
 
 	// Verificar acceso con roles exactos
-	if (requiredRole && user) {
-		const userRole = user.role;
-		const normalizedRequired = requiredRole;
-		const hasAccess =
-			userRole === normalizedRequired ||
-			(normalizedRequired === "Docente" && userRole === "Administrador");
+	if ((requiredRole || requiredRoles?.length) && user) {
+		const allowedRoles = requiredRoles || [requiredRole as UserRole];
+		const hasAccess = allowedRoles.includes(user.role);
 
 		if (!hasAccess) {
 			return null;

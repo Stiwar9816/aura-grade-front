@@ -10,7 +10,7 @@ const AssignmentsPage: React.FC = () => {
 		<ProtectedRoute requiredRole={UserRole.TEACHER}>
 			<Layout title="Crear Tarea" hideHeader>
 				<div className="space-y-8">
-					<SectionHeader
+					<SectionHeader as="h1"
 						title="Crear Nueva Tarea"
 						description="Gestiona tus actividades académicas y configura los criterios de evaluación."
 						className="mb-8"

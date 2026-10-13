@@ -7,6 +7,7 @@ export const GET_TASK_TEACHER: DocumentNode = gql`
 			title
 			description
 			dueDate
+			effectiveDueDate
 			isActive
 			user {
 				id
@@ -29,6 +30,9 @@ export const GET_TASK_TEACHER: DocumentNode = gql`
 				fileUrl
 				extractedText
 				status
+				gradingAttemptCount
+				gradingFailureReason
+				gradingLastAttemptAt
 				createdAt
 				updatedAt
 				student {
@@ -40,6 +44,7 @@ export const GET_TASK_TEACHER: DocumentNode = gql`
 				}
 				evaluation {
 					id
+					origin
 					status
 					totalScore
 					generalFeedback
@@ -50,6 +55,25 @@ export const GET_TASK_TEACHER: DocumentNode = gql`
 			course {
 				id
 				course_name
+				users {
+					id
+					name
+					last_name
+					email
+					role
+					isActive
+				}
+			}
+			extensions {
+				id
+				extendedDueDate
+				reason
+				student {
+					id
+					name
+					last_name
+					email
+				}
 			}
 		}
 	}
@@ -62,6 +86,7 @@ export const GET_ASSIGNMENT_BY_ID: DocumentNode = gql`
 			title
 			description
 			dueDate
+			effectiveDueDate
 			isActive
 			user {
 				id
@@ -84,6 +109,9 @@ export const GET_ASSIGNMENT_BY_ID: DocumentNode = gql`
 				fileUrl
 				extractedText
 				status
+				gradingAttemptCount
+				gradingFailureReason
+				gradingLastAttemptAt
 				createdAt
 				updatedAt
 				student {
@@ -95,6 +123,7 @@ export const GET_ASSIGNMENT_BY_ID: DocumentNode = gql`
 				}
 				evaluation {
 					id
+					origin
 					status
 					totalScore
 					generalFeedback
@@ -105,6 +134,25 @@ export const GET_ASSIGNMENT_BY_ID: DocumentNode = gql`
 			course {
 				id
 				course_name
+				users {
+					id
+					name
+					last_name
+					email
+					role
+					isActive
+				}
+			}
+			extensions {
+				id
+				extendedDueDate
+				reason
+				student {
+					id
+					name
+					last_name
+					email
+				}
 			}
 		}
 	}
@@ -119,5 +167,30 @@ export const CREATE_ASSIGNMENT: DocumentNode = gql`
 			dueDate
 			isActive
 		}
+	}
+`;
+
+export const UPSERT_ASSIGNMENT_EXTENSION: DocumentNode = gql`
+	mutation UpsertAssignmentExtension($input: UpsertAssignmentExtensionInput!) {
+		upsertAssignmentExtension(input: $input) {
+			id
+			extendedDueDate
+			reason
+			student {
+				id
+				name
+				last_name
+				email
+			}
+		}
+	}
+`;
+
+export const REMOVE_ASSIGNMENT_EXTENSION: DocumentNode = gql`
+	mutation RemoveAssignmentExtension($assignmentId: ID!, $studentId: ID!) {
+		removeAssignmentExtension(
+			assignmentId: $assignmentId
+			studentId: $studentId
+		)
 	}
 `;

@@ -1,18 +1,5 @@
+import { BadgeProps } from "@/interface";
 import React from "react";
-
-type BadgeVariant =
-	| "default"
-	| "success"
-	| "warning"
-	| "error"
-	| "info"
-	| "electric";
-
-interface BadgeProps {
-	children: React.ReactNode;
-	variant?: BadgeVariant;
-	className?: string;
-}
 
 const Badge: React.FC<BadgeProps> = ({
 	children,
@@ -30,7 +17,7 @@ const Badge: React.FC<BadgeProps> = ({
 
 	return (
 		<span
-			className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-tight border ${variants[variant]} ${className}`}
+			className={`inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium border ${variants[variant]} ${className}`}
 		>
 			{children}
 		</span>

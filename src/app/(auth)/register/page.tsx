@@ -9,14 +9,18 @@ import {
 	faArrowLeft,
 	faArrowRight,
 	faChalkboardTeacher,
+	faCheck,
 	faExclamationTriangle,
 	faUserGraduate,
 	faUserShield,
 } from "@fortawesome/free-solid-svg-icons";
+import {PASSWORD_MIN_LENGTH} from "@/utils/passwordPolicy";
 
 const RegisterPage: React.FC = () => {
 	const {
 		formData,
+		institutions,
+		institutionsLoading,
 		step,
 		errors,
 		showPassword,
@@ -36,19 +40,19 @@ const RegisterPage: React.FC = () => {
 		{
 			icon: <FontAwesomeIcon icon={faUserGraduate} />,
 			title: "Panel de Estudiante",
-			description: "Accede a tus tareas y recibe feedback en tiempo real",
+			description: "Consulta tus tareas, entregas y observaciones publicadas",
 			gradient: "from-cyan-500 to-blue-500",
 		},
 		{
 			icon: <FontAwesomeIcon icon={faChalkboardTeacher} />,
 			title: "Herramientas de Docente",
-			description: "Gestiona rúbricas y automatiza evaluaciones con precisión",
+			description: "Define criterios y revisa los borradores antes de publicar",
 			gradient: "from-purple-500 to-electric-500",
 		},
 		{
 			icon: <FontAwesomeIcon icon={faUserShield} />,
-			title: "Seguro y Privado",
-			description: "Tus datos y trabajos están protegidos con encriptación",
+			title: "Acceso por institución",
+			description: "Cada rol tiene acceso a sus cursos y actividades",
 			gradient: "from-emerald-500 to-green-500",
 		},
 	];
@@ -56,11 +60,11 @@ const RegisterPage: React.FC = () => {
 	return (
 		<AuthLayout
 			title="Crea tu cuenta"
-			subtitle="Únete a la nueva era de la evaluación educativa"
+			subtitle="Solicita acceso a tu institución. Los campos con * son obligatorios."
 			features={features}
 			heroTitle={
 				<>
-					Empieza tu viaje <span className="text-electric-500">educativo</span>
+					Tu trabajo académico, <span className="text-electric-600">en un solo lugar.</span>
 				</>
 			}
 		>
@@ -70,7 +74,7 @@ const RegisterPage: React.FC = () => {
 					<span className="text-xs font-bold text-electric-500 uppercase tracking-widest">
 						Paso {step} de 3
 					</span>
-					<span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+					<span className="text-xs font-bold text-gray-500 uppercase tracking-widest">
 						{step === 1
 							? "Información"
 							: step === 2
@@ -87,7 +91,7 @@ const RegisterPage: React.FC = () => {
 			</div>
 
 			{displayError && (
-				<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+				<div role="alert" className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
 					<div className="flex items-center gap-3">
 						<span className="text-red-600">
 							<FontAwesomeIcon icon={faExclamationTriangle} />
@@ -106,14 +110,52 @@ const RegisterPage: React.FC = () => {
 						<p className="text-gray-600">Comencemos con tus datos básicos</p>
 					</div>
 
+					<div>
+						<label htmlFor="institutionId" className="block text-sm font-medium text-gray-700 mb-2">
+							Institución *
+						</label>
+						<select
+							aria-invalid={Boolean(errors.institutionId)} aria-describedby={errors.institutionId ? "institutionId-error" : undefined} id="institutionId" name="institutionId"
+							value={formData.institutionId}
+							onChange={handleChange}
+							disabled={institutionsLoading}
+							className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all bg-white disabled:bg-gray-100 ${
+								errors.institutionId
+									? "border-red-500"
+									: "border-gray-300 focus:border-electric-500"
+							}`}
+						>
+							<option value="">
+								{institutionsLoading
+									? "Cargando instituciones..."
+									: "Selecciona tu institución"}
+							</option>
+							{institutions.map((institution) => (
+								<option key={institution.id} value={institution.id}>
+									{institution.name}
+								</option>
+							))}
+						</select>
+						{errors.institutionId && (
+							<p id="institutionId-error" role="alert" className="mt-1 text-sm text-red-600">
+								{errors.institutionId}
+							</p>
+						)}
+						{!institutionsLoading && institutions.length === 0 && (
+							<p className="mt-1 text-sm text-amber-700">
+								No hay instituciones disponibles para registro.
+							</p>
+						)}
+					</div>
+
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
+							<label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
 								Nombre *
 							</label>
 							<input
 								type="text"
-								name="name"
+								autoComplete="given-name" aria-invalid={Boolean(errors.name)} aria-describedby={errors.name ? "name-error" : undefined} id="name" name="name"
 								value={formData.name}
 								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
@@ -124,17 +166,17 @@ const RegisterPage: React.FC = () => {
 								placeholder="Ej: María"
 							/>
 							{errors.name && (
-								<p className="mt-1 text-sm text-red-600">{errors.name}</p>
+								<p id="name-error" role="alert" className="mt-1 text-sm text-red-600">{errors.name}</p>
 							)}
 						</div>
 
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
+							<label htmlFor="last_name" className="block text-sm font-medium text-gray-700 mb-2">
 								Apellido *
 							</label>
 							<input
 								type="text"
-								name="last_name"
+								autoComplete="family-name" aria-invalid={Boolean(errors.last_name)} aria-describedby={errors.last_name ? "last_name-error" : undefined} id="last_name" name="last_name"
 								value={formData.last_name}
 								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
@@ -145,18 +187,18 @@ const RegisterPage: React.FC = () => {
 								placeholder="Ej: González"
 							/>
 							{errors.last_name && (
-								<p className="mt-1 text-sm text-red-600">{errors.last_name}</p>
+								<p id="last_name-error" role="alert" className="mt-1 text-sm text-red-600">{errors.last_name}</p>
 							)}
 						</div>
 					</div>
 
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
+							<label htmlFor="documentType" className="block text-sm font-medium text-gray-700 mb-2">
 								Tipo de Documento *
 							</label>
 							<select
-								name="documentType"
+								aria-invalid={Boolean(errors.documentType)} aria-describedby={errors.documentType ? "documentType-error" : undefined} id="documentType" name="documentType"
 								value={formData.documentType}
 								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all bg-white ${
@@ -184,19 +226,19 @@ const RegisterPage: React.FC = () => {
 								</option>
 							</select>
 							{errors.documentType && (
-								<p className="mt-1 text-sm text-red-600">
+								<p id="documentType-error" role="alert" className="mt-1 text-sm text-red-600">
 									{errors.documentType}
 								</p>
 							)}
 						</div>
 
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
+							<label htmlFor="documentNum" className="block text-sm font-medium text-gray-700 mb-2">
 								Documento de Identidad *
 							</label>
 							<input
 								type="text"
-								name="documentNum"
+								aria-invalid={Boolean(errors.documentNum)} aria-describedby={errors.documentNum ? "documentNum-error" : undefined} id="documentNum" name="documentNum"
 								value={formData.documentNum}
 								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
@@ -207,19 +249,19 @@ const RegisterPage: React.FC = () => {
 								placeholder="Ej: 1234567890"
 							/>
 							{errors.documentNum && (
-								<p className="mt-1 text-sm text-red-600">
+								<p id="documentNum-error" role="alert" className="mt-1 text-sm text-red-600">
 									{errors.documentNum}
 								</p>
 							)}
 						</div>
 
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
+							<label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
 								Teléfono *
 							</label>
 							<input
 								type="tel"
-								name="phone"
+								autoComplete="tel" aria-invalid={Boolean(errors.phone)} aria-describedby={errors.phone ? "phone-error" : undefined} id="phone" name="phone"
 								value={formData.phone}
 								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
@@ -230,16 +272,16 @@ const RegisterPage: React.FC = () => {
 								placeholder="Ej: 3001234567"
 							/>
 							{errors.phone && (
-								<p className="mt-1 text-sm text-red-600">{errors.phone}</p>
+								<p id="phone-error" role="alert" className="mt-1 text-sm text-red-600">{errors.phone}</p>
 							)}
 						</div>
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
+							<label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
 								Correo electrónico *
 							</label>
 							<input
 								type="email"
-								name="email"
+								autoComplete="email" aria-invalid={Boolean(errors.email)} aria-describedby={errors.email ? "email-error" : undefined} id="email" name="email"
 								value={formData.email}
 								onChange={handleChange}
 								className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
@@ -251,19 +293,17 @@ const RegisterPage: React.FC = () => {
 								required
 							/>
 							{errors.email && (
-								<p className="mt-1 text-sm text-red-600">{errors.email}</p>
+								<p id="email-error" role="alert" className="mt-1 text-sm text-red-600">{errors.email}</p>
 							)}
 						</div>
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-4">
-							¿Cómo usarás AuraGrade? *
-						</label>
+						<p className="block text-sm font-medium text-gray-700 mb-4">¿Cómo usarás AuraGrade? *</p>
 						<div className="grid grid-cols-1 gap-4">
 							<button
 								type="button"
-								onClick={() => handleTypeChange("userType", UserRole.STUDENT)}
+								aria-pressed={formData.userType === UserRole.STUDENT} onClick={() => handleTypeChange("userType", UserRole.STUDENT)}
 								className={`p-4 border-2 rounded-xl text-left transition-all ${
 									formData.userType === UserRole.STUDENT
 										? "border-electric-500 bg-electric-50"
@@ -295,7 +335,7 @@ const RegisterPage: React.FC = () => {
 
 							<button
 								type="button"
-								onClick={() => handleTypeChange("userType", UserRole.TEACHER)}
+								aria-pressed={formData.userType === UserRole.TEACHER} onClick={() => handleTypeChange("userType", UserRole.TEACHER)}
 								className={`p-4 border-2 rounded-xl text-left transition-all ${
 									formData.userType === UserRole.TEACHER
 										? "border-electric-500 bg-electric-50"
@@ -345,13 +385,13 @@ const RegisterPage: React.FC = () => {
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+						<label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
 							Contraseña *
 						</label>
 						<div className="relative">
 							<input
 								type={showPassword ? "text" : "password"}
-								name="password"
+								autoComplete="new-password" aria-invalid={Boolean(errors.password)} aria-describedby={errors.password ? "password-error" : undefined} id="password" name="password"
 								value={formData.password}
 								onChange={handleChange}
 								className={`w-full px-4 py-3 pr-12 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
@@ -363,12 +403,13 @@ const RegisterPage: React.FC = () => {
 							/>
 							<button
 								type="button"
-								onClick={() => setShowPassword(!showPassword)}
-								className="absolute inset-y-0 right-0 pr-3 flex items-center"
+								aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                aria-pressed={showPassword} onClick={() => setShowPassword(!showPassword)}
+								className="absolute inset-y-0 right-0 min-w-11 flex items-center justify-center"
 							>
 								{showPassword ? (
 									<svg
-										className="h-5 w-5 text-gray-400"
+										className="h-5 w-5 text-gray-500"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -382,7 +423,7 @@ const RegisterPage: React.FC = () => {
 									</svg>
 								) : (
 									<svg
-										className="h-5 w-5 text-gray-400"
+										className="h-5 w-5 text-gray-500"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -404,7 +445,7 @@ const RegisterPage: React.FC = () => {
 							</button>
 						</div>
 						{errors.password && (
-							<p className="mt-1 text-sm text-red-600">{errors.password}</p>
+							<p id="password-error" role="alert" className="mt-1 text-sm text-red-600">{errors.password}</p>
 						)}
 
 						{/* Password Strength */}
@@ -443,50 +484,22 @@ const RegisterPage: React.FC = () => {
 									<li className="flex items-center gap-2">
 										<span
 											className={
-												formData.password.length >= 8
+												formData.password.length >= PASSWORD_MIN_LENGTH
 													? "text-green-500"
-													: "text-gray-400"
+													: "text-gray-500"
 											}
 										>
-											{formData.password.length >= 8 ? "✓" : "○"}
+											{formData.password.length >= PASSWORD_MIN_LENGTH
+												? <FontAwesomeIcon icon={faCheck} />
+												: <FontAwesomeIcon icon={faExclamationTriangle} />}
 										</span>
-										<span>Al menos 8 caracteres</span>
+										<span>Al menos {PASSWORD_MIN_LENGTH} caracteres</span>
 									</li>
 									<li className="flex items-center gap-2">
-										<span
-											className={
-												/[a-z]/.test(formData.password)
-													? "text-green-500"
-													: "text-gray-400"
-											}
-										>
-											{/[a-z]/.test(formData.password) ? "✓" : "○"}
+										<span className="text-electric-500">•</span>
+										<span>
+											No debe contener espacios ni otros caracteres en blanco.
 										</span>
-										<span>Una letra minúscula</span>
-									</li>
-									<li className="flex items-center gap-2">
-										<span
-											className={
-												/[A-Z]/.test(formData.password)
-													? "text-green-500"
-													: "text-gray-400"
-											}
-										>
-											{/[A-Z]/.test(formData.password) ? "✓" : "○"}
-										</span>
-										<span>Una letra mayúscula</span>
-									</li>
-									<li className="flex items-center gap-2">
-										<span
-											className={
-												/\d/.test(formData.password)
-													? "text-green-500"
-													: "text-gray-400"
-											}
-										>
-											{/\d/.test(formData.password) ? "✓" : "○"}
-										</span>
-										<span>Un número</span>
 									</li>
 								</ul>
 							</div>
@@ -494,12 +507,12 @@ const RegisterPage: React.FC = () => {
 					</div>
 
 					<div>
-						<label className="block text-sm font-medium text-gray-700 mb-2">
+						<label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
 							Confirmar contraseña *
 						</label>
 						<input
 							type="password"
-							name="confirmPassword"
+							autoComplete="new-password" aria-invalid={Boolean(errors.confirmPassword)} aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined} id="confirmPassword" name="confirmPassword"
 							value={formData.confirmPassword}
 							onChange={handleChange}
 							className={`w-full px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-electric-200 outline-none transition-all ${
@@ -510,7 +523,7 @@ const RegisterPage: React.FC = () => {
 							placeholder="••••••••"
 						/>
 						{errors.confirmPassword && (
-							<p className="mt-1 text-sm text-red-600">
+							<p id="confirmPassword-error" role="alert" className="mt-1 text-sm text-red-600">
 								{errors.confirmPassword}
 							</p>
 						)}
@@ -562,6 +575,15 @@ const RegisterPage: React.FC = () => {
 									{formData.email}
 								</div>
 							</div>
+							<div>
+								<div className="text-sm text-gray-600">Institución</div>
+								<div className="font-medium text-gray-900">
+									{institutions.find(
+										(institution) =>
+											institution.id === formData.institutionId,
+									)?.name || "Sin seleccionar"}
+								</div>
+							</div>
 						</div>
 					</div>
 
@@ -611,7 +633,7 @@ const RegisterPage: React.FC = () => {
 					onClick={handlePreviousStep}
 					className={`px-6 py-3 rounded-xl font-medium transition-colors ${
 						step === 1
-							? "text-gray-400 cursor-not-allowed"
+							? "text-gray-500 cursor-not-allowed"
 							: "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
 					}`}
 					disabled={step === 1}
@@ -626,7 +648,7 @@ const RegisterPage: React.FC = () => {
 					className={`px-6 py-3 rounded-xl font-semibold transition-all ${
 						isLoading
 							? "bg-gray-400 text-white cursor-not-allowed"
-							: "bg-gradient-to-r from-electric-500 to-cyan-500 text-white hover:from-electric-600 hover:to-cyan-600 shadow-lg hover:shadow-xl"
+							: "bg-electric-500 text-white hover:bg-electric-600"
 					}`}
 				>
 					{isLoading ? (

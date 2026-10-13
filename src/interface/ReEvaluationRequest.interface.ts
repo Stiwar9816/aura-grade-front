@@ -54,5 +54,5 @@ export interface CreateReEvaluationRequestInput {
 export interface ResolveReEvaluationRequestInput {
 	id: string;
 	status: ReEvaluationRequestStatus.APPROVED | ReEvaluationRequestStatus.REJECTED;
-	teacherResponse?: string;
+	teacherResponse: string;
 }

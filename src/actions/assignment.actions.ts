@@ -2,7 +2,14 @@ import {useAuth} from "@/hooks";
 import {useMutation, useQuery} from "@apollo/client/react";
 import {GET_TASK_TEACHER, CREATE_ASSIGNMENT} from "@/gql/Assignment";
 
-type CreateAssignmentPayload = Record<string, unknown>;
+type CreateAssignmentPayload = {
+	title: string;
+	description: string;
+	dueDate: string;
+	rubricId: string;
+	courseId: string;
+	isActive?: boolean;
+};
 
 type CreateAssignmentResponse = {
 	createAssignment: CreateAssignmentPayload & {id: string};

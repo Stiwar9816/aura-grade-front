@@ -6,11 +6,12 @@ import {
 	DELETE_COURSE,
 } from "@/gql/Course";
 import {CoursesData} from "@/interface";
+import {ASSIGN_COURSES_TO_USER} from "@/gql/User";
 import {useAuth} from "./useAuth";
 
-type CourseUpdateData = Partial<Pick<CoursesData["courses"][number], "course_name" | "code_course">> & {
-	studentsIds?: string[];
-};
+type CourseUpdateData = Partial<
+	Pick<CoursesData["courses"][number], "course_name" | "code_course">
+>;
 
 export const useCourse = () => {
 	const {user} = useAuth();
@@ -19,6 +20,7 @@ export const useCourse = () => {
 	const [createCourseMutation] = useMutation(CREATE_COURSE);
 	const [updateCourseMutation] = useMutation(UPDATE_COURSE);
 	const [deleteCourseMutation] = useMutation(DELETE_COURSE);
+	const [assignCoursesMutation] = useMutation(ASSIGN_COURSES_TO_USER);
 
 	const createCourse = async (course_name: string, code_course: string) => {
 		if (!user?.id) {
@@ -58,44 +60,22 @@ export const useCourse = () => {
 		}
 	};
 
-	const addStudentToCourse = async (
-		courseId: string,
+	const assignCoursesToStudent = async (
 		studentId: string,
-		currentStudentIds: string[],
+		courseIds: string[],
 	) => {
 		try {
-			const newStudentIds = [...currentStudentIds, studentId];
-			await updateCourseMutation({
+			await assignCoursesMutation({
 				variables: {
-					updateCourseInput: {
-						id: courseId,
-						studentsIds: newStudentIds,
+					assignCoursesInput: {
+						userId: studentId,
+						courseIds,
 					},
 				},
 			});
+			await refetch();
 		} catch (error) {
-			console.error("Error al agregar estudiante:", error);
-			throw error;
-		}
-	};
-
-	const removeStudentFromCourse = async (
-		courseId: string,
-		studentId: string,
-		currentStudentIds: string[],
-	) => {
-		try {
-			const newStudentIds = currentStudentIds.filter((id) => id !== studentId);
-			await updateCourseMutation({
-				variables: {
-					updateCourseInput: {
-						id: courseId,
-						studentsIds: newStudentIds,
-					},
-				},
-			});
-		} catch (error) {
-			console.error("Error removing student:", error);
+			console.error("Error al asignar cursos al estudiante:", error);
 			throw error;
 		}
 	};
@@ -138,8 +118,7 @@ export const useCourse = () => {
 		updateCourse,
 		deleteCourse,
 		saveCourse,
-		addStudentToCourse,
-		removeStudentFromCourse,
+		assignCoursesToStudent,
 		refetch,
 	};
 };

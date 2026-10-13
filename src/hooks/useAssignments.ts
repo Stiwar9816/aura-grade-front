@@ -1,11 +1,11 @@
-import {useEffect, useMemo, useState} from "react";
-import {useAssignmentActions} from "@/actions";
-import {useAuth} from "./useAuth";
-import {useReEvaluationRequests} from "./useReEvaluationRequests";
-import {SubmissionStatus, UserRole} from "@/interface";
-import {GET_ASSIGNMENT_BY_ID} from "@/gql/Assignment";
+import { useEffect, useMemo, useState } from "react";
+import { useAssignmentActions } from "@/actions";
+import { useAuth } from "./useAuth";
+import { useReEvaluationRequests } from "./useReEvaluationRequests";
+import { SubmissionStatus, UserRole } from "@/interface";
+import { GET_ASSIGNMENT_BY_ID } from "@/gql/Assignment";
 import client from "@/lib/apolloClient";
-import {normalizeGrade, getScoreTime} from "@/utils/gradeScale";
+import { normalizeGrade, getScoreTime } from "@/utils/gradeScale";
 
 export interface AssignmentStudent {
 	id: string;
@@ -13,14 +13,23 @@ export interface AssignmentStudent {
 	last_name?: string;
 	email?: string;
 	isActive?: boolean;
+	role?: string;
+}
+
+export interface AssignmentExtension {
+	id: string;
+	extendedDueDate: string;
+	reason?: string;
+	student: AssignmentStudent;
 }
 
 export interface AssignmentEvaluation {
 	id: string;
+	origin?: "AI" | "MANUAL";
 	status?: string;
 	totalScore?: number;
 	generalFeedback?: string;
-	detailedFeedback?: string;
+	detailedFeedback?: unknown;
 	createdAt?: string;
 }
 
@@ -29,6 +38,9 @@ export interface AssignmentSubmission {
 	fileUrl?: string;
 	extractedText?: string;
 	status?: string;
+	gradingAttemptCount?: number;
+	gradingFailureReason?: string;
+	gradingLastAttemptAt?: string;
 	createdAt?: string;
 	updatedAt?: string;
 	student?: AssignmentStudent;
@@ -59,6 +71,7 @@ export interface TeacherAssignment {
 	title: string;
 	description?: string;
 	dueDate: string;
+	effectiveDueDate?: string;
 	isActive?: boolean;
 	user?: {
 		id: string;
@@ -68,11 +81,9 @@ export interface TeacherAssignment {
 	course?: {
 		id: string;
 		course_name: string;
-		users?: {
-			id: string;
-			role?: string;
-		}[];
+		users?: AssignmentStudent[];
 	};
+	extensions?: AssignmentExtension[];
 	rubric?: AssignmentRubric;
 	submissions?: AssignmentSubmission[];
 }
@@ -82,8 +93,10 @@ export interface ProcessedTeacherAssignment {
 	title: string;
 	description?: string;
 	dueDate: string;
+	effectiveDueDate?: string;
 	course?: TeacherAssignment["course"];
 	courseName?: string;
+	extensions: AssignmentExtension[];
 	rubric?: AssignmentRubric;
 	rubricTitle?: string;
 	submissionItems: AssignmentSubmission[];
@@ -190,8 +203,7 @@ const assignmentBelongsToTeacher = (
 };
 
 export const useAssignments = () => {
-	const {user} = useAuth();
-	const isAdmin = user?.role === UserRole.ADMIN;
+	const { user } = useAuth();
 	const [assignmentDetailsById, setAssignmentDetailsById] = useState<
 		Record<string, TeacherAssignment>
 	>({});
@@ -215,16 +227,14 @@ export const useAssignments = () => {
 
 		const teacherAssignments = assignments as TeacherAssignment[];
 
-		if (!isAdmin && user?.id) {
-			const ownedAssignments = teacherAssignments.filter((assignment) =>
+		if (user?.role === UserRole.TEACHER && user.id) {
+			return teacherAssignments.filter((assignment) =>
 				assignmentBelongsToTeacher(assignment, user.id),
 			);
-
-			return ownedAssignments.length > 0 ? ownedAssignments : teacherAssignments;
 		}
 
 		return teacherAssignments;
-	}, [assignments, isAdmin, user?.id]);
+	}, [assignments, user]);
 
 	useEffect(() => {
 		const assignmentsMissingSubmissions = filteredAssignments.filter(
@@ -243,9 +253,11 @@ export const useAssignments = () => {
 				setDetailsLoading(true);
 				const results = await Promise.all(
 					assignmentsMissingSubmissions.map(async (assignment) => {
-						const {data} = await client.query<{assignment: TeacherAssignment}>({
+						const { data } = await client.query<{
+							assignment: TeacherAssignment;
+						}>({
 							query: GET_ASSIGNMENT_BY_ID,
-							variables: {id: assignment.id},
+							variables: { id: assignment.id },
 							fetchPolicy: "network-only",
 						});
 
@@ -256,7 +268,7 @@ export const useAssignments = () => {
 				if (!isActive) return;
 
 				setAssignmentDetailsById((current) => {
-					const next = {...current};
+					const next = { ...current };
 					results.forEach((assignment) => {
 						if (assignment?.id) {
 							next[assignment.id] = assignment;
@@ -331,10 +343,12 @@ export const useAssignments = () => {
 				title: assignment.title,
 				description: assignment.description,
 				dueDate: assignment.dueDate,
+				effectiveDueDate: assignment.effectiveDueDate,
 				course: assignment.course,
 				courseName: assignment.course?.course_name,
 				rubric: assignment.rubric,
 				rubricTitle: assignment.rubric?.title,
+				extensions: assignment.extensions || [],
 				submissionItems: latestSubmissions,
 				submissions: latestSubmissions.length,
 				pending,

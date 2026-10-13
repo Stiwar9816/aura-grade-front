@@ -6,6 +6,9 @@ const SUBMISSION_FIELDS = gql`
 		fileUrl
 		extractedText
 		status
+		gradingAttemptCount
+		gradingFailureReason
+		gradingLastAttemptAt
 		createdAt
 		updatedAt
 		student {
@@ -17,6 +20,7 @@ const SUBMISSION_FIELDS = gql`
 		}
 		evaluation {
 			id
+			origin
 			generalFeedback
 			detailedFeedback
 			status
@@ -41,6 +45,7 @@ const SUBMISSION_FIELDS = gql`
 					id
 					title
 					maxPoints
+					weight
 				}
 			}
 		}
@@ -60,6 +65,7 @@ export const GET_TEACHER_EVALUATIONS: DocumentNode = gql`
 	query GetTeacherEvaluations {
 		evaluations {
 			id
+			origin
 			status
 			totalScore
 			generalFeedback
@@ -70,6 +76,9 @@ export const GET_TEACHER_EVALUATIONS: DocumentNode = gql`
 				fileUrl
 				extractedText
 				status
+				gradingAttemptCount
+				gradingFailureReason
+				gradingLastAttemptAt
 				createdAt
 				updatedAt
 				student {
@@ -95,6 +104,7 @@ export const GET_TEACHER_EVALUATIONS: DocumentNode = gql`
 							id
 							title
 							maxPoints
+							weight
 						}
 					}
 				}
@@ -127,6 +137,19 @@ export const CREATE_SUBMISSION: DocumentNode = gql`
 	${SUBMISSION_FIELDS}
 `;
 
+export const RETRY_SUBMISSION_GRADING: DocumentNode = gql`
+	mutation RetrySubmissionGrading($id: ID!) {
+		retrySubmissionGrading(id: $id) {
+			id
+			status
+			gradingAttemptCount
+			gradingFailureReason
+			gradingLastAttemptAt
+			updatedAt
+		}
+	}
+`;
+
 export const PUBLISH_EVALUATION: DocumentNode = gql`
 	mutation PublishEvaluation(
 		$id: ID!
@@ -143,6 +166,20 @@ export const PUBLISH_EVALUATION: DocumentNode = gql`
 	}
 `;
 
+export const CREATE_MANUAL_EVALUATION_DRAFT: DocumentNode = gql`
+	mutation CreateManualEvaluationDraft($input: CreateManualEvaluationInput!) {
+		createManualEvaluationDraft(input: $input) {
+			id
+			origin
+			status
+			totalScore
+			generalFeedback
+			detailedFeedback
+			createdAt
+		}
+	}
+`;
+
 // Query para obtener las entregas (el backend ahora filtra por usuario/rol)
 export const GET_TEACHER_SUBMISSIONS: DocumentNode = gql`
 	query GetTeacherSubmissions {
@@ -150,6 +187,9 @@ export const GET_TEACHER_SUBMISSIONS: DocumentNode = gql`
 			id
 			fileUrl
 			status
+			gradingAttemptCount
+			gradingFailureReason
+			gradingLastAttemptAt
 			createdAt
 			updatedAt
 			student {
@@ -173,6 +213,7 @@ export const GET_TEACHER_SUBMISSIONS: DocumentNode = gql`
 			}
 			evaluation {
 				id
+				origin
 				status
 				totalScore
 				generalFeedback

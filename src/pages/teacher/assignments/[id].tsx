@@ -1,12 +1,21 @@
 import React from "react";
-import {useRouter} from "next/router";
-import {useQuery} from "@apollo/client/react";
+import { useRouter } from "next/router";
+import { useMutation, useQuery } from "@apollo/client/react";
 import Layout from "@/components/Layout";
-import {ProtectedRoute} from "@/components/Auth";
+import { ProtectedRoute } from "@/components/Auth";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import Badge from "@/components/Common/Badge";
-import {GET_TEACHER_SUBMISSIONS} from "@/gql/Submission";
+import {
+	GET_TEACHER_SUBMISSIONS,
+	RETRY_SUBMISSION_GRADING,
+} from "@/gql/Submission";
+import {
+	GET_ASSIGNMENT_BY_ID,
+	GET_TASK_TEACHER,
+	REMOVE_ASSIGNMENT_EXTENSION,
+	UPSERT_ASSIGNMENT_EXTENSION,
+} from "@/gql/Assignment";
 import {
 	AssignmentRubricCriterion,
 	AssignmentSubmission,
@@ -20,18 +29,49 @@ import {
 	SubmissionsData,
 	UserRole,
 } from "@/interface";
-import {STANDARD_GRADE_MAX, normalizeGrade} from "@/utils/gradeScale";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import { STANDARD_GRADE_MAX, normalizeGrade } from "@/utils/gradeScale";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
 	faArrowLeft,
+	faBell,
 	faCalendarDays,
 	faChartLine,
 	faCircleExclamation,
 	faClipboardList,
+	faClock,
 	faFileLines,
 	faGraduationCap,
+	faRotateRight,
+	faTrashCan,
 	faUserGroup,
 } from "@fortawesome/free-solid-svg-icons";
+import { notifyError, notifyLoading, notifySuccess } from "@/utils/toastNotify";
+
+type AssignmentReminderPreview = {
+	assignmentId: string;
+	dueDate: string;
+	pendingCount: number;
+	eligibleCount: number;
+	cooldownCount: number;
+	canSendCount: number;
+	nextAllowedAt?: string;
+};
+
+type AssignmentReminderSendResult = AssignmentReminderPreview & {
+	queuedCount: number;
+};
+
+const reminderResponseMessage = async (
+	response: Response,
+	fallback: string,
+) => {
+	const payload = (await response.json().catch(() => null)) as {
+		error?: unknown;
+		message?: unknown;
+	} | null;
+	const message = payload?.error ?? payload?.message;
+	return typeof message === "string" ? message : fallback;
+};
 
 type StatusConfig = {
 	label: string;
@@ -39,13 +79,13 @@ type StatusConfig = {
 };
 
 const statusConfigByValue: Record<string, StatusConfig> = {
-	[SubmissionStatus.PENDING]: {label: "Pendiente", variant: "warning"},
-	[SubmissionStatus.IN_PROGRESS]: {label: "En progreso", variant: "info"},
-	[SubmissionStatus.REVIEW_PENDING]: {label: "En revisión", variant: "info"},
-	[SubmissionStatus.PUBLISHED]: {label: "Calificada", variant: "success"},
-	[SubmissionStatus.FAILED]: {label: "Fallida", variant: "error"},
-	SUBMITTED: {label: "Enviada", variant: "electric"},
-	GRADED: {label: "Pendiente de revisión", variant: "warning"},
+	[SubmissionStatus.PENDING]: { label: "Pendiente", variant: "warning" },
+	[SubmissionStatus.IN_PROGRESS]: { label: "En progreso", variant: "info" },
+	[SubmissionStatus.REVIEW_PENDING]: { label: "En revisión", variant: "info" },
+	[SubmissionStatus.PUBLISHED]: { label: "Calificada", variant: "success" },
+	[SubmissionStatus.FAILED]: { label: "Fallida", variant: "error" },
+	SUBMITTED: { label: "Enviada", variant: "electric" },
+	GRADED: { label: "Pendiente de revisión", variant: "warning" },
 };
 
 const formatDate = (date?: string, withTime = false) => {
@@ -55,8 +95,15 @@ const formatDate = (date?: string, withTime = false) => {
 		day: "numeric",
 		month: "short",
 		year: "numeric",
-		...(withTime ? {hour: "2-digit", minute: "2-digit"} : {}),
+		...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
 	});
+};
+
+const toDateTimeLocalValue = (date: Date) => {
+	const localDate = new Date(
+		date.getTime() - date.getTimezoneOffset() * 60_000,
+	);
+	return localDate.toISOString().slice(0, 16);
 };
 
 const normalizeStatusValue = (status?: string | null) =>
@@ -64,7 +111,7 @@ const normalizeStatusValue = (status?: string | null) =>
 
 const getStatusConfig = (status?: string): StatusConfig => {
 	const normalizedStatus = normalizeStatusValue(status);
-	if (!normalizedStatus) return {label: "Sin estado", variant: "default"};
+	if (!normalizedStatus) return { label: "Sin estado", variant: "default" };
 	return (
 		statusConfigByValue[normalizedStatus] || {
 			label: normalizedStatus,
@@ -105,7 +152,7 @@ const getSubmissionStatusConfig = (
 	reevaluationSubmissionIds: Set<string>,
 ) => {
 	if (reevaluationSubmissionIds.has(submission.id)) {
-		return {label: "Reevaluación solicitada", variant: "warning" as const};
+		return { label: "Reevaluación solicitada", variant: "warning" as const };
 	}
 
 	if (isPublishedSubmission(submission, reevaluationSubmissionIds)) {
@@ -119,7 +166,7 @@ const getSubmissionStatusConfig = (
 		status === "GRADED" ||
 		submission.evaluation
 	) {
-		return {label: "Pendiente de revisión", variant: "warning" as const};
+		return { label: "Pendiente de revisión", variant: "warning" as const };
 	}
 
 	return getStatusConfig(submission.status);
@@ -132,6 +179,9 @@ const mapSubmissionDetailToAssignmentSubmission = (
 	fileUrl: submission.fileUrl,
 	extractedText: submission.extractedText,
 	status: submission.status,
+	gradingAttemptCount: submission.gradingAttemptCount,
+	gradingFailureReason: submission.gradingFailureReason,
+	gradingLastAttemptAt: submission.gradingLastAttemptAt,
 	createdAt: submission.createdAt,
 	updatedAt: submission.updatedAt,
 	student: submission.student,
@@ -162,15 +212,24 @@ const mergeSubmissions = (...sources: AssignmentSubmission[][]) => {
 
 const AssignmentDetailPage: React.FC = () => {
 	const router = useRouter();
+	const [now, setNow] = React.useState(() => Date.now());
+	React.useEffect(() => {
+		const timer = setInterval(() => setNow(Date.now()), 60000);
+		return () => clearInterval(timer);
+	}, []);
 	const assignmentId =
 		typeof router.query.id === "string" ? router.query.id : undefined;
-	const {assignments, loading, error} = useAssignments();
+	const focusedSubmissionId =
+		typeof router.query.submission === "string"
+			? router.query.submission
+			: undefined;
+	const { assignments, loading, error } = useAssignments();
 	const {
 		getRequestBySubmissionId,
 		pendingSubmissionIds: reevaluationSubmissionIds,
 		loading: reevaluationLoading,
 	} = useReEvaluationRequests();
-	const {data: teacherSubmissionsData, loading: submissionsLoading} =
+	const { data: teacherSubmissionsData, loading: submissionsLoading } =
 		useQuery<SubmissionsData>(GET_TEACHER_SUBMISSIONS, {
 			skip: !assignmentId,
 			fetchPolicy: "cache-and-network",
@@ -179,6 +238,243 @@ const AssignmentDetailPage: React.FC = () => {
 	const assignment = assignments.find(
 		(item: ProcessedTeacherAssignment) => item.id === assignmentId,
 	);
+	const [reminderPreview, setReminderPreview] =
+		React.useState<AssignmentReminderPreview | null>(null);
+	const [reminderLoading, setReminderLoading] = React.useState(false);
+	const [reminderError, setReminderError] = React.useState<string | null>(null);
+	const [extensionStudentId, setExtensionStudentId] = React.useState("");
+	const [extensionDueDate, setExtensionDueDate] = React.useState("");
+	const [extensionReason, setExtensionReason] = React.useState("");
+	const [extensionSaving, setExtensionSaving] = React.useState(false);
+	const [retryingSubmissionId, setRetryingSubmissionId] = React.useState<
+		string | null
+	>(null);
+	const [upsertExtension] = useMutation(UPSERT_ASSIGNMENT_EXTENSION);
+	const [removeExtension] = useMutation(REMOVE_ASSIGNMENT_EXTENSION);
+	const [retrySubmissionGrading] = useMutation(RETRY_SUBMISSION_GRADING);
+	const submittedStudentIds = React.useMemo(
+		() =>
+			new Set(
+				(assignment?.submissionItems || [])
+					.map((submission) => submission.student?.id)
+					.filter((id): id is string => Boolean(id)),
+			),
+		[assignment?.submissionItems],
+	);
+	const studentsWithoutSubmission = React.useMemo(
+		() =>
+			(assignment?.course?.users || []).filter(
+				(student) =>
+					student.role === UserRole.STUDENT &&
+					student.isActive !== false &&
+					!submittedStudentIds.has(student.id),
+			),
+		[assignment?.course?.users, submittedStudentIds],
+	);
+	const assignmentSubmissionCount = assignment?.submissionItems?.length ?? 0;
+	const fetchedSubmissionCount =
+		teacherSubmissionsData?.submissions?.length ?? 0;
+
+	React.useEffect(() => {
+		if (!focusedSubmissionId || loading || submissionsLoading) return;
+		const frame = window.requestAnimationFrame(() => {
+			document
+				.getElementById(`submission-${focusedSubmissionId}`)
+				?.scrollIntoView({ behavior: "smooth", block: "center" });
+		});
+		return () => window.cancelAnimationFrame(frame);
+	}, [
+		focusedSubmissionId,
+		loading,
+		submissionsLoading,
+		assignmentSubmissionCount,
+		fetchedSubmissionCount,
+	]);
+
+	const loadReminderPreview = React.useCallback(async () => {
+		if (!assignmentId) return;
+		setReminderLoading(true);
+		setReminderError(null);
+		try {
+			const response = await fetch(
+				`/api/notifications/assignments/${encodeURIComponent(assignmentId)}/reminder-preview`,
+				{ credentials: "same-origin", cache: "no-store" },
+			);
+			if (!response.ok) {
+				throw new Error(
+					await reminderResponseMessage(
+						response,
+						"No fue posible consultar los estudiantes pendientes.",
+					),
+				);
+			}
+			setReminderPreview((await response.json()) as AssignmentReminderPreview);
+		} catch (loadError) {
+			setReminderError(
+				loadError instanceof Error
+					? loadError.message
+					: "No fue posible consultar los estudiantes pendientes.",
+			);
+		} finally {
+			setReminderLoading(false);
+		}
+	}, [assignmentId]);
+
+	React.useEffect(() => {
+		React.startTransition(() => {
+			void loadReminderPreview();
+		});
+	}, [loadReminderPreview]);
+
+	const sendPendingReminders = async () => {
+		if (!assignmentId) return;
+		const notificationId = notifyLoading("Programando recordatorios...");
+		setReminderLoading(true);
+		try {
+			const response = await fetch(
+				`/api/notifications/assignments/${encodeURIComponent(assignmentId)}/reminders`,
+				{ method: "POST", credentials: "same-origin" },
+			);
+			if (!response.ok) {
+				throw new Error(
+					await reminderResponseMessage(
+						response,
+						"No fue posible programar los recordatorios.",
+					),
+				);
+			}
+			const result = (await response.json()) as AssignmentReminderSendResult;
+			setReminderPreview(result);
+			notifySuccess(
+				result.queuedCount === 1
+					? "Se programó 1 recordatorio."
+					: `Se programaron ${result.queuedCount} recordatorios.`,
+				{ id: notificationId },
+			);
+		} catch (sendError) {
+			notifyError(
+				sendError instanceof Error
+					? sendError.message
+					: "No fue posible programar los recordatorios.",
+				{ id: notificationId },
+			);
+		} finally {
+			setReminderLoading(false);
+		}
+	};
+
+	const selectExtensionStudent = (studentId: string) => {
+		setExtensionStudentId(studentId);
+		const currentExtension = assignment?.extensions.find(
+			(extension) => extension.student.id === studentId,
+		);
+		setExtensionDueDate(
+			currentExtension
+				? toDateTimeLocalValue(new Date(currentExtension.extendedDueDate))
+				: "",
+		);
+		setExtensionReason(currentExtension?.reason || "");
+	};
+
+	const extensionRefetchQueries = assignmentId
+		? [
+				{ query: GET_ASSIGNMENT_BY_ID, variables: { id: assignmentId } },
+				{ query: GET_TASK_TEACHER },
+			]
+		: [];
+
+	const saveExtension = async () => {
+		if (!assignmentId || !extensionStudentId || !extensionDueDate) {
+			notifyError("Selecciona un estudiante y una nueva fecha límite.");
+			return;
+		}
+		const notificationId = notifyLoading("Guardando prórroga...");
+		setExtensionSaving(true);
+		try {
+			await upsertExtension({
+				variables: {
+					input: {
+						assignmentId,
+						studentId: extensionStudentId,
+						extendedDueDate: new Date(extensionDueDate),
+						...(extensionReason.trim()
+							? { reason: extensionReason.trim() }
+							: {}),
+					},
+				},
+				refetchQueries: extensionRefetchQueries,
+				awaitRefetchQueries: true,
+			});
+			notifySuccess("La prórroga quedó aplicada.", { id: notificationId });
+			setExtensionStudentId("");
+			setExtensionDueDate("");
+			setExtensionReason("");
+			await loadReminderPreview();
+		} catch (saveError) {
+			notifyError(
+				saveError instanceof Error
+					? saveError.message
+					: "No fue posible guardar la prórroga.",
+				{ id: notificationId },
+			);
+		} finally {
+			setExtensionSaving(false);
+		}
+	};
+
+	const deleteExtension = async (studentId: string) => {
+		if (!assignmentId) return;
+		const notificationId = notifyLoading("Retirando prórroga...");
+		setExtensionSaving(true);
+		try {
+			await removeExtension({
+				variables: { assignmentId, studentId },
+				refetchQueries: extensionRefetchQueries,
+				awaitRefetchQueries: true,
+			});
+			notifySuccess("La prórroga fue retirada.", { id: notificationId });
+			if (extensionStudentId === studentId) selectExtensionStudent("");
+			await loadReminderPreview();
+		} catch (removeError) {
+			notifyError(
+				removeError instanceof Error
+					? removeError.message
+					: "No fue posible retirar la prórroga.",
+				{ id: notificationId },
+			);
+		} finally {
+			setExtensionSaving(false);
+		}
+	};
+
+	const retryFailedSubmission = async (submissionId: string) => {
+		if (!assignmentId) return;
+		const notificationId = notifyLoading("Reintentando evaluación...");
+		setRetryingSubmissionId(submissionId);
+		try {
+			await retrySubmissionGrading({
+				variables: { id: submissionId },
+				refetchQueries: [
+					{ query: GET_ASSIGNMENT_BY_ID, variables: { id: assignmentId } },
+					{ query: GET_TASK_TEACHER },
+					{ query: GET_TEACHER_SUBMISSIONS },
+				],
+				awaitRefetchQueries: true,
+			});
+			notifySuccess("La entrega volvió a la cola de evaluación.", {
+				id: notificationId,
+			});
+		} catch (retryError) {
+			notifyError(
+				retryError instanceof Error
+					? retryError.message
+					: "No fue posible reintentar la evaluación.",
+				{ id: notificationId },
+			);
+		} finally {
+			setRetryingSubmissionId(null);
+		}
+	};
 
 	if (loading || reevaluationLoading) {
 		return (
@@ -208,7 +504,7 @@ const AssignmentDetailPage: React.FC = () => {
 							<div className="text-3xl text-red-500 mb-4">
 								<FontAwesomeIcon icon={faCircleExclamation} />
 							</div>
-							<h1 className="text-2xl font-black text-gray-900 mb-2">
+							<h1 className="text-2xl font-semibold text-gray-900 mb-2">
 								No se pudo cargar la tarea
 							</h1>
 							<p className="text-gray-600 mb-6">
@@ -284,7 +580,7 @@ const AssignmentDetailPage: React.FC = () => {
 								<div className="text-sm font-bold text-gray-500">Entregas</div>
 								<FontAwesomeIcon icon={faUserGroup} className="text-blue-500" />
 							</div>
-							<div className="text-3xl font-black text-gray-900">
+							<div className="text-3xl font-semibold text-gray-900">
 								{submissions.length}
 							</div>
 						</Card>
@@ -298,7 +594,7 @@ const AssignmentDetailPage: React.FC = () => {
 									className="text-yellow-500"
 								/>
 							</div>
-							<div className="text-3xl font-black text-yellow-600">
+							<div className="text-3xl font-semibold text-yellow-600">
 								{pendingSubmissions.length}
 							</div>
 						</Card>
@@ -310,7 +606,7 @@ const AssignmentDetailPage: React.FC = () => {
 									className="text-green-500"
 								/>
 							</div>
-							<div className="text-3xl font-black text-green-600">
+							<div className="text-3xl font-semibold text-green-600">
 								{assignment.average > 0 ? assignment.average.toFixed(2) : "-"}
 							</div>
 						</Card>
@@ -324,7 +620,7 @@ const AssignmentDetailPage: React.FC = () => {
 									className="text-electric-500"
 								/>
 							</div>
-							<div className="text-3xl font-black text-electric-600">
+							<div className="text-3xl font-semibold text-electric-600">
 								{completionRate}%
 							</div>
 						</Card>
@@ -380,6 +676,9 @@ const AssignmentDetailPage: React.FC = () => {
 													submission,
 													reevaluationSubmissionIds,
 												);
+												const isFailed =
+													normalizeStatusValue(submission.status) ===
+													SubmissionStatus.FAILED;
 												const reevaluationRequest = getRequestBySubmissionId(
 													submission.id,
 												);
@@ -390,90 +689,177 @@ const AssignmentDetailPage: React.FC = () => {
 													: "Estudiante sin nombre";
 
 												return (
-													<tr
-														key={submission.id}
-														className="border-b border-gray-100 hover:bg-gray-50"
-													>
-														<td className="py-4 px-4">
-															<div className="font-bold text-gray-900">
-																{studentName}
-															</div>
-															<div className="text-xs text-gray-500">
-																{submission.student?.email || "Sin correo"}
-															</div>
-														</td>
-														<td className="py-4 px-4">
-															<Badge variant={status.variant}>
-																{status.label}
-															</Badge>
-															{reevaluationRequest && (
-																<div className="mt-2 max-w-xs">
-																	<div className="text-[10px] font-black uppercase text-amber-700">
-																		Solicitud del estudiante
-																	</div>
-																	<p className="text-xs text-gray-600 line-clamp-2">
-																		{reevaluationRequest.reason}
-																	</p>
-																	<div className="text-[10px] text-gray-400 mt-1">
-																		{formatDate(
-																			reevaluationRequest.createdAt,
-																			true,
-																		)}
-																	</div>
+													<React.Fragment key={submission.id}>
+														<tr
+															id={`submission-${submission.id}`}
+															className={`border-b border-gray-100 hover:bg-gray-50 ${
+																focusedSubmissionId === submission.id
+																	? "bg-red-50/70"
+																	: ""
+															}`}
+														>
+															<td className="py-4 px-4">
+																<div className="font-bold text-gray-900">
+																	{studentName}
 																</div>
-															)}
-														</td>
-														<td className="py-4 px-4 text-sm text-gray-600">
-															{formatDate(submission.createdAt, true)}
-														</td>
-														<td className="py-4 px-4">
-															{typeof submission.evaluation?.totalScore ===
-															"number" ? (
-																<div className="font-black text-gray-900">
-																	{normalizeGrade(
-																		submission.evaluation.totalScore,
-																		assignment.rubric?.maxTotalScore,
-																	)?.toFixed(2)}
-																	<span className="text-xs font-bold text-gray-400">
-																		{" "}
-																		/ {STANDARD_GRADE_MAX}
-																	</span>
+																<div className="text-xs text-gray-500">
+																	{submission.student?.email || "Sin correo"}
 																</div>
-															) : (
-																<span className="text-gray-400">-</span>
-															)}
-															{submission.evaluation &&
-																!isPublishedSubmission(
-																	submission,
-																	reevaluationSubmissionIds,
-																) && (
-																	<div className="text-[10px] font-bold uppercase text-amber-600 mt-1">
-																		Sugerencia IA
+															</td>
+															<td className="py-4 px-4">
+																<Badge variant={status.variant}>
+																	{status.label}
+																</Badge>
+																{reevaluationRequest && (
+																	<div className="mt-2 max-w-xs">
+																		<div className="text-xs font-semibold uppercase text-amber-700">
+																			Solicitud del estudiante
+																		</div>
+																		<p className="text-xs text-gray-600 line-clamp-2">
+																			{reevaluationRequest.reason}
+																		</p>
+																		<div className="text-xs text-gray-500 mt-1">
+																			{formatDate(
+																				reevaluationRequest.createdAt,
+																				true,
+																			)}
+																		</div>
 																	</div>
 																)}
-														</td>
-														<td className="py-4 px-4 text-right">
-															<button
-																onClick={() =>
-																	router.push(
-																		`/evaluation?submission=${submission.id}`,
-																	)
-																}
-																className="px-3 py-1.5 bg-electric-500 text-white text-sm rounded-lg hover:bg-electric-600 transition-colors"
-															>
-																{reevaluationRequest
-																	? "Reevaluar"
-																	: isPublishedSubmission(
+															</td>
+															<td className="py-4 px-4 text-sm text-gray-600">
+																{formatDate(submission.createdAt, true)}
+															</td>
+															<td className="py-4 px-4">
+																{typeof submission.evaluation?.totalScore ===
+																"number" ? (
+																	<div className="font-semibold text-gray-900">
+																		{normalizeGrade(
+																			submission.evaluation.totalScore,
+																			assignment.rubric?.maxTotalScore,
+																		)?.toFixed(2)}
+																		<span className="text-xs font-bold text-gray-500">
+																			{" "}
+																			/ {STANDARD_GRADE_MAX}
+																		</span>
+																	</div>
+																) : (
+																	<span className="text-gray-500">-</span>
+																)}
+																{submission.evaluation &&
+																	!isPublishedSubmission(
+																		submission,
+																		reevaluationSubmissionIds,
+																	) && (
+																		<div className="text-xs font-bold uppercase text-amber-600 mt-1">
+																			Sugerencia IA
+																		</div>
+																	)}
+															</td>
+															<td className="py-4 px-4 text-right">
+																<div className="flex justify-end gap-2">
+																	{isFailed && (
+																		<button
+																			type="button"
+																			onClick={() =>
+																				router.push(
+																					`/evaluation?submission=${submission.id}&mode=manual`,
+																				)
+																			}
+																			disabled={
+																				retryingSubmissionId === submission.id
+																			}
+																			className="px-3 py-1.5 rounded-lg border border-red-200 bg-white text-sm font-bold text-red-600 hover:bg-red-50 disabled:opacity-50"
+																		>
+																			Manual
+																		</button>
+																	)}
+																	<button
+																		onClick={() => {
+																			if (isFailed) {
+																				void retryFailedSubmission(
+																					submission.id,
+																				);
+																				return;
+																			}
+																			router.push(
+																				`/evaluation?submission=${submission.id}`,
+																			);
+																		}}
+																		disabled={
+																			retryingSubmissionId === submission.id
+																		}
+																		className={`px-3 py-1.5 text-white text-sm rounded-lg transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
+																			isFailed
+																				? "bg-red-500 hover:bg-red-600"
+																				: "bg-electric-500 hover:bg-electric-600"
+																		}`}
+																	>
+																		{isFailed ? (
+																			<>
+																				<FontAwesomeIcon
+																					icon={faRotateRight}
+																					className="mr-1"
+																				/>
+																				{retryingSubmissionId === submission.id
+																					? "Reintentando"
+																					: "Reintentar"}
+																			</>
+																		) : reevaluationRequest ? (
+																			"Reevaluar"
+																		) : isPublishedSubmission(
 																				submission,
 																				reevaluationSubmissionIds,
-																		  )
-																		? "Ver"
-																		: submission.evaluation
-																			? "Revisar"
-																			: "Evaluar"}
-															</button>
-														</td>
-													</tr>
+																		  ) ? (
+																			"Ver"
+																		) : submission.evaluation ? (
+																			"Revisar"
+																		) : (
+																			"Evaluar"
+																		)}
+																	</button>
+																</div>
+															</td>
+														</tr>
+														{isFailed && (
+															<tr className="border-b border-gray-100">
+																<td colSpan={5} className="px-4 pb-4">
+																	<div className="flex items-start gap-3 rounded-xl border border-red-100 bg-red-50 p-3 text-red-800">
+																		<FontAwesomeIcon
+																			icon={faCircleExclamation}
+																			className="mt-0.5 text-red-500"
+																		/>
+																		<div className="min-w-0">
+																			<p className="text-sm font-semibold">
+																				{submission.gradingFailureReason ||
+																					"No se registró una causa detallada para este fallo."}
+																			</p>
+																			<div className="mt-1 text-xs text-red-600">
+																				{typeof submission.gradingAttemptCount ===
+																				"number"
+																					? `${submission.gradingAttemptCount} ${
+																							submission.gradingAttemptCount ===
+																							1
+																								? "intento"
+																								: "intentos"
+																						}`
+																					: "Intentos sin registro"}
+																				{submission.gradingLastAttemptAt && (
+																					<>
+																						{" · Último intento: "}
+																						{formatDate(
+																							submission.gradingLastAttemptAt,
+																							true,
+																						)}
+																					</>
+																				)}
+																			</div>
+																		</div>
+																	</div>
+																</td>
+															</tr>
+														)}
+													</React.Fragment>
 												);
 											})}
 										</tbody>
@@ -484,6 +870,168 @@ const AssignmentDetailPage: React.FC = () => {
 
 						<div className="space-y-6">
 							<Card className="bg-white/70 border border-gray-100">
+								<SectionHeader title="Recordar a pendientes" className="mb-4" />
+								<div className="flex items-start gap-3 rounded-xl bg-electric-50 p-4">
+									<FontAwesomeIcon
+										icon={faBell}
+										className="mt-1 text-electric-600"
+									/>
+									<div className="min-w-0 flex-1">
+										<p className="text-sm font-bold text-gray-900">
+											{reminderLoading && !reminderPreview
+												? "Consultando destinatarios..."
+												: `${reminderPreview?.canSendCount ?? 0} estudiantes recibirán el aviso`}
+										</p>
+										<p className="mt-1 text-xs text-gray-600">
+											{reminderPreview
+												? `${reminderPreview.pendingCount} sin entrega; ${reminderPreview.eligibleCount} tienen recordatorios activos.`
+												: "Solo se avisará a estudiantes matriculados que aún no hayan entregado."}
+										</p>
+										{reminderError && (
+											<p className="mt-2 text-xs font-medium text-red-600">
+												{reminderError}
+											</p>
+										)}
+										{Boolean(reminderPreview?.cooldownCount) && (
+											<p className="mt-2 text-xs text-amber-700">
+												{reminderPreview?.cooldownCount} ya fueron avisados
+												durante las últimas 6 horas.
+											</p>
+										)}
+									</div>
+								</div>
+								<button
+									type="button"
+									onClick={() => void sendPendingReminders()}
+									disabled={
+										reminderLoading ||
+										!reminderPreview?.canSendCount ||
+										assignment.isExpired ||
+										!assignment.isActive
+									}
+									className="btn-primary mt-4 w-full disabled:cursor-not-allowed disabled:opacity-50"
+								>
+									<FontAwesomeIcon icon={faBell} className="mr-2" />
+									Enviar recordatorio
+								</button>
+							</Card>
+
+							<Card className="bg-white/70 border border-gray-100">
+								<SectionHeader
+									title="Prórrogas individuales"
+									className="mb-4"
+								/>
+								<p className="mb-4 text-sm text-gray-500">
+									Extiende la fecha de un estudiante pendiente sin cambiar el
+									plazo general del curso.
+								</p>
+								{studentsWithoutSubmission.length === 0 ? (
+									<p className="rounded-xl bg-gray-50 p-3 text-sm text-gray-500">
+										No hay estudiantes pendientes disponibles.
+									</p>
+								) : (
+									<div className="space-y-3">
+										<select
+											value={extensionStudentId}
+											onChange={(event) =>
+												selectExtensionStudent(event.target.value)
+											}
+											className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm"
+										>
+											<option value="">Selecciona un estudiante</option>
+											{studentsWithoutSubmission.map((student) => (
+												<option key={student.id} value={student.id}>
+													{`${student.name} ${student.last_name || ""}`.trim()}
+												</option>
+											))}
+										</select>
+										<input
+											type="datetime-local"
+											value={extensionDueDate}
+											min={toDateTimeLocalValue(
+												new Date(
+													Math.max(
+														now,
+														new Date(assignment.dueDate).getTime(),
+													) + 60_000,
+												),
+											)}
+											onChange={(event) =>
+												setExtensionDueDate(event.target.value)
+											}
+											disabled={!extensionStudentId}
+											className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm disabled:bg-gray-100"
+										/>
+										<textarea
+											value={extensionReason}
+											onChange={(event) =>
+												setExtensionReason(event.target.value)
+											}
+											placeholder="Motivo (opcional)"
+											maxLength={500}
+											disabled={!extensionStudentId}
+											className="min-h-20 w-full resize-y rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm disabled:bg-gray-100"
+										/>
+										<button
+											type="button"
+											onClick={() => void saveExtension()}
+											disabled={
+												extensionSaving ||
+												!extensionStudentId ||
+												!extensionDueDate
+											}
+											className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
+										>
+											<FontAwesomeIcon icon={faClock} className="mr-2" />
+											Guardar prórroga
+										</button>
+									</div>
+								)}
+
+								{assignment.extensions.length > 0 && (
+									<div className="mt-5 space-y-2 border-t border-gray-100 pt-4">
+										{assignment.extensions.map((extension) => (
+											<div
+												key={extension.id}
+												className="flex items-start justify-between gap-3 rounded-xl bg-electric-50 p-3"
+											>
+												<button
+													type="button"
+													onClick={() =>
+														selectExtensionStudent(extension.student.id)
+													}
+													className="min-w-0 flex-1 text-left"
+												>
+													<div className="truncate text-sm font-bold text-gray-900">
+														{`${extension.student.name} ${extension.student.last_name || ""}`.trim()}
+													</div>
+													<div className="text-xs text-electric-700">
+														Hasta {formatDate(extension.extendedDueDate, true)}
+													</div>
+													{extension.reason && (
+														<p className="mt-1 text-xs text-gray-500">
+															{extension.reason}
+														</p>
+													)}
+												</button>
+												<button
+													type="button"
+													onClick={() =>
+														void deleteExtension(extension.student.id)
+													}
+													disabled={extensionSaving}
+													aria-label={`Retirar prórroga de ${extension.student.name}`}
+													className="rounded-lg p-2 text-red-500 hover:bg-red-50 disabled:opacity-50"
+												>
+													<FontAwesomeIcon icon={faTrashCan} />
+												</button>
+											</div>
+										))}
+									</div>
+								)}
+							</Card>
+
+							<Card className="bg-white/70 border border-gray-100">
 								<SectionHeader title="Configuración" className="mb-6" />
 								<div className="space-y-4">
 									<div className="flex gap-3">
@@ -492,7 +1040,7 @@ const AssignmentDetailPage: React.FC = () => {
 											className="mt-1 text-electric-500"
 										/>
 										<div>
-											<div className="text-xs font-bold uppercase text-gray-400">
+											<div className="text-xs font-bold uppercase text-gray-500">
 												Fecha límite
 											</div>
 											<div className="font-bold text-gray-900">
@@ -501,7 +1049,7 @@ const AssignmentDetailPage: React.FC = () => {
 										</div>
 									</div>
 									<div>
-										<div className="text-xs font-bold uppercase text-gray-400">
+										<div className="text-xs font-bold uppercase text-gray-500">
 											Curso
 										</div>
 										<div className="font-bold text-gray-900">
@@ -509,7 +1057,7 @@ const AssignmentDetailPage: React.FC = () => {
 										</div>
 									</div>
 									<div>
-										<div className="text-xs font-bold uppercase text-gray-400">
+										<div className="text-xs font-bold uppercase text-gray-500">
 											Rúbrica
 										</div>
 										<div className="font-bold text-gray-900">

@@ -1,51 +1,75 @@
 import "@/styles/globals.css";
-import type {AppProps} from "next/app";
-import {ApolloProvider} from "@apollo/client/react";
+import Head from "next/head";
+import {useRouter} from "next/router";
+import {publicPages, siteOrigin} from "@/lib/site";
+import type { AppProps } from "next/app";
+import { ApolloProvider } from "@apollo/client/react";
+import { Toaster } from "sonner";
+import { useEffect } from "react";
 import client from "@/lib/apolloClient";
-import {useEffect} from "react";
+import { AuthProvider } from "@/context/AuthContext";
+import PushSubscriptionSync from "@/components/Notifications/PushSubscriptionSync";
+import { ConfirmProvider } from "@/context/ConfirmContext";
+import { useAuth } from "@/hooks";
+import SentryUserSync from "@/components/Observability/SentryUserSync";
 import {
-	SETTINGS_UPDATED_EVENT,
-	applyStoredTheme,
-	applyTheme,
-	getStoredTheme,
+  SETTINGS_UPDATED_EVENT,
+  applyStoredTheme,
+  applyTheme,
+  getStoredTheme,
 } from "@/utils/theme";
 
-export default function App({Component, pageProps}: AppProps) {
-	useEffect(() => {
-		applyStoredTheme();
+const ThemeController = () => {
+  const { user } = useAuth();
+  const userId = user?.id;
 
-		const syncTheme = () => applyStoredTheme();
-		const handleSystemThemeChange = () => {
-			try {
-				const rawUser = window.localStorage.getItem("auraGrade_user");
-				const user = rawUser ? JSON.parse(rawUser) : null;
-				const theme = getStoredTheme(user?.id);
+  useEffect(() => {
+    applyStoredTheme(userId);
 
-				if (theme === "auto") {
-					applyTheme("auto");
-				}
-			} catch {
-				applyTheme("light");
-			}
-		};
-		const mediaQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
+    const syncTheme = () => applyStoredTheme(userId);
+    const handleSystemThemeChange = () => {
+      if (getStoredTheme(userId) === "auto") {
+        applyTheme("auto");
+      }
+    };
+    const mediaQuery = window.matchMedia?.("(prefers-color-scheme: dark)");
 
-		window.addEventListener(SETTINGS_UPDATED_EVENT, syncTheme);
-		window.addEventListener("auraGrade_user_updated", syncTheme);
-		window.addEventListener("storage", syncTheme);
-		mediaQuery?.addEventListener("change", handleSystemThemeChange);
+    window.addEventListener(SETTINGS_UPDATED_EVENT, syncTheme);
+    window.addEventListener("storage", syncTheme);
+    mediaQuery?.addEventListener("change", handleSystemThemeChange);
 
-		return () => {
-			window.removeEventListener(SETTINGS_UPDATED_EVENT, syncTheme);
-			window.removeEventListener("auraGrade_user_updated", syncTheme);
-			window.removeEventListener("storage", syncTheme);
-			mediaQuery?.removeEventListener("change", handleSystemThemeChange);
-		};
-	}, []);
+    return () => {
+      window.removeEventListener(SETTINGS_UPDATED_EVENT, syncTheme);
+      window.removeEventListener("storage", syncTheme);
+      mediaQuery?.removeEventListener("change", handleSystemThemeChange);
+    };
+  }, [userId]);
 
-	return (
-		<ApolloProvider client={client}>
-			<Component {...pageProps} />
-		</ApolloProvider>
-	);
+  return null;
+};
+
+export default function App({ Component, pageProps }: AppProps) {
+  const {pathname} = useRouter();
+  const publicPage = publicPages[pathname];
+  return (
+    <ApolloProvider client={client}>
+      <AuthProvider>
+        <SentryUserSync />
+        <ConfirmProvider>
+          <ThemeController />
+          <PushSubscriptionSync />
+          <Head>
+            <title>{publicPage?.title || 'Tu espacio académico | AuraGrade'}</title>
+            <meta name="robots" key="robots" content={publicPage && siteOrigin ? 'index, follow' : 'noindex, nofollow'} />
+            {publicPage && <meta name="description" content={publicPage.description} />}
+            {publicPage && <meta property="og:title" content={publicPage.title} />}
+            {publicPage && <meta property="og:description" content={publicPage.description} />}
+            {publicPage && siteOrigin && <link rel="canonical" href={`${siteOrigin}${pathname}`} />}
+          </Head>
+          <Component {...pageProps} />
+          <Toaster richColors closeButton position="bottom-right" />
+        </ConfirmProvider>
+      </AuthProvider>
+    </ApolloProvider>
+  );
 }

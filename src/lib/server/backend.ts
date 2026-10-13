@@ -1,0 +1,135 @@
+import "server-only";
+
+import { randomUUID } from "node:crypto";
+import { isIP } from "node:net";
+
+const REQUEST_ID_PATTERN = /^[A-Za-z0-9._:-]{8,128}$/;
+const TRACEPARENT_PATTERN = /^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$/i;
+
+const legacyApiUrl =
+	process.env.AURA_GRADE_APP_URL || "http://localhost:3000/api";
+const legacyGraphqlUrl =
+	process.env.NEXT_PUBLIC_GRAPHQL_API_URL || "http://localhost:3000/graphql";
+
+const backendOrigin = process.env.AURA_GRADE_API_URL?.replace(/\/+$/, "");
+
+export const backendRestUrl = (path: string) =>
+	backendOrigin
+		? `${backendOrigin}/api/${path.replace(/^\/+/, "")}`
+		: `${legacyApiUrl.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
+
+export const backendGraphqlUrl = () =>
+	backendOrigin ? `${backendOrigin}/graphql` : legacyGraphqlUrl;
+
+const getBffSecret = () => {
+	const secret =
+		process.env.AURA_GRADE_BFF_SECRET || process.env.BFF_SHARED_SECRET;
+
+	if (process.env.NODE_ENV === "production" && !secret) {
+		throw new Error("AURA_GRADE_BFF_SECRET no está configurado.");
+	}
+
+	return secret;
+};
+
+const trustedHeader = (request: Request, name: string, pattern: RegExp) => {
+	const value = request.headers.get(name);
+	return value && pattern.test(value) ? value : undefined;
+};
+
+export const getRequestContext = (request: Request) => ({
+	requestId:
+		trustedHeader(request, "x-request-id", REQUEST_ID_PATTERN) || randomUUID(),
+	traceparent: trustedHeader(request, "traceparent", TRACEPARENT_PATTERN),
+});
+
+const clientIp = (request: Request) => {
+	const forwardedChain = (request.headers.get("x-forwarded-for") || "")
+		.split(",")
+		.map((value) => value.trim())
+		.filter(Boolean);
+	const configuredHops = Number(
+		process.env.AURA_GRADE_TRUSTED_PROXY_HOPS || "1",
+	);
+	const trustedProxyHops =
+		Number.isInteger(configuredHops) && configuredHops > 0 ? configuredHops : 1;
+	const forwardedIndex = forwardedChain.length - trustedProxyHops;
+	const forwarded =
+		forwardedIndex >= 0 ? forwardedChain[forwardedIndex] : undefined;
+	const candidate = forwarded || request.headers.get("x-real-ip")?.trim();
+	return candidate && isIP(candidate) ? candidate : undefined;
+};
+
+export type BackendFetchOptions = Omit<RequestInit, "headers"> & {
+	duplex?: "half";
+	headers?: HeadersInit;
+	sessionToken?: string;
+};
+
+const backendFetch = (
+	request: Request,
+	url: string,
+	options: BackendFetchOptions = {},
+) => {
+	const context = getRequestContext(request);
+	const headers = new Headers(options.headers);
+	const bffSecret = getBffSecret();
+	const { sessionToken, ...requestOptions } = options;
+
+	headers.set("x-request-id", context.requestId);
+	if (context.traceparent) headers.set("traceparent", context.traceparent);
+	if (bffSecret) headers.set("x-bff-secret", bffSecret);
+	const requestClientIp = clientIp(request);
+	if (requestClientIp) headers.set("x-client-ip", requestClientIp);
+	const userAgent = request.headers.get("user-agent")?.slice(0, 512);
+	if (userAgent) headers.set("x-client-user-agent", userAgent);
+	if (sessionToken) {
+		headers.set("authorization", `Bearer ${sessionToken}`);
+	}
+
+	return fetch(url, {
+		...requestOptions,
+		headers,
+		cache: "no-store",
+		signal: AbortSignal.any([
+			request.signal,
+			AbortSignal.timeout(60000),
+			...(options.signal ? [options.signal] : []),
+		]),
+	} as RequestInit & { duplex?: "half" });
+};
+
+export const fetchBackendRest = (
+	request: Request,
+	path: string,
+	options: BackendFetchOptions = {},
+) => backendFetch(request, backendRestUrl(path), options);
+
+export const fetchBackendGraphql = (
+	request: Request,
+	options: BackendFetchOptions = {},
+) => backendFetch(request, backendGraphqlUrl(), options);
+
+export const forwardedBackendHeaders = (response: Response) => {
+	const headers = new Headers({ "cache-control": "no-store" });
+
+	for (const name of ["x-request-id", "traceparent", "retry-after"]) {
+		const value = response.headers.get(name);
+		if (value) headers.set(name, value);
+	}
+
+	return headers;
+};
+
+export const isTrustedMutationRequest = (request: Request) => {
+	const site = request.headers.get("sec-fetch-site");
+	if (site === "cross-site" || site === "same-site") return false;
+	const origin = request.headers.get("origin");
+	if (!origin) return true;
+
+	try {
+		return new URL(origin).origin === new URL(request.url).origin;
+	} catch {
+		return false;
+	}
+};

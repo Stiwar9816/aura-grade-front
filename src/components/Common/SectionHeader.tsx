@@ -1,17 +1,12 @@
 import React from "react";
-
-interface SectionHeaderProps {
-	title: string;
-	description?: string;
-	actions?: React.ReactNode;
-	className?: string;
-}
+import type { SectionHeaderProps } from "@/interface";
 
 const SectionHeader: React.FC<SectionHeaderProps> = ({
 	title,
 	description,
 	actions,
 	className = "",
+	as: Heading = "h2",
 }) => {
 	return (
 		<div
@@ -19,16 +14,16 @@ const SectionHeader: React.FC<SectionHeaderProps> = ({
 		>
 			<div>
 				<div className="flex items-center gap-2 mb-1">
-					<div className="w-2 h-6 bg-electric-500 rounded-full" />
-					<h2 className="text-2xl font-black text-gray-900 tracking-tight">
+
+					<Heading className="text-2xl font-semibold text-gray-900 tracking-tight">
 						{title}
-					</h2>
+					</Heading>
 				</div>
 				{description && (
-					<p className="text-gray-500 font-medium max-w-2xl">{description}</p>
+					<p className="text-sm text-gray-600 max-w-2xl">{description}</p>
 				)}
 			</div>
-			{actions && <div className="flex gap-3">{actions}</div>}
+			{actions && <div className="flex flex-wrap items-center gap-3">{actions}</div>}
 		</div>
 	);
 };

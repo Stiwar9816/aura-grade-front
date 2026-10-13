@@ -8,6 +8,7 @@ import {
 	faFileText,
 	faLightbulb,
 	faMinus,
+	faPenToSquare,
 	faPlus,
 	faRemove,
 } from "@fortawesome/free-solid-svg-icons";
@@ -146,15 +147,15 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 								</label>
 								<div className="flex items-center gap-3">
 									<input
-										type="range"
-										min="5"
-										max="50"
-										step="5"
+										type="number"
+										min="0.01"
+										max="100"
+										step="0.01"
 										value={newCriteria.weight}
 										onChange={(e) =>
 											setNewCriteria({
 												...newCriteria,
-												weight: parseInt(e.target.value),
+												weight: Number(e.target.value),
 											})
 										}
 										className="flex-1 accent-electric-500"
@@ -186,22 +187,9 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 								<label className="block text-sm font-medium text-gray-700 mb-2">
 									Puntuación Máxima
 								</label>
-								<select
-									value={newCriteria.maxPoints}
-									onChange={(e) =>
-										setNewCriteria({
-											...newCriteria,
-											maxPoints: parseInt(e.target.value),
-										})
-									}
-									className="input-primary"
-								>
-									{[5, 10, 15, 20, 25].map((score) => (
-										<option key={score} value={score}>
-											{score} puntos
-										</option>
-									))}
-								</select>
+								<div className="input-primary bg-gray-50 font-bold text-gray-700">
+									5.0 puntos
+								</div>
 							</div>
 							<div className="flex items-end">
 								<button
@@ -256,17 +244,17 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 											</label>
 											<div className="flex items-center gap-2">
 												<input
-													type="range"
-													min="5"
-													max="50"
-													step="5"
+													type="number"
+													min="0.01"
+													max="100"
+													step="0.01"
 													value={criteria.weight}
 													onChange={(e) =>
 														onUpdateCriteria(criteria.id, {
-															weight: parseInt(e.target.value),
+															weight: Number(e.target.value),
 														})
 													}
-													className="flex-1"
+													className="input-primary flex-1"
 												/>
 												<span className="w-12 text-center font-bold text-electric-500">
 													{criteria.weight}%
@@ -278,21 +266,9 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 											<label className="text-sm text-gray-600">
 												Puntuación máxima
 											</label>
-											<select
-												value={criteria.maxPoints}
-												onChange={(e) =>
-													onUpdateCriteria(criteria.id, {
-														maxPoints: parseInt(e.target.value),
-													})
-												}
-												className="input-primary text-sm"
-											>
-												{[5, 10, 15, 20, 25].map((score) => (
-													<option key={score} value={score}>
-														{score} pts
-													</option>
-												))}
-											</select>
+											<div className="input-primary bg-gray-50 text-sm font-bold">
+												5.0 pts
+											</div>
 										</div>
 
 										<div>
@@ -304,12 +280,36 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 											</div>
 										</div>
 									</div>
+									<div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
+										{criteria.levels.map((level, levelIndex) => (
+											<div key={level.label}>
+												<label className="mb-1 block text-xs font-bold text-gray-600">
+													{level.label} ({level.minScore}–{level.maxScore})
+												</label>
+												<textarea
+													value={level.description}
+													onChange={(event) =>
+														onUpdateCriteria(criteria.id, {
+															levels: criteria.levels.map((current, index) =>
+																index === levelIndex
+																	? {...current, description: event.target.value}
+																	: current,
+															),
+														})
+													}
+												rows={3}
+												disabled={editingId !== criteria.id}
+													className="input-primary text-sm"
+												/>
+											</div>
+										))}
+									</div>
 								</div>
 
 								<div className="ml-4 flex flex-col gap-2">
 									<button
 										onClick={() => onDeleteCriteria(criteria.id)}
-										className="p-2 text-gray-400 hover:text-red-500"
+										className="p-2 text-gray-500 hover:text-red-500"
 										title="Eliminar criterio"
 									>
 										<FontAwesomeIcon icon={faRemove} />
@@ -320,7 +320,7 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 												editingId === criteria.id ? null : criteria.id,
 											)
 										}
-										className="p-2 text-gray-400 hover:text-electric-500"
+										className="p-2 text-gray-500 hover:text-electric-500"
 										title="Editar criterio"
 									>
 										<FontAwesomeIcon icon={faEdit} />
@@ -382,7 +382,9 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 
 				{rubric.criteria.length === 0 && (
 					<div className="text-center py-12">
-						<div className="text-4xl mb-4">📝</div>
+						<div className="text-4xl mb-4">
+							<FontAwesomeIcon icon={faPenToSquare} />
+						</div>
 						<h4 className="font-medium text-gray-900 mb-2">
 							No hay criterios configurados
 						</h4>
@@ -394,7 +396,7 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 			</div>
 
 			{/* Quick Tips */}
-			<div className="card p-6 bg-gradient-to-r from-electric-50 to-cyan-50 border border-electric-200">
+			<div className="card p-6 bg-electric-50 border border-electric-200">
 				<h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
 					<span className="text-amber-500">
 						<FontAwesomeIcon icon={faLightbulb} />

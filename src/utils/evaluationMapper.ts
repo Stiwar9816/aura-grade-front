@@ -55,7 +55,10 @@ export const mapSubmissionToEvaluation = (
 						if (Array.isArray(parsedFeedback)) {
 							const match = parsedFeedback.find(
 								(f: EvaluationCriterionFeedback) =>
-									f.criteriaId === c.id || f.name === c.title,
+									f.criterionId === c.id ||
+									f.criteriaId === c.id ||
+									f.criterion === c.title ||
+									f.name === c.title,
 							);
 							if (match) criterionFeedback = match;
 						} else if (isFeedbackRecord(parsedFeedback)) {
@@ -73,11 +76,11 @@ export const mapSubmissionToEvaluation = (
 				return {
 					id: c.id,
 					name: c.title,
-					score:
-						normalizeGrade(criterionFeedback.score, c.maxPoints) || 0,
+					score: normalizeGrade(criterionFeedback.score, c.maxPoints) || 0,
 					maxScore: STANDARD_GRADE_MAX,
 					feedback:
-						criterionFeedback.feedback || "Sin feedback específico disponible.",
+						(criterionFeedback.feedback ?? criterionFeedback.observations) ||
+						"Sin feedback específico disponible.",
 					suggestion: criterionFeedback.suggestion || "",
 				};
 			}) || [],

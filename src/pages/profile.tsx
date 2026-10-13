@@ -5,9 +5,15 @@ import {ProtectedRoute} from "@/components/Auth";
 import {useAuth} from "@/hooks";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
-import {UpdateUserInput, User, UserRole} from "@/interface";
-import {RESET_PASSWORD_AUTH, UPDATE_USER} from "@/gql/User";
-import {notifyError, notifySuccess, notifyWarning} from "@/utils/toastNotify";
+import {UpdateOwnProfileInput, User, UserRole} from "@/interface";
+import {RESET_PASSWORD_AUTH, UPDATE_MY_PROFILE} from "@/gql/User";
+import {
+	notifyError,
+	notifyLoading,
+	notifySuccess,
+	notifyWarning,
+} from "@/utils/toastNotify";
+import {passwordPolicyError} from "@/utils/passwordPolicy";
 
 const getRoleLabel = (role?: UserRole) => {
 	if (role === UserRole.STUDENT) return "Estudiante";
@@ -17,12 +23,13 @@ const getRoleLabel = (role?: UserRole) => {
 
 const ProfilePage: React.FC = () => {
 	const {user, updateUser} = useAuth();
-	const [updateUserMutation, {loading: savingProfile}] = useMutation<{
-		updateUser: User;
-	}>(UPDATE_USER);
+	const [updateMyProfileMutation, {loading: savingProfile}] = useMutation<
+		{updateMyProfile: User},
+		{input: UpdateOwnProfileInput}
+	>(UPDATE_MY_PROFILE);
 	const [resetPasswordAuthMutation, {loading: savingPassword}] = useMutation<
 		{resetPasswordAuth: User},
-		{newPassword: string}
+		{input: {newPassword: string}}
 	>(RESET_PASSWORD_AUTH);
 	const [isEditing, setIsEditing] = useState(false);
 	const [formData, setFormData] = useState({
@@ -69,11 +76,17 @@ const ProfilePage: React.FC = () => {
 
 		const firstName = formData.firstName.trim();
 		const lastName = formData.lastName.trim();
+		const email = formData.email.trim().toLowerCase();
 		const cleanPhone = formData.phone.replace(/\s+/g, "");
 
-		if (!firstName || !lastName) {
-			const message = "Nombre y apellido son obligatorios.";
+		if (!firstName || !lastName || !email) {
+			const message = "Nombre, apellido y correo son obligatorios.";
 			notifyWarning(message);
+			return;
+		}
+
+		if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+			notifyWarning("Ingresa un correo electrónico válido.");
 			return;
 		}
 
@@ -83,37 +96,35 @@ const ProfilePage: React.FC = () => {
 			return;
 		}
 
-		const updateUserInput: UpdateUserInput = {
-			id: user.id,
+		const input: UpdateOwnProfileInput = {
 			name: firstName,
 			last_name: lastName,
+			email,
 			phone: cleanPhone ? Number(cleanPhone.replace(/^\+/, "")) : null,
-			isActive: user.isActive ?? true,
-			role: user.role,
 		};
 
+		const notificationId = notifyLoading("Guardando cambios del perfil...");
 		try {
-			const {data} = await updateUserMutation({
-				variables: {updateUserInput},
+			const {data} = await updateMyProfileMutation({
+				variables: {input},
 			});
-			const updatedUser = data?.updateUser;
+			const updatedUser = data?.updateMyProfile;
 
 			if (!updatedUser) {
 				const message = "El servidor no retornó el usuario actualizado.";
-				notifyError(message);
+				notifyError(message, {id: notificationId});
 				return;
 			}
 
-			const result = updateUser?.({
+			const result = await updateUser?.({
 				...updatedUser,
 				role: user.role,
-				token: user.token,
 			});
 
 			if (!result?.success) {
 				const message =
 					result?.error || "No se pudo actualizar la sesión local.";
-				notifyError(message);
+				notifyError(message, {id: notificationId});
 				return;
 			}
 		} catch (error) {
@@ -121,26 +132,27 @@ const ProfilePage: React.FC = () => {
 				error instanceof Error
 					? error.message
 					: "No se pudo guardar el perfil.";
-			notifyError(message);
+			notifyError(message, {id: notificationId});
 			return;
 		}
 
 		setIsEditing(false);
-		notifySuccess("Perfil actualizado correctamente.");
+		notifySuccess("Perfil actualizado correctamente.", {id: notificationId});
 	};
 
 	const handlePasswordSave = async (event?: React.FormEvent) => {
 		event?.preventDefault();
-		const newPassword = String(passwordData.newPassword || "").trim();
-		const confirmPassword = String(passwordData.confirmPassword || "").trim();
+		const newPassword = String(passwordData.newPassword || "");
+		const confirmPassword = String(passwordData.confirmPassword || "");
 
 		if (!newPassword || !confirmPassword) {
 			notifyWarning("Ingresa y confirma la nueva contraseña.");
 			return;
 		}
 
-		if (newPassword.length < 8) {
-			notifyWarning("La contraseña debe tener al menos 8 caracteres.");
+		const policyError = passwordPolicyError(newPassword);
+		if (policyError) {
+			notifyWarning(policyError);
 			return;
 		}
 
@@ -149,24 +161,29 @@ const ProfilePage: React.FC = () => {
 			return;
 		}
 
+		const notificationId = notifyLoading("Actualizando contraseña...");
 		try {
 			const {data} = await resetPasswordAuthMutation({
-				variables: {newPassword},
+				variables: {input: {newPassword}},
 			});
 
 			if (!data?.resetPasswordAuth) {
-				notifyError("El servidor no confirmó el cambio de contraseña.");
+				notifyError("El servidor no confirmó el cambio de contraseña.", {
+					id: notificationId,
+				});
 				return;
 			}
 
 			setPasswordData({newPassword: "", confirmPassword: ""});
-			notifySuccess("Contraseña actualizada correctamente.");
+			notifySuccess("Contraseña actualizada correctamente.", {
+				id: notificationId,
+			});
 		} catch (error) {
 			const message =
 				error instanceof Error
 					? error.message
 					: "No se pudo actualizar la contraseña.";
-			notifyError(message);
+			notifyError(message, {id: notificationId});
 		}
 	};
 
@@ -176,7 +193,7 @@ const ProfilePage: React.FC = () => {
 				<div className="max-w-4xl mx-auto">
 					<Card className="mb-6">
 						<div className="flex items-center gap-6">
-							<div className="w-24 h-24 bg-gradient-to-r from-electric-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
+							<div className="w-24 h-24 bg-electric-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
 								{user?.name?.charAt(0).toUpperCase()}
 								{user?.last_name?.charAt(0).toUpperCase()}
 							</div>
@@ -264,10 +281,23 @@ const ProfilePage: React.FC = () => {
 									<label className="block text-sm font-medium text-gray-700 mb-2">
 										Correo Electrónico
 									</label>
-									<p className="text-gray-900 font-medium">{user?.email}</p>
-									<p className="text-xs text-gray-500 mt-1">
-										El correo no se puede modificar
-									</p>
+									{isEditing ? (
+										<input
+											type="email"
+											value={formData.email}
+											onChange={(event) =>
+												setFormData({
+													...formData,
+													email: event.target.value,
+												})
+											}
+											className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-electric-500 focus:border-electric-500"
+										/>
+									) : (
+										<p className="text-gray-900 font-medium">
+											{user?.email}
+										</p>
+									)}
 								</div>
 
 								<div>
@@ -318,7 +348,7 @@ const ProfilePage: React.FC = () => {
 									<button
 										onClick={handleSave}
 										disabled={savingProfile}
-										className="btn-primary disabled:bg-gray-200 disabled:text-gray-400"
+										className="btn-primary disabled:bg-gray-200 disabled:text-gray-500"
 									>
 										{savingProfile ? "Guardando..." : "Guardar Cambios"}
 									</button>
@@ -378,14 +408,14 @@ const ProfilePage: React.FC = () => {
 										setPasswordData({newPassword: "", confirmPassword: ""})
 									}
 									disabled={savingPassword}
-									className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
+									className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-500"
 								>
 									Limpiar
 								</button>
 								<button
 									type="submit"
 									disabled={savingPassword}
-									className="btn-primary disabled:bg-gray-200 disabled:text-gray-400"
+									className="btn-primary disabled:bg-gray-200 disabled:text-gray-500"
 								>
 									{savingPassword ? "Actualizando..." : "Actualizar contraseña"}
 								</button>
