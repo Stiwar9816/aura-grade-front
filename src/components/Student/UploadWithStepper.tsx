@@ -1,6 +1,7 @@
 import React, {useState} from "react";
 import UploadZone from "../Upload/UploadZone";
 import {Step} from "@/types";
+import { redirect } from "next/navigation";
 
 const UploadWithStepper: React.FC = () => {
 	const [currentStep, setCurrentStep] = useState<number>(0);
@@ -82,7 +83,7 @@ const UploadWithStepper: React.FC = () => {
 
 						// Redirigir después de 2 segundos
 						setTimeout(() => {
-							window.location.href = "/evaluation";
+							redirect("/evaluation");
 						}, 2000);
 					}, 3000);
 				}, 4000);

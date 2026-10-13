@@ -7,6 +7,7 @@ import {
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import {notifyError, notifySuccess} from "@/utils/toastNotify";
+import { redirect } from "next/navigation";
 
 const formatDate = (value: string) =>
 	new Intl.DateTimeFormat("es-CO", {
@@ -84,8 +85,7 @@ const ActiveSessions: React.FC = () => {
 			return;
 		}
 		if (result.currentSession) {
-			window.location.assign("/login");
-			return;
+			redirect("/login");
 		}
 		setSessions((current) => current.filter(({id}) => id !== session.id));
 		notifySuccess("La sesión seleccionada fue cerrada.");
