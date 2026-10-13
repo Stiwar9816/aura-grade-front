@@ -152,7 +152,7 @@ const GradeHistory: React.FC = () => {
 					<div className="relative w-full">
 						<FontAwesomeIcon
 							icon={faSearch}
-							className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"
+							className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400"
 						/>
 						<input
 							type="text"
@@ -288,12 +288,12 @@ const GradeHistory: React.FC = () => {
 												>
 													{s.grade.toFixed(2)}
 												</span>
-												<span className="text-xs text-gray-400 dark:text-gray-500 font-normal">
+												<span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
 													/{STANDARD_GRADE_MAX}
 												</span>
 											</span>
 										) : (
-											<span className="text-gray-400 dark:text-gray-600">
+											<span className="text-gray-500 dark:text-gray-600">
 												-
 											</span>
 										)}

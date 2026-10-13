@@ -1,6 +1,5 @@
 import React from "react";
 import {EvaluationSummaryProps} from "@/interface";
-import {gradeToPercentage} from "@/utils/gradeScale";
 
 export const EvaluationSummary: React.FC<EvaluationSummaryProps> = ({
 	score,
@@ -8,57 +7,20 @@ export const EvaluationSummary: React.FC<EvaluationSummaryProps> = ({
 	feedback,
 	evaluationDate,
 }) => {
-	const percentage = gradeToPercentage(score) ?? 0;
 
 	return (
 		<div className="card p-6 mb-8">
 			<div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-				{/* Score Circle */}
-				<div className="flex-shrink-0">
-					<div className="relative w-32 h-32">
-						<svg className="w-full h-full" viewBox="0 0 100 100">
-							{/* Background circle */}
-							<circle
-								cx="50"
-								cy="50"
-								r="45"
-								fill="none"
-								stroke="#F3F4F6"
-								strokeWidth="8"
-							/>
-							{/* Progress circle */}
-							<circle
-								cx="50"
-								cy="50"
-								r="45"
-								fill="none"
-								stroke="url(#gradient)"
-								strokeWidth="8"
-								strokeLinecap="round"
-								strokeDasharray={`${percentage * 2.83} 283`}
-								transform="rotate(-90 50 50)"
-							/>
-							<defs>
-								<linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-									<stop offset="0%" stopColor="#0066FF" />
-									<stop offset="100%" stopColor="#00D4FF" />
-								</linearGradient>
-							</defs>
-						</svg>
-						<div className="absolute inset-0 flex flex-col items-center justify-center">
-							<span className="text-3xl font-bold text-gray-900">
-								{score.toFixed(1)}
-							</span>
-							<span className="text-gray-600">/{maxScore}</span>
-						</div>
-					</div>
-				</div>
+                <div className="w-full shrink-0 rounded-lg border border-electric-100 bg-electric-50 p-5 md:w-40">
+                    <p className="text-xs font-medium text-electric-700">Calificación</p>
+                    <p className="mt-2 text-4xl font-semibold tabular-nums text-electric-800">{score.toFixed(1)} <span className="text-base font-normal text-electric-700">/ {maxScore}</span></p>
+                </div>
 
 				{/* Feedback Section */}
 				<div className="flex-1">
 					<div className="flex items-center gap-3 mb-4">
 						<h2 className="text-2xl font-bold text-gray-900">
-							Resumen de Evaluación
+							Resumen de evaluación
 						</h2>
 					</div>
 
@@ -66,7 +28,7 @@ export const EvaluationSummary: React.FC<EvaluationSummaryProps> = ({
 						<div className="flex items-start gap-3">
 							<div>
 								<h3 className="font-semibold text-gray-900 mb-2">
-									Feedback General
+									Observaciones de la evaluación
 								</h3>
 								<p className="text-gray-700 leading-relaxed">{feedback}</p>
 							</div>

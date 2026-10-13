@@ -28,6 +28,7 @@ export interface CardProps {
 }
 
 export interface SectionHeaderProps {
+    as?: "h1" | "h2" | "h3";
     title: string;
     description?: string;
     actions?: React.ReactNode;

@@ -378,7 +378,7 @@ const AuditLogsPage = () => {
 														new Date(log.occurredAt || log.createdAt),
 													)}
 													{typeof log.durationMs === "number" && (
-														<p className="mt-1 text-xs text-gray-400">
+														<p className="mt-1 text-xs text-gray-500">
 															{log.durationMs} ms
 														</p>
 													)}
@@ -449,7 +449,7 @@ const AuditLogsPage = () => {
 														</span>
 													)}
 													{log.resourceId && (
-														<p className="mt-2 break-all text-xs text-gray-400">
+														<p className="mt-2 break-all text-xs text-gray-500">
 															ID: {log.resourceId}
 														</p>
 													)}

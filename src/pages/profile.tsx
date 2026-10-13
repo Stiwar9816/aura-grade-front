@@ -193,7 +193,7 @@ const ProfilePage: React.FC = () => {
 				<div className="max-w-4xl mx-auto">
 					<Card className="mb-6">
 						<div className="flex items-center gap-6">
-							<div className="w-24 h-24 bg-gradient-to-r from-electric-500 to-cyan-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
+							<div className="w-24 h-24 bg-electric-500 rounded-full flex items-center justify-center text-white text-3xl font-bold">
 								{user?.name?.charAt(0).toUpperCase()}
 								{user?.last_name?.charAt(0).toUpperCase()}
 							</div>
@@ -348,7 +348,7 @@ const ProfilePage: React.FC = () => {
 									<button
 										onClick={handleSave}
 										disabled={savingProfile}
-										className="btn-primary disabled:bg-gray-200 disabled:text-gray-400"
+										className="btn-primary disabled:bg-gray-200 disabled:text-gray-500"
 									>
 										{savingProfile ? "Guardando..." : "Guardar Cambios"}
 									</button>
@@ -408,14 +408,14 @@ const ProfilePage: React.FC = () => {
 										setPasswordData({newPassword: "", confirmPassword: ""})
 									}
 									disabled={savingPassword}
-									className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-400"
+									className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:bg-gray-100 disabled:text-gray-500"
 								>
 									Limpiar
 								</button>
 								<button
 									type="submit"
 									disabled={savingPassword}
-									className="btn-primary disabled:bg-gray-200 disabled:text-gray-400"
+									className="btn-primary disabled:bg-gray-200 disabled:text-gray-500"
 								>
 									{savingPassword ? "Actualizando..." : "Actualizar contraseña"}
 								</button>

@@ -35,30 +35,27 @@ export const ForgotPasswordForm: React.FC = () => {
 					"Si tu cuenta existe y está activa, recibirás un enlace de recuperación.",
 			);
 			setIsSubmitted(true);
-			setTimeout(() => {
-				window.location.href = "/login";
-			}, 5000);
 			return;
 		}
 
 		setError(
-			result.error || "No fue posible enviar la enlace de recuperación.",
+			result.error || "No fue posible enviar el enlace de recuperación.",
 		);
 	};
 
 	return (
 		<AuthLayout
-			title={isSubmitted ? "¡Correo enviado!" : "¿Olvidaste tu contraseña?"}
+			title={isSubmitted ? "Solicitud recibida" : "¿Olvidaste tu contraseña?"}
 			subtitle={
 				isSubmitted
-					? "Revisa tu bandeja de entrada para continuar"
-					: "Ingresa tu email y te enviaremos una enlace de recuperación"
+					? "Si la cuenta está activa, recibirás las instrucciones por correo"
+					: "Ingresa tu email y te enviaremos un enlace de recuperación"
 			}
 		>
 			{!isSubmitted ? (
 				<>
 					{error && (
-						<div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+						<div role="alert" className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
 							<div className="flex items-center gap-3">
 								<span className="text-red-600">
 									<FontAwesomeIcon icon={faExclamationTriangle} />
@@ -70,13 +67,13 @@ export const ForgotPasswordForm: React.FC = () => {
 
 					<form onSubmit={handleSubmit} className="space-y-6">
 						<div>
-							<label className="block text-sm font-medium text-gray-700 mb-2">
+							<label htmlFor="recovery-email" className="block text-sm font-medium text-gray-700 mb-2">
 								Correo electrónico
 							</label>
 							<div className="relative">
 								<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
 									<svg
-										className="h-5 w-5 text-gray-400"
+										className="h-5 w-5 text-gray-500"
 										fill="none"
 										stroke="currentColor"
 										viewBox="0 0 24 24"
@@ -90,7 +87,7 @@ export const ForgotPasswordForm: React.FC = () => {
 									</svg>
 								</div>
 								<input
-									type="email"
+									id="recovery-email" autoComplete="email" type="email"
 									value={email}
 									onChange={(e) => setEmail(e.target.value)}
 									className="w-full pl-10 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:border-electric-500 focus:ring-2 focus:ring-electric-200 outline-none transition-all"
@@ -106,7 +103,7 @@ export const ForgotPasswordForm: React.FC = () => {
 							className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-all ${
 								isLoading
 									? "bg-gray-400 cursor-not-allowed"
-									: "bg-gradient-to-r from-electric-500 to-cyan-500 hover:from-electric-600 hover:to-cyan-600 shadow-lg hover:shadow-xl"
+									: "bg-electric-500 hover:bg-electric-600"
 							}`}
 						>
 							{isLoading ? (
@@ -177,25 +174,13 @@ export const ForgotPasswordForm: React.FC = () => {
 							</li>
 							<li className="flex items-start gap-2">
 								<span className="text-blue-500 mt-1">3.</span>
-								<span>Inicia sesión y cambia la clave desde configuración</span>
+								<span>Abre el enlace y sigue las instrucciones para recuperar el acceso</span>
 							</li>
 						</ul>
 					</div>
 
-					<div className="text-sm text-gray-600 mb-6">
-						Serás redirigido en{" "}
-						<span className="font-extrabold text-electric-500">5 segundos</span>
-					</div>
-
 					<div className="grid grid-cols-2 gap-4">
-						<button
-							onClick={() => {
-								window.location.href = "/login";
-							}}
-							className="py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-medium hover:border-gray-400 transition-colors"
-						>
-							Ir a Login
-						</button>
+						<Link href="/login" className="btn-ghost text-center">Iniciar sesión</Link>
 						<button
 							onClick={() => {
 								setError(null);

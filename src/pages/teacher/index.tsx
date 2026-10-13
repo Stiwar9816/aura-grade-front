@@ -181,7 +181,7 @@ const TeacherDashboard: React.FC = () => {
 			<Layout title="Panel de docente" hideHeader>
 				<div className="max-w-7xl mx-auto">
 					{/* Header */}
-					<SectionHeader
+					<SectionHeader as="h1"
 						title={`Bienvenido(a), ${
 							user?.role === UserRole.ADMIN ? "Administrador(a)" : "Profesor(a)"
 						} ${user?.name}`}
@@ -427,12 +427,12 @@ const TeacherDashboard: React.FC = () => {
 																					</div>
 																				</div>
 																				<div className="text-right">
-																					<div className="text-lg font-black text-gray-900">
+																					<div className="text-lg font-semibold text-gray-900">
 																						{assignment.average > 0
 																							? assignment.average
 																							: "-"}
 																					</div>
-																					<div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
+																					<div className="text-xs uppercase tracking-wider font-bold text-gray-500">
 																						Promedio
 																					</div>
 																				</div>
@@ -484,7 +484,7 @@ const TeacherDashboard: React.FC = () => {
 														{activeAssignmentsList.length > 0 && (
 															<div className="space-y-3">
 																{pendingAssignmentsList.length > 0 && (
-																	<h3 className="text-sm font-black uppercase tracking-wider text-gray-400 pt-2">
+																	<h3 className="text-sm font-semibold uppercase tracking-wider text-gray-500 pt-2">
 																		Otras tareas activas
 																	</h3>
 																)}
@@ -524,14 +524,14 @@ const TeacherDashboard: React.FC = () => {
 																					</div>
 																				</div>
 																				<div className="text-right">
-																					<div className="text-lg font-black text-gray-900">
+																					<div className="text-lg font-semibold text-gray-900">
 																						{assignment.average > 0
 																							? Number(
 																									assignment.average,
 																								).toFixed(2)
 																							: "-"}
 																					</div>
-																					<div className="text-[10px] uppercase tracking-wider font-bold text-gray-400">
+																					<div className="text-xs uppercase tracking-wider font-bold text-gray-500">
 																						Promedio
 																					</div>
 																				</div>
@@ -621,11 +621,11 @@ const TeacherDashboard: React.FC = () => {
 																						<div className="flex items-center gap-2 mt-1">
 																							<Badge
 																								variant="default"
-																								className="text-[10px]"
+																								className="text-xs"
 																							>
 																								Vencida
 																							</Badge>
-																							<span className="text-[10px] text-gray-400">
+																							<span className="text-xs text-gray-500">
 																								Venció el{" "}
 																								{new Date(
 																									assignment.dueDate,
@@ -634,7 +634,7 @@ const TeacherDashboard: React.FC = () => {
 																						</div>
 																					</div>
 																					<div className="text-right">
-																						<div className="text-lg font-black text-gray-500">
+																						<div className="text-lg font-semibold text-gray-500">
 																							{assignment.average > 0
 																								? assignment.average
 																								: "-"}
@@ -692,7 +692,7 @@ const TeacherDashboard: React.FC = () => {
 																	prev === 8 ? 50 : 8,
 																)
 															}
-															className="text-xs font-bold text-gray-400 hover:text-gray-600 transition-colors uppercase tracking-widest"
+															className="text-xs font-bold text-gray-500 hover:text-gray-600 transition-colors uppercase tracking-widest"
 														>
 															{activityLimit === 8 ? "Ver todo" : "Ver menos"}
 														</button>
@@ -755,13 +755,13 @@ const TeacherDashboard: React.FC = () => {
 																	</span>
 																</p>
 																<div className="flex items-center gap-2 mt-1.5">
-																	<span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">
+																	<span className="text-xs font-bold text-gray-500 uppercase tracking-tighter">
 																		{activity.time}
 																	</span>
 																	{activity.grade !== undefined && (
 																		<Badge
 																			variant="success"
-																			className="text-[10px] font-black italic"
+																			className="text-xs font-semibold italic"
 																		>
 																			{activity.grade.toFixed(2)}
 																		</Badge>

@@ -15,6 +15,7 @@ import {
 	faGraduationCap,
 	faBuildingColumns,
 	faClockRotateLeft,
+	faGaugeHigh,
 } from "@fortawesome/free-solid-svg-icons";
 
 const Sidebar: React.FC = () => {
@@ -30,7 +31,7 @@ const Sidebar: React.FC = () => {
 						? "/admin/approvals"
 						: "/teacher",
 			icon: <FontAwesomeIcon icon={faHouse} />,
-			label: "Panel de Inicio",
+			label: "Inicio",
 			badge: null,
 		},
 	];
@@ -45,13 +46,13 @@ const Sidebar: React.FC = () => {
 		{
 			path: "/upload",
 			icon: <FontAwesomeIcon icon={faCloudArrowUp} />,
-			label: "Subir Tarea",
+			label: "Entregar",
 			badge: null,
 		},
 		{
 			path: "/evaluation",
 			icon: <FontAwesomeIcon icon={faFileLines} />,
-			label: "Mi progreso",
+			label: "Resultados",
 			badge: null,
 		},
 	];
@@ -60,30 +61,36 @@ const Sidebar: React.FC = () => {
 		{
 			path: "/teacher/assignments",
 			icon: <FontAwesomeIcon icon={faPencil} />,
-			label: "Crear Tarea",
+			label: "Tareas",
 			badge: null,
 		},
 		{
 			path: "/rubrics",
 			icon: <FontAwesomeIcon icon={faBookOpen} />,
-			label: "Gestor de Rúbricas",
+			label: "Rúbricas",
 			badge: null,
 		},
 		{
 			path: "/teacher/courses",
 			icon: <FontAwesomeIcon icon={faPeopleRoof} />,
-			label: "Gestión de Cursos",
+			label: "Cursos",
 			badge: null,
 		},
 		{
 			path: "/analytics",
 			icon: <FontAwesomeIcon icon={faChartLine} />,
-			label: "Analíticas",
+			label: "Reportes",
 			badge: null,
 		},
 	];
 
 	const administratorItems = [
+		{
+			path: "/admin/operations",
+			icon: <FontAwesomeIcon icon={faGaugeHigh} />,
+			label: "Operaciones",
+			badge: null,
+		},
 		{
 			path: "/teacher/courses",
 			icon: <FontAwesomeIcon icon={faPeopleRoof} />,
@@ -127,22 +134,23 @@ const Sidebar: React.FC = () => {
 	];
 
 	return (
-		<aside className="w-60 border-r border-gray-200 bg-white min-h-[calc(100vh-80px)] p-4">
-			<nav className="space-y-2">
+		<aside className="w-full shrink-0 border-b border-gray-200 bg-white p-2 lg:min-h-[calc(100vh-80px)] lg:w-60 lg:border-b-0 lg:border-r lg:p-4">
+			<nav aria-label="Navegación principal" className={`grid gap-1 ${menuItems.length === 4 ? "grid-cols-4" : "grid-cols-3 sm:grid-cols-5"} lg:block lg:space-y-1`}>
 				{menuItems.map((item) => {
-					const isActive = router.pathname === item.path;
+					const isActive = router.pathname === item.path || (item.path !== "/student" && item.path !== "/teacher" && router.pathname.startsWith(`${item.path}/`));
 
 					return (
 						<Link
 							key={item.path}
 							href={item.path}
-							className={`flex items-center justify-between px-4 py-2 rounded-xl transition-all duration-200 ${
+                            aria-current={isActive ? "page" : undefined}
+							className={`flex min-h-12 items-center justify-center lg:justify-start px-2 lg:px-3 py-2 rounded-lg transition-colors duration-200 ${
 								isActive
-									? "bg-electric-50 text-electric-500 font-semibold"
+									? "bg-electric-50 text-electric-700 font-semibold"
 									: "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
 							}`}
 						>
-							<div className="flex items-center space-x-3">
+							<div className="flex flex-col lg:flex-row items-center gap-1 lg:gap-3 text-xs lg:text-sm">
 								<span className="text-md ">{item.icon}</span>
 								<span>{item.label}</span>
 							</div>
@@ -163,7 +171,7 @@ const Sidebar: React.FC = () => {
 			</nav>
 
 			{/* Sección de ayuda */}
-			<div className="mt-4 p-3 bg-gradient-to-r from-cyan-50 to-electric-50 rounded-xl border border-cyan-200">
+			<div className="mt-8 hidden p-3 bg-gray-50 lg:block rounded-lg border border-gray-200">
 				<h3 className="font-semibold text-gray-900 mb-1 text-sm">
 					¿Necesitas ayuda?
 				</h3>

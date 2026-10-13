@@ -309,7 +309,7 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 								<div className="ml-4 flex flex-col gap-2">
 									<button
 										onClick={() => onDeleteCriteria(criteria.id)}
-										className="p-2 text-gray-400 hover:text-red-500"
+										className="p-2 text-gray-500 hover:text-red-500"
 										title="Eliminar criterio"
 									>
 										<FontAwesomeIcon icon={faRemove} />
@@ -320,7 +320,7 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 												editingId === criteria.id ? null : criteria.id,
 											)
 										}
-										className="p-2 text-gray-400 hover:text-electric-500"
+										className="p-2 text-gray-500 hover:text-electric-500"
 										title="Editar criterio"
 									>
 										<FontAwesomeIcon icon={faEdit} />
@@ -396,7 +396,7 @@ export const RubricBuilder: React.FC<RubricBuilderProps> = ({
 			</div>
 
 			{/* Quick Tips */}
-			<div className="card p-6 bg-gradient-to-r from-electric-50 to-cyan-50 border border-electric-200">
+			<div className="card p-6 bg-electric-50 border border-electric-200">
 				<h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
 					<span className="text-amber-500">
 						<FontAwesomeIcon icon={faLightbulb} />

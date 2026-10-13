@@ -198,9 +198,9 @@ const SettingsPage: React.FC = () => {
 		}
 	};
 
-	const handleDeleteAccount = async () => {
-		if (deleteConfirmation !== "ELIMINAR") {
-			const message = 'Escribe "ELIMINAR" para confirmar.';
+	const handleDeactivateAccount = async () => {
+		if (deleteConfirmation !== "DESACTIVAR") {
+			const message = 'Escribe "DESACTIVAR" para confirmar.';
 			notifyWarning(message);
 			return;
 		}
@@ -459,19 +459,18 @@ const SettingsPage: React.FC = () => {
 
 					<Card className="border-red-200">
 						<SectionHeader
-							title="Zona de Peligro"
-							description="Acciones irreversibles"
+							title="Desactivar cuenta"
+							description="Gestiona el acceso a tu cuenta"
 							className="mb-6"
 						/>
 
 						<div className="space-y-4">
 							<div className="p-4 bg-red-50 border border-red-200 rounded-lg">
 								<h4 className="font-medium text-red-900 mb-2">
-									Eliminar Cuenta
+									Desactivar el acceso
 								</h4>
 								<p className="text-sm text-red-700 mb-4">
-									Una vez que elimines tu cuenta, no hay vuelta atrás. Por
-									favor, asegúrate de esto.
+									Se cerrará tu sesión y se desactivará el acceso. Esta acción no elimina tus datos académicos. Contacta con la administración de tu institución para consultar la reactivación.
 								</p>
 								<input
 									type="text"
@@ -479,15 +478,16 @@ const SettingsPage: React.FC = () => {
 									onChange={(event) =>
 										setDeleteConfirmation(event.target.value)
 									}
-									placeholder='Escribe "ELIMINAR"'
+									aria-label='Escribe DESACTIVAR para confirmar la desactivación'
+                                    placeholder='Escribe "DESACTIVAR"'
 									className="w-full max-w-xs px-4 py-2 border border-red-200 rounded-lg mb-4 focus:ring-2 focus:ring-red-200 focus:border-red-400"
 								/>
 								<button
-									onClick={handleDeleteAccount}
+									onClick={handleDeactivateAccount}
 									disabled={deletingAccount}
 									className="block px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:bg-red-200"
 								>
-									{deletingAccount ? "Eliminando..." : "Eliminar mi cuenta"}
+									{deletingAccount ? "Desactivando..." : "Desactivar mi cuenta"}
 								</button>
 							</div>
 						</div>

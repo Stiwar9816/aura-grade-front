@@ -162,7 +162,6 @@ const EvaluationPage: React.FC = () => {
 		deliveredCount,
 		reviewPendingCount,
 		averageGrade,
-		averagePercentage,
 	} = useStudentAcademicData();
 	const {
 		requests: reEvaluationRequests,
@@ -241,7 +240,7 @@ const EvaluationPage: React.FC = () => {
 			<ProtectedRoute>
 				<Layout title="Mis Resultados" hideHeader>
 					<div className="max-w-7xl mx-auto space-y-8">
-						<SectionHeader
+						<SectionHeader as="h1"
 							title="Mis resultados"
 							description="Retroalimentación y calificaciones de las tareas que ya entregaste."
 						/>
@@ -254,7 +253,7 @@ const EvaluationPage: React.FC = () => {
 							</Card>
 						)}
 
-						<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+						<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 							<Card className="bg-white/70 border border-gray-100">
 								<div className="flex items-center justify-between mb-3">
 									<div className="text-sm font-bold text-gray-500">
@@ -265,7 +264,7 @@ const EvaluationPage: React.FC = () => {
 										className="text-blue-500"
 									/>
 								</div>
-								<div className="text-3xl font-black text-blue-600">
+								<div className="text-3xl font-semibold text-blue-600">
 									{resultsLoading ? "-" : deliveredCount}
 								</div>
 							</Card>
@@ -279,7 +278,7 @@ const EvaluationPage: React.FC = () => {
 										className="text-green-500"
 									/>
 								</div>
-								<div className="text-3xl font-black text-green-600">
+								<div className="text-3xl font-semibold text-gray-900">
 									{resultsLoading ? "-" : gradedCount}
 								</div>
 							</Card>
@@ -290,7 +289,7 @@ const EvaluationPage: React.FC = () => {
 									</div>
 									<FontAwesomeIcon icon={faClock} className="text-yellow-500" />
 								</div>
-								<div className="text-3xl font-black text-yellow-600">
+								<div className="text-3xl font-semibold text-yellow-600">
 									{resultsLoading ? "-" : reviewPendingCount}
 								</div>
 								<div className="text-xs text-gray-500">
@@ -307,11 +306,11 @@ const EvaluationPage: React.FC = () => {
 										className="text-electric-500"
 									/>
 								</div>
-								<div className="text-3xl font-black text-electric-600">
-									{resultsLoading ? "-" : averageGrade}
+								<div className="text-3xl font-semibold text-electric-600">
+									{resultsLoading || !gradedCount ? "—" : `${averageGrade} / ${STANDARD_GRADE_MAX}`}
 								</div>
 								<div className="text-xs text-gray-500">
-									{averagePercentage}% acumulado
+									{gradedCount} tareas con nota publicada
 								</div>
 							</Card>
 						</div>
@@ -338,7 +337,7 @@ const EvaluationPage: React.FC = () => {
 										icon={faFileLines}
 										className="text-5xl text-gray-300 mb-4"
 									/>
-									<h2 className="text-xl font-black text-gray-900 mb-2">
+									<h2 className="text-xl font-semibold text-gray-900 mb-2">
 										Aún no tienes entregas registradas
 									</h2>
 									<p className="text-gray-500">
@@ -362,18 +361,18 @@ const EvaluationPage: React.FC = () => {
 															<Badge variant={status.variant}>
 																{status.label}
 															</Badge>
-															<span className="text-xs font-bold text-gray-400 uppercase">
+															<span className="text-xs font-bold text-gray-500 uppercase">
 																{assignment.courseName || "Sin curso"}
 															</span>
 														</div>
-														<h3 className="text-lg font-black text-gray-900">
+														<h3 className="text-lg font-semibold text-gray-900">
 															{assignment.title}
 														</h3>
 														<p className="text-sm text-gray-500 mt-1 line-clamp-2">
 															{assignment.description}
 														</p>
 														<div className="mt-4 p-4 rounded-xl bg-gray-50 border border-gray-100">
-															<div className="text-xs font-bold text-gray-400 uppercase mb-1">
+															<div className="text-xs font-bold text-gray-500 uppercase mb-1">
 																Retroalimentación
 															</div>
 															<p className="text-sm text-gray-700">
@@ -390,7 +389,7 @@ const EvaluationPage: React.FC = () => {
 															</div>
 															{assignment.score !== undefined ? (
 																<>
-																	<div className="text-3xl font-black text-electric-700">
+																	<div className="text-3xl font-semibold text-electric-700">
 																		{assignment.score.toFixed(1)}
 																		<span className="text-sm text-electric-500">
 																			/{assignment.maxScore}
@@ -414,7 +413,7 @@ const EvaluationPage: React.FC = () => {
 																	`/evaluation?submission=${assignment.submissionId}`,
 																)
 															}
-															className="w-full px-4 py-2 bg-electric-500 text-white text-sm font-bold rounded-xl hover:bg-electric-600 transition-colors disabled:bg-gray-200 disabled:text-gray-400"
+															className="w-full px-4 py-2 bg-electric-500 text-white text-sm font-bold rounded-xl hover:bg-electric-600 transition-colors disabled:bg-gray-200 disabled:text-gray-500"
 														>
 															Ver detalle
 														</button>
@@ -897,11 +896,11 @@ const EvaluationPage: React.FC = () => {
 											icon={faClock}
 											className="text-amber-500"
 										/>
-										<span className="text-xs font-black text-amber-700 uppercase tracking-widest">
+										<span className="text-xs font-semibold text-amber-700 uppercase tracking-widest">
 											Entrega recibida
 										</span>
 									</div>
-									<h1 className="text-2xl font-black text-gray-900 mb-2">
+									<h1 className="text-2xl font-semibold text-gray-900 mb-2">
 										{submissionDetail?.assignment?.title || "Entrega"}
 									</h1>
 									<p className="text-gray-600">
@@ -912,20 +911,20 @@ const EvaluationPage: React.FC = () => {
 								</div>
 								<div className="grid grid-cols-2 gap-3 min-w-64">
 									<div className="p-3 rounded-xl bg-white/80 border border-amber-100">
-										<div className="text-xs font-bold text-gray-400 uppercase">
+										<div className="text-xs font-bold text-gray-500 uppercase">
 											Versión
 										</div>
-										<div className="text-xl font-black text-gray-900">
+										<div className="text-xl font-semibold text-gray-900">
 											{currentHistoryItem
 												? currentHistoryItem.version
 												: evaluationSubmissionHistory.length || 1}
 										</div>
 									</div>
 									<div className="p-3 rounded-xl bg-white/80 border border-amber-100">
-										<div className="text-xs font-bold text-gray-400 uppercase">
+										<div className="text-xs font-bold text-gray-500 uppercase">
 											Estado
 										</div>
-										<div className="text-sm font-black text-amber-700">
+										<div className="text-sm font-semibold text-amber-700">
 											En revisión
 										</div>
 									</div>
@@ -937,7 +936,7 @@ const EvaluationPage: React.FC = () => {
 							<SectionHeader title="Detalle de la entrega" className="mb-6" />
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-									<div className="text-xs font-bold text-gray-400 uppercase mb-1">
+									<div className="text-xs font-bold text-gray-500 uppercase mb-1">
 										Curso
 									</div>
 									<div className="font-bold text-gray-900">
@@ -947,7 +946,7 @@ const EvaluationPage: React.FC = () => {
 									</div>
 								</div>
 								<div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-									<div className="text-xs font-bold text-gray-400 uppercase mb-1">
+									<div className="text-xs font-bold text-gray-500 uppercase mb-1">
 										Fecha de entrega
 									</div>
 									<div className="font-bold text-gray-900">
@@ -955,7 +954,7 @@ const EvaluationPage: React.FC = () => {
 									</div>
 								</div>
 								<div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-									<div className="text-xs font-bold text-gray-400 uppercase mb-1">
+									<div className="text-xs font-bold text-gray-500 uppercase mb-1">
 										Fecha límite
 									</div>
 									<div className="font-bold text-gray-900">
@@ -963,7 +962,7 @@ const EvaluationPage: React.FC = () => {
 									</div>
 								</div>
 								<div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-									<div className="text-xs font-bold text-gray-400 uppercase mb-1">
+									<div className="text-xs font-bold text-gray-500 uppercase mb-1">
 										Archivo
 									</div>
 									{submissionDetail?.fileUrl ? (
@@ -1021,7 +1020,7 @@ const EvaluationPage: React.FC = () => {
 												}`}
 											>
 												<div>
-													<div className="font-black text-gray-900">
+													<div className="font-semibold text-gray-900">
 														Versión {submission.version}
 														{submission.id === submissionId ? " actual" : ""}
 													</div>
@@ -1099,9 +1098,9 @@ const EvaluationPage: React.FC = () => {
 					{submissionDetail && (
 						<Card className="mb-8 bg-white/80 border border-gray-100">
 							<SectionHeader title="Detalle de la entrega" className="mb-6" />
-							<div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+							<div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
 								<div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-									<div className="text-xs font-bold text-gray-400 uppercase mb-1">
+									<div className="text-xs font-bold text-gray-500 uppercase mb-1">
 										Tarea
 									</div>
 									<div className="font-bold text-gray-900">
@@ -1109,7 +1108,7 @@ const EvaluationPage: React.FC = () => {
 									</div>
 								</div>
 								<div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-									<div className="text-xs font-bold text-gray-400 uppercase mb-1">
+									<div className="text-xs font-bold text-gray-500 uppercase mb-1">
 										Curso
 									</div>
 									<div className="font-bold text-gray-900">
@@ -1119,7 +1118,7 @@ const EvaluationPage: React.FC = () => {
 									</div>
 								</div>
 								<div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-									<div className="text-xs font-bold text-gray-400 uppercase mb-1">
+									<div className="text-xs font-bold text-gray-500 uppercase mb-1">
 										Entregada
 									</div>
 									<div className="font-bold text-gray-900">
@@ -1127,7 +1126,7 @@ const EvaluationPage: React.FC = () => {
 									</div>
 								</div>
 								<div className="p-4 rounded-xl bg-gray-50 border border-gray-100">
-									<div className="text-xs font-bold text-gray-400 uppercase mb-1">
+									<div className="text-xs font-bold text-gray-500 uppercase mb-1">
 										Versión
 									</div>
 									<div className="font-bold text-gray-900">
@@ -1140,7 +1139,7 @@ const EvaluationPage: React.FC = () => {
 
 							{evaluationSubmissionHistory.length > 0 && (
 								<div>
-									<div className="text-xs font-bold text-gray-400 uppercase mb-3">
+									<div className="text-xs font-bold text-gray-500 uppercase mb-3">
 										Histórico de entregas y calificaciones
 									</div>
 									<div className="space-y-2">
@@ -1168,7 +1167,7 @@ const EvaluationPage: React.FC = () => {
 													</div>
 													<div className="flex items-center gap-3">
 														{submission.score !== undefined && (
-															<div className="text-sm font-black text-electric-700">
+															<div className="text-sm font-semibold text-electric-700">
 																{submission.score.toFixed(1)}/
 																{STANDARD_GRADE_MAX}
 															</div>
@@ -1207,7 +1206,7 @@ const EvaluationPage: React.FC = () => {
 									className="mt-1 text-red-500"
 								/>
 								<div>
-									<h2 className="font-black">
+									<h2 className="font-semibold">
 										La calificación automática no pudo completarse
 									</h2>
 									<p className="mt-1 text-sm">
@@ -1247,21 +1246,21 @@ const EvaluationPage: React.FC = () => {
 												: "Sugerencia interna IA"}
 										</Badge>
 									</div>
-									<h2 className="text-xl font-black text-gray-900 mb-2">
+									<h2 className="text-xl font-semibold text-gray-900 mb-2">
 										Revisión docente
 									</h2>
 									<p className="text-sm text-gray-600">
 										{pendingReEvaluationRequest
 											? "El estudiante pidió una segunda revisión. Si apruebas la solicitud, publica la nota/feedback ajustados y la solicitud quedará resuelta."
 											: canCreateManualDraft
-												? "La IA agotó sus intentos. Ingresa una nota y retroalimentación para crear un borrador manual; el estudiante no verá nada hasta que lo publiques."
+												? "La IA agotó sus intentos. Califica cada criterio y agrega retroalimentación para crear un borrador manual; el estudiante no verá nada hasta que lo publiques."
 												: isManualEvaluation
 													? "Este borrador fue creado manualmente. Revisa la nota y la retroalimentación antes de publicarlo."
 													: "La nota sugerida por IA no es visible para el estudiante hasta que publiques la nota final."}
 									</p>
 									{pendingReEvaluationRequest && (
 										<div className="mt-5 p-4 rounded-xl bg-amber-50 border border-amber-100">
-											<div className="text-xs font-black text-amber-700 uppercase mb-2">
+											<div className="text-xs font-semibold text-amber-700 uppercase mb-2">
 												Motivo del estudiante
 											</div>
 											<p className="text-sm text-gray-700">
@@ -1443,7 +1442,7 @@ const EvaluationPage: React.FC = () => {
 												: handlePublishEvaluation
 										}
 										disabled={isPublishedEvaluation || teacherActionLoading}
-										className="btn-primary w-full disabled:bg-gray-200 disabled:text-gray-400"
+										className="btn-primary w-full disabled:bg-gray-200 disabled:text-gray-500"
 									>
 										{isPublishedEvaluation
 											? "Nota publicada"
@@ -1462,7 +1461,7 @@ const EvaluationPage: React.FC = () => {
 											type="button"
 											onClick={handleRejectReevaluation}
 											disabled={teacherActionLoading}
-											className="w-full px-4 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition-colors disabled:bg-gray-100 disabled:text-gray-400 inline-flex items-center justify-center gap-2"
+											className="w-full px-4 py-2.5 rounded-xl bg-red-50 text-red-600 text-sm font-bold hover:bg-red-100 transition-colors disabled:bg-gray-100 disabled:text-gray-500 inline-flex items-center justify-center gap-2"
 										>
 											<FontAwesomeIcon icon={faXmark} />
 											{resolvingReevaluationRequest
@@ -1538,7 +1537,7 @@ const EvaluationPage: React.FC = () => {
 										disabled={
 											creatingReevaluationRequest || reEvaluationLoading
 										}
-										className="btn-primary inline-flex items-center justify-center gap-2 disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+										className="btn-primary inline-flex items-center justify-center gap-2 disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed"
 									>
 										<FontAwesomeIcon icon={faRotateRight} />
 										{creatingReevaluationRequest
@@ -1577,7 +1576,7 @@ const EvaluationPage: React.FC = () => {
 										/>
 										<div>
 											<div className="flex flex-wrap items-center gap-2 mb-1">
-												<h3 className="font-black text-gray-900">
+												<h3 className="font-semibold text-gray-900">
 													{reevaluationStatusContent.title}
 												</h3>
 												<Badge variant={reevaluationStatusContent.variant}>
@@ -1592,7 +1591,7 @@ const EvaluationPage: React.FC = () => {
 											</p>
 											{latestReEvaluationRequest.teacherResponse && (
 												<div className="mt-3 p-3 rounded-xl bg-white/70 border border-white">
-													<div className="text-xs font-black uppercase text-gray-400 mb-1">
+													<div className="text-xs font-semibold uppercase text-gray-500 mb-1">
 														Respuesta del docente
 													</div>
 													<p className="text-sm text-gray-700">
@@ -1640,7 +1639,7 @@ const EvaluationPage: React.FC = () => {
 											type="button"
 											onClick={handleSubmitReevaluation}
 											disabled={creatingReevaluationRequest}
-											className="btn-primary inline-flex items-center justify-center gap-2 disabled:bg-gray-200 disabled:text-gray-400"
+											className="btn-primary inline-flex items-center justify-center gap-2 disabled:bg-gray-200 disabled:text-gray-500"
 										>
 											<FontAwesomeIcon icon={faPaperPlane} />
 											{creatingReevaluationRequest

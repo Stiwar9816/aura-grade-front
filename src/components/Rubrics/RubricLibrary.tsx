@@ -112,7 +112,7 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
               className="card p-6 hover:shadow-lg transition-shadow group h-full min-h-[260px] flex flex-col"
             >
               <div className="flex items-start justify-between gap-4 mb-4">
-                <div className="p-3 bg-gradient-to-r from-electric-500 to-cyan-500 rounded-xl">
+                <div className="p-3 bg-electric-500 rounded-xl">
                   <span className="text-white text-xl">
                     <FontAwesomeIcon icon={faFileText} />
                   </span>
@@ -121,7 +121,7 @@ export const RubricLibrary: React.FC<RubricLibraryProps> = ({
                   <span className="block shrink-0 text-sm font-semibold text-electric-600">
                     {template.maxTotalScore} pts
                   </span>
-                  <span className="mt-1 block text-[10px] font-bold uppercase text-gray-400">
+                  <span className="mt-1 block text-xs font-bold uppercase text-gray-500">
                     {template.status === "DRAFT"
                       ? "Borrador"
                       : template.status === "ARCHIVED"

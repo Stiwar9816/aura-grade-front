@@ -273,7 +273,7 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 						<h3 className="font-semibold text-gray-900 mb-3">
 							Feedback General de IA
 						</h3>
-						<div className="bg-gradient-to-r from-electric-50 to-cyan-50 border border-electric-200 rounded-xl p-4">
+						<div className="bg-electric-50 border border-electric-200 rounded-xl p-4">
 							<p className="text-gray-700">{aiEvaluation.generalFeedback}</p>
 						</div>
 					</div>
@@ -308,7 +308,7 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 											<div className="flex items-center gap-2">
 												{override ? (
 													<>
-														<div className="text-sm text-gray-400 line-through">
+														<div className="text-sm text-gray-500 line-through">
 															{criterion.score}/{criterion.maxScore}
 														</div>
 														<div className="text-lg font-bold text-purple-600">
@@ -562,7 +562,7 @@ En conclusión, mientras la IA ofrece oportunidades sin precedentes para la pers
 											</div>
 											<div className="text-right">
 												<div className="flex items-center gap-2">
-													<div className="text-sm text-gray-400 line-through">
+													<div className="text-sm text-gray-500 line-through">
 														{override.originalScore}/{criterion?.maxScore}
 													</div>
 													<div className="text-lg font-bold text-purple-600">
