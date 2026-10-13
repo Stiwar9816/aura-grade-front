@@ -8,14 +8,11 @@ import { USER_ROLE_STUDENTS } from "@/gql/User";
 import { useCourse } from "@/hooks";
 import { UserRole, UsersStats } from "@/interface";
 import {
-  faCancel,
   faEdit,
   faGraduationCap,
   faMagnifyingGlass,
   faRemove,
   faTrash,
-  faXmark,
-  faXmarkCircle,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import SectionHeader from "@/components/Common/SectionHeader";

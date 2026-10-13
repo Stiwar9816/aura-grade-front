@@ -6,6 +6,7 @@ import {
 } from "@apollo/client";
 import {CombinedGraphQLErrors} from "@apollo/client/errors";
 import {ErrorLink} from "@apollo/client/link/error";
+import { redirect } from "next/navigation";
 
 const getStatusCode = (error: unknown) => {
 	if (typeof error !== "object" || error === null || !("statusCode" in error)) {
@@ -30,7 +31,7 @@ const clearSessionAndRedirect = () => {
 		method: "POST",
 		credentials: "same-origin",
 	}).finally(() => {
-		window.location.href = "/login";
+		redirect("/login");
 	});
 };
 

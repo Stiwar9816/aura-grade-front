@@ -5,6 +5,7 @@ import {STANDARD_GRADE_MAX} from "@/utils/gradeScale";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faInbox} from "@fortawesome/free-solid-svg-icons";
 import {normalizeReEvaluationStatus} from "@/utils/reevaluationRequests";
+import { redirect } from "next/navigation";
 
 const SubmissionTracker: React.FC = () => {
 	const {submissions: dataSubmissions, loading, error} = useSubmission();
@@ -301,7 +302,7 @@ const SubmissionTracker: React.FC = () => {
 										<div className="flex gap-2">
 											<button
 												onClick={() =>
-													(window.location.href = `/evaluation?submission=${submission.id}`)
+													redirect(`/evaluation?submission=${submission.id}`)
 												}
 												className="px-3 py-1.5 bg-electric-500 text-white text-sm rounded-lg hover:bg-electric-600"
 											>

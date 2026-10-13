@@ -4,7 +4,6 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faExclamationTriangle,
   faFileText,
-  faHourglass,
   faHourglassHalf,
   faSearch,
 } from "@fortawesome/free-solid-svg-icons";

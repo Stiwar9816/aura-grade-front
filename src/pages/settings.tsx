@@ -38,6 +38,7 @@ import {
 	notifySuccess,
 	notifyWarning,
 } from "@/utils/toastNotify";
+import { redirect } from "next/navigation";
 
 type PrivacySettings = {
 	profileVisible: boolean;
@@ -227,7 +228,7 @@ const SettingsPage: React.FC = () => {
 			});
 			window.localStorage.removeItem(settingsKey);
 			await logout();
-			window.location.href = "/login";
+			redirect("/login");
 		} catch (error) {
 			const message =
 				error instanceof Error
