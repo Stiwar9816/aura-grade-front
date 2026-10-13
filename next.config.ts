@@ -1,5 +1,5 @@
 import type { NextConfig } from "next";
-import { withSentryConfig } from "@sentry/nextjs";
+import { withSentryConfig } from "@sentry/nextjs/config";
 
 const nextConfig: NextConfig = {
 	async headers() {
@@ -27,6 +27,7 @@ export default withSentryConfig(nextConfig, {
 	project: process.env.SENTRY_PROJECT,
 	authToken: process.env.SENTRY_AUTH_TOKEN,
 	silent: !process.env.CI,
+	telemetry:false,
 	release: {
 		name: process.env.NEXT_PUBLIC_SENTRY_RELEASE,
 	},
