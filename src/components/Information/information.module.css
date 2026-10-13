@@ -1,0 +1,57 @@
+.page {min-height:100vh; font-size:16px; line-height:1.65;}
+.header {border-bottom:1px solid var(--home-line); background:var(--home-surface);}
+.topbar,.navigation,.main,.footer {width:min(1120px,calc(100% - 64px)); margin-inline:auto;}
+.topbar {display:flex; align-items:center; justify-content:space-between; gap:16px; padding-block:20px;}
+.actions {display:flex; align-items:center; gap:12px;}
+.navigation {display:flex; gap:28px; flex-wrap:wrap;}
+.navigation a {min-height:48px; display:flex; align-items:center; border-bottom:3px solid transparent; color:var(--home-muted); font-size:14px;}
+.navigation a[aria-current] {color:var(--home-brand); border-color:var(--home-brand); font-weight:650;}
+.hero {padding:64px 0 36px; max-width:850px;}
+.eyebrow {font-size:12px; font-weight:700; letter-spacing:.15em; text-transform:uppercase; color:var(--home-brand); margin-bottom:14px;}
+.hero h1 {font-size:clamp(32px,4.5vw,54px); line-height:1.12; font-weight:650; letter-spacing:-.035em; text-wrap:balance;}
+.description {color:var(--home-muted); margin-top:20px; font-size:18px; max-width:700px;}
+.grid {display:grid; grid-template-columns:245px minmax(0,1fr); gap:32px; align-items:start;}
+.sidebar {position:sticky; top:24px; display:grid; gap:24px;}
+.panel {background:var(--home-surface); border:1px solid var(--home-line); border-radius:18px; padding:28px;}
+.panel h2,.section h2 {font-size:21px; font-weight:650; line-height:1.4; margin-bottom:12px;}
+.panel p,.section p {color:var(--home-muted);}
+.categories {display:flex; flex-direction:column; gap:6px;}
+.categories button,.categories a {display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:48px; text-align:left; padding:10px 14px; border-radius:10px; color:var(--home-muted); font-size:14px; cursor:pointer;}
+.categories button[aria-pressed=true] {background:var(--home-soft); color:var(--home-brand); font-weight:650;}
+.categories a:hover,.categories button:hover {background:var(--home-soft); color:var(--home-brand);}
+.categories span {font-variant-numeric:tabular-nums; font-size:12px;}
+.search {margin-bottom:32px; max-width:800px;}
+.search label {display:block; font-weight:600; margin-bottom:10px;}
+.search input {width:100%; min-height:58px; padding:14px 18px; border:1px solid var(--home-line); border-radius:12px; background:var(--home-surface); color:var(--home-text); font-size:16px;}
+.search input::placeholder {color:var(--home-muted); opacity:1;}
+.stack {display:grid; gap:24px; min-width:0;}
+.count {font-size:14px; margin-bottom:24px;}
+.faq {border-top:1px solid var(--home-line);}
+.faq summary {padding:20px 4px; cursor:pointer; font-weight:600; line-height:1.5;}
+.faq[open] summary {color:var(--home-brand);}
+.faq p {padding:0 4px 24px; line-height:1.8;}
+.link {display:inline-flex; align-items:center; min-height:44px; color:var(--home-brand); text-decoration:underline; text-underline-offset:4px; overflow-wrap:anywhere;}
+.notice {border-left:3px solid var(--home-accent); background:var(--home-soft); padding:16px 20px; border-radius:0 10px 10px 0; margin-top:20px; color:var(--home-text)!important; font-size:14px;}
+.steps {list-style:decimal; padding-left:22px; color:var(--home-muted);}
+.steps li+li {margin-top:12px;}
+.section {scroll-margin-top:24px; padding:28px 0; border-bottom:1px solid var(--home-line);}
+.section:first-of-type {padding-top:0;}
+.section:last-of-type {border-bottom:0;}
+.date {font-size:13px; color:var(--home-muted); margin-bottom:28px;}
+.footer {display:flex; justify-content:space-between; gap:20px; flex-wrap:wrap; padding:28px 0; margin-top:64px; border-top:1px solid var(--home-line); font-size:14px; color:var(--home-muted);}
+.footer a {min-height:44px; display:inline-flex; align-items:center; gap:8px; color:var(--home-brand);}
+.page :is(a,button,input,summary):focus-visible {outline:3px solid var(--home-brand); outline-offset:4px;}
+@media(max-width:760px) {
+ .topbar,.navigation,.main,.footer {width:calc(100% - 32px);}
+ .hero {padding-top:40px;}
+ .grid {grid-template-columns:minmax(0,1fr); gap:24px;}
+ .sidebar {position:static;}
+ .categories {flex-direction:row; flex-wrap:wrap;}
+ .categories button,.categories a {font-size:14px;}
+ .panel {padding:22px;}
+ .topbar {gap:8px;}
+ .topbar img {width:125px;}
+ .actions {gap:8px;}
+ .navigation {gap:20px;}
+}
+@media(prefers-reduced-motion:reduce) {.page * {scroll-behavior:auto;}}

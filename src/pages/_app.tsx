@@ -64,6 +64,20 @@ export default function App({ Component, pageProps }: AppProps) {
             {publicPage && <meta name="description" content={publicPage.description} />}
             {publicPage && <meta property="og:title" content={publicPage.title} />}
             {publicPage && <meta property="og:description" content={publicPage.description} />}
+            {publicPage && <meta property="og:type" content="website" />}
+            {publicPage && <meta property="og:locale" content="es_CO" />}
+            {publicPage && <meta property="og:site_name" content="AuraGrade" />}
+            {publicPage && siteOrigin && <meta property="og:url" content={`${siteOrigin}${pathname}`} />}
+            {publicPage && siteOrigin && <meta property="og:image" content={`${siteOrigin}${publicPage.image}`} />}
+            {publicPage && <meta property="og:image:width" content="1200" />}
+            {publicPage && <meta property="og:image:height" content="630" />}
+            {publicPage && <meta property="og:image:type" content="image/png" />}
+            {publicPage && <meta property="og:image:alt" content={publicPage.imageAlt} />}
+            {publicPage && <meta name="twitter:card" content="summary_large_image" />}
+            {publicPage && <meta name="twitter:title" content={publicPage.title} />}
+            {publicPage && <meta name="twitter:description" content={publicPage.description} />}
+            {publicPage && siteOrigin && <meta name="twitter:image" content={`${siteOrigin}${publicPage.image}`} />}
+            {publicPage && <meta name="twitter:image:alt" content={publicPage.imageAlt} />}
             {publicPage && siteOrigin && <link rel="canonical" href={`${siteOrigin}${pathname}`} />}
           </Head>
           <Component {...pageProps} />

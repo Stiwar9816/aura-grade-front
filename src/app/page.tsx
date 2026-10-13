@@ -3,64 +3,83 @@ import {publicPages, siteOrigin} from '@/lib/site';
 import Image from 'next/image';
 import Link from 'next/link';
 import HomeAccess from '@/components/HomeAccess';
+import PlanetBackground from '@/components/Home/PlanetBackground';
+import ThemeSelect from '@/components/Home/ThemeSelect';
+import ProductFeatures, {HomeFaq} from '@/components/Home/ProductFeatures';
+import styles from './home.module.css';
 
 export const metadata: Metadata = {
  ...(siteOrigin ? {alternates: {canonical: siteOrigin}} : {}),
- openGraph: {title: publicPages['/'].title, description: publicPages['/'].description, type: 'website', locale: 'es_CO', siteName: 'AuraGrade', ...(siteOrigin ? {url: siteOrigin, images: [{url: `${siteOrigin}/logo.png`, width: 775, height: 294, alt: 'AuraGrade'}]} : {})},
- twitter: {card: 'summary', title: publicPages['/'].title, description: publicPages['/'].description},
+ openGraph: {title: publicPages['/'].title, description: publicPages['/'].description, type: 'website', locale: 'es_CO', siteName: 'AuraGrade', ...(siteOrigin ? {url: siteOrigin, images: [{url: `${siteOrigin}${publicPages['/'].image}`, width: 1200, height: 630, alt: publicPages['/'].imageAlt}]} : {})},
+ twitter: {card: 'summary_large_image', title: publicPages['/'].title, description: publicPages['/'].description, ...(siteOrigin ? {images: [{url: `${siteOrigin}${publicPages['/'].image}`, alt: publicPages['/'].imageAlt}]} : {})},
 };
 
 const criteria = [
- {name: 'Argumentación', weight: '30 %', score: '4,0'},
- {name: 'Uso de fuentes', weight: '20 %', score: '3,5'},
- {name: 'Análisis crítico', weight: '30 %', score: '4,5'},
- {name: 'Comunicación', weight: '20 %', score: '4,0'},
+ {name: 'Argumentación', weight: '30 %', score: '4,0', fill: '80%'},
+ {name: 'Uso de fuentes', weight: '20 %', score: '3,5', fill: '70%'},
+ {name: 'Análisis crítico', weight: '30 %', score: '4,5', fill: '90%'},
+ {name: 'Comunicación', weight: '20 %', score: '4,0', fill: '80%'},
 ];
+const steps = [
+ {title: 'Define el criterio.', text: 'Organiza el curso y la tarea. Establece una rúbrica con criterios y ponderaciones que el estudiante pueda consultar antes de entregar.', tag: 'Rúbricas y tareas'},
+ {title: 'Revisa la evidencia.', text: 'La IA prepara una propuesta a partir de la entrega y la rúbrica. Contrasta los resultados, ajusta la nota y aporta tu retroalimentación.', tag: 'Evaluación asistida'},
+ {title: 'Publica con fundamento.', text: 'Comparte la calificación y las observaciones cuando estén listas. El estudiante consulta el resultado y puede solicitar una revisión.', tag: 'Retroalimentación'},
+];
+
 export default function HomePage() {
- return <div className="min-h-screen bg-white text-gray-900">
+ return <div className={styles.home}>
   <a href="#main-content" className="skip-link">Saltar al contenido</a>
-  <header className="border-b border-gray-200">
-   <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-5 py-4 sm:px-8">
-    <Link href="/" aria-label="AuraGrade — Inicio"><Image src="/logo.png" width={190} height={72} alt="AuraGrade" priority className="h-auto w-36 sm:w-48" /></Link>
-    <nav aria-label="Navegación principal" className="flex items-center gap-5 text-sm font-medium"><Link href="#proceso" className="hidden sm:block text-gray-600 hover:text-electric-600">Cómo funciona</Link><Link href="/help" className="hidden sm:block text-gray-600 hover:text-electric-600">Ayuda</Link><HomeAccess /></nav>
+  <PlanetBackground />
+  <header className={styles.header}>
+   <div className={styles.nav}>
+    <Link href="/" aria-label="AuraGrade — Inicio" className={styles.brand}><Image src="/logo.png" width={190} height={72} alt="AuraGrade" priority /></Link>
+    <nav aria-label="Navegación principal" className={styles.navLinks}><a href="#funciones">Funciones</a><a href="#comunidad">Para quién</a><a href="#proceso">Cómo funciona</a><Link href="/help">Ayuda</Link></nav>
+    <div className={styles.navActions}><ThemeSelect /><HomeAccess /></div>
    </div>
   </header>
   <main id="main-content" tabIndex={-1}>
-   <section className="border-b border-gray-200 bg-background-bone">
-    <div className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-12 sm:px-8 sm:py-16 lg:grid-cols-[1fr_1.05fr] lg:gap-14 lg:py-20">
-     <div>
-      <p className="page-eyebrow mb-5">Evaluación académica con rúbricas</p>
-      <h1 className="text-4xl font-semibold leading-[1.08] tracking-tight text-gray-900 sm:text-5xl lg:text-6xl">Cada nota,<br /><span className="text-electric-600">con fundamento.</span></h1>
-      <p className="mt-6 max-w-md text-lg leading-relaxed text-gray-600">Define los criterios. Revisa las evidencias. Publica una evaluación que tus estudiantes puedan comprender.</p>
-      <div className="mt-8 flex flex-wrap items-center gap-4"><HomeAccess primary /><Link href="/register" className="min-h-11 inline-flex items-center text-sm font-semibold text-electric-700">Solicitar una cuenta <span aria-hidden="true" className="ml-2">↗</span></Link></div>
-      <p className="mt-5 max-w-sm text-sm text-gray-600">La IA prepara un borrador. El docente revisa y decide qué publicar.</p>
-     </div>
-     <figure className="min-w-0 rounded-xl border border-gray-200 bg-white shadow-sm">
-      <figcaption className="flex flex-wrap items-center justify-between gap-2 border-b border-gray-200 px-5 py-4"><span className="text-sm font-semibold">Revisión con rúbrica</span><span className="rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-800">Ejemplo ilustrativo</span></figcaption>
-      <div className="p-4 sm:p-5">
-       <div className="mb-4 flex justify-between gap-3 text-xs text-gray-600"><span>Ensayo · Análisis y argumentación</span><span>Escala 0–5</span></div>
-       <table className="w-full text-left text-sm"><caption className="sr-only">Ejemplo de calificaciones por criterio, sin datos de estudiantes</caption><thead className="border-y border-gray-200 bg-gray-50 text-xs text-gray-600"><tr><th scope="col" className="py-3 pl-3 font-medium">Criterio</th><th scope="col" className="px-2 font-medium">Peso</th><th scope="col" className="pr-3 text-right font-medium">Nota</th></tr></thead><tbody>{criteria.map(c => <tr key={c.name} className="border-b border-gray-100"><th scope="row" className="py-4 pl-3 font-medium">{c.name}</th><td className="px-2 text-gray-600">{c.weight}</td><td className="pr-3 text-right font-semibold text-electric-700">{c.score}</td></tr>)}</tbody></table>
-       <div className="mt-4 rounded-lg border-l-2 border-deep-purple bg-gray-50 p-4"><p className="text-xs font-semibold text-gray-600">Observación del docente · Ejemplo</p><p className="mt-2 text-sm leading-relaxed text-gray-700">La postura es clara y está respaldada por fuentes. Explica cómo la evidencia citada sostiene tu conclusión.</p></div>
-       <div className="mt-5 flex items-end justify-between border-t border-gray-200 pt-4"><div><p className="text-xs text-gray-600">Resultado ilustrativo</p><p className="mt-1 text-2xl font-semibold tabular-nums text-electric-700">4,1 <span className="text-sm font-normal text-gray-500">/ 5</span></p></div><span className="rounded-md border border-gray-200 px-3 py-2 text-xs font-medium text-gray-600">Revisión docente</span></div>
+   <section className={styles.hero} aria-labelledby="welcome-title">
+    <div className={styles.heroAtmosphere} aria-hidden="true"><div className={styles.orbit}/><div className={styles.orbit}/><div className={styles.orbit}/></div>
+    <div className={styles.heroCopy}>
+     <p className={styles.intro}><span aria-hidden="true"/>Evaluación académica con rúbricas</p>
+     <h1 id="welcome-title">Cada nota,<br/>con fundamento.</h1>
+     <p className={styles.lead}>Más claridad para aprender. Más criterio para evaluar.</p>
+     <p className={styles.description}>Un espacio para estudiantes, docentes e instituciones. Conecta cursos, entregas y retroalimentación, con IA de apoyo y la decisión en manos del docente.</p>
+     <div className={styles.actions}><HomeAccess primary /><a href="#comunidad" className={styles.secondary}>Descubre tu espacio <span aria-hidden="true">↓</span></a></div>
+     <p className={styles.accessNote}>¿Tu institución usa AuraGrade? <Link href="/register">Solicita una cuenta</Link></p>
+    </div>
+    <div className={styles.previewWrap} id="evaluacion">
+     <div className={styles.previewLabel}><span>Así se construye una evaluación</span><span className={styles.example}>Ejemplo ilustrativo</span></div>
+     <figure className={styles.preview}>
+      <figcaption className={styles.previewHeading}><div><span className={styles.documentIcon} aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8Z"/><path d="M14 3v5h5M8 12h8M8 16h5"/></svg></span><div><strong>Ensayo argumentativo</strong><p>Análisis y uso de fuentes</p></div></div><span className={styles.reviewStatus}>Revisión docente</span></figcaption>
+      <div className={styles.previewBody}>
+       <div className={styles.rubric}>
+        <div className={styles.panelTitle}><h2>Rúbrica de evaluación</h2><span>Escala 0–5</span></div>
+        <table><caption className="sr-only">Calificaciones ilustrativas por criterio, sin datos de estudiantes</caption><thead><tr><th scope="col">Criterio</th><th scope="col">Peso</th><th scope="col">Nota</th></tr></thead><tbody>{criteria.map(c => <tr key={c.name}><th scope="row">{c.name}<span className={styles.scoreTrack} aria-hidden="true"><span style={{width: c.fill}}/></span></th><td>{c.weight}</td><td>{c.score}</td></tr>)}</tbody></table>
+       </div>
+       <div className={styles.feedback}>
+        <div className={styles.panelTitle}><h2>Del criterio al aprendizaje</h2></div>
+        <p className={styles.feedbackLabel}>Observación del docente · Ejemplo</p>
+        <blockquote>“La postura es clara y está respaldada por fuentes. Explica cómo la evidencia citada sostiene tu conclusión.”</blockquote>
+        <div className={styles.result}><div><span>Resultado ilustrativo</span><p>4,1 <small>/ 5</small></p></div><span className={styles.resultNote}>Criterios visibles.<br/>Una nota explicada.</span></div>
+       </div>
       </div>
+      <div className={styles.previewFooter}><span><span aria-hidden="true">✓</span> La publicación requiere revisión docente</span><span>Borrador → Revisión → Publicación</span></div>
      </figure>
     </div>
    </section>
-   <section id="proceso" className="mx-auto max-w-6xl px-5 py-14 sm:px-8 sm:py-16">
-    <p className="page-eyebrow">Un proceso claro</p><h2 className="mt-3 text-3xl font-semibold tracking-tight">Del criterio a la retroalimentación.</h2>
-    <ol className="mt-9 grid gap-8 md:grid-cols-3">{[
-     ['Definir', 'El docente establece los criterios y sus ponderaciones. El estudiante puede consultar la rúbrica antes de entregar.'],
-     ['Revisar', 'La IA genera una propuesta a partir de la entrega y la rúbrica. El docente contrasta el resultado y ajusta la evaluación.'],
-     ['Publicar', 'La nota y las observaciones llegan al estudiante después de la revisión docente. Los borradores se mantienen separados.'],
-    ].map(([title, description], index) => <li key={title} className="border-t border-gray-200 pt-5"><span className="text-sm font-semibold tabular-nums text-deep-purple">0{index + 1}</span><h3 className="mt-4 text-xl font-semibold">{title}</h3><p className="mt-3 text-sm leading-relaxed text-gray-600">{description}</p></li>)}</ol>
+   <ProductFeatures />
+   <section id="proceso" className={styles.process} aria-labelledby="process-title">
+    <div className={styles.sectionHeading}><p className={styles.kicker}>Un proceso claro</p><h2 id="process-title">Del criterio a la<br/>retroalimentación.</h2><p>Cada etapa tiene un propósito. Cada decisión conserva el contexto que la sustenta.</p></div>
+    <ol className={styles.steps}>{steps.map((step, index) => <li key={step.title}><div className={styles.stepTop}><span>0{index + 1}</span><span>{step.tag}</span></div><h3>{step.title}</h3><p>{step.text}</p></li>)}</ol>
    </section>
-   <section className="border-y border-gray-200 bg-background-bone">
-    <div className="mx-auto grid max-w-6xl gap-8 px-5 py-12 sm:px-8 md:grid-cols-2 md:gap-16">
-     <div><p className="page-eyebrow">Criterio docente, herramientas de apoyo</p><h2 className="mt-4 text-3xl font-semibold tracking-tight">La decisión final sigue siendo del docente.</h2></div>
-     <div className="space-y-5 text-base leading-relaxed text-gray-600"><p>Una sugerencia automática requiere revisión. AuraGrade diferencia el borrador de IA de los resultados publicados y permite consultar el contexto de cada entrega.</p><p>Antes de subir un documento, revisa las condiciones de tu institución y qué información es necesaria para la actividad.</p><div className="flex flex-wrap gap-5 text-sm font-semibold text-electric-700"><Link href="/help">Conocer el proceso →</Link><Link href="/privacy">Uso de los datos →</Link></div></div>
-    </div>
+   <section className={styles.control} aria-labelledby="control-title">
+    <div><p className={styles.kicker}>Criterio docente, herramientas de apoyo</p><h2 id="control-title">La decisión final<br/>sigue siendo tuya.</h2><p>Una sugerencia automática necesita una mirada docente. Revisa la entrega, contrasta la rúbrica y ajusta la evaluación antes de compartirla.</p><Link href="/help" className={styles.textLink}>Explorar la guía de AuraGrade <span aria-hidden="true">↗</span></Link></div>
+    <div className={styles.controlList}><article><span aria-hidden="true">01</span><div><h3>El borrador tiene su lugar</h3><p>La propuesta de IA permanece separada de la evaluación publicada.</p></div></article><article><span aria-hidden="true">02</span><div><h3>El estudiante conoce el criterio</h3><p>Consulta la rúbrica de la tarea y recibe las observaciones que publica el docente.</p></div></article><article><span aria-hidden="true">03</span><div><h3>El contexto acompaña la nota</h3><p>La entrega, los criterios y la retroalimentación orientan la revisión académica.</p></div></article></div>
    </section>
+   <HomeFaq />
+   <section className={styles.closing} aria-labelledby="closing-title"><p className={styles.kicker}>Tu próximo paso</p><h2 id="closing-title">Una evaluación más clara.<br/>Desde la primera rúbrica.</h2><p>Accede a tus cursos, tareas y evaluaciones en AuraGrade.</p><div className={styles.actions}><HomeAccess primary/><Link href="/register" className={styles.secondary}>Solicitar una cuenta</Link></div><small>El registro puede requerir aprobación de tu institución.</small></section>
   </main>
-  <footer className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-5 px-5 py-7 text-sm text-gray-600 sm:px-8"><p>AuraGrade · Evaluación académica</p><nav aria-label="Información y soporte" className="flex flex-wrap gap-5"><Link href="/help">Ayuda</Link><Link href="/privacy">Privacidad</Link><Link href="/terms">Condiciones de uso</Link></nav></footer>
+  <footer className={styles.footer}><p>AuraGrade <span>Evaluación académica con criterio.</span></p><nav aria-label="Información y soporte"><Link href="/help">Ayuda</Link><Link href="/privacy">Privacidad</Link><Link href="/terms">Condiciones de uso</Link></nav></footer>
  </div>;
 }

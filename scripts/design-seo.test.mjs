@@ -17,3 +17,24 @@ test('sitemap source contains only public information, never account or academic
  assert.deepEqual(Object.keys(publicPages).sort(), ['/', '/help', '/privacy', '/terms']);
  for (const page of Object.values(publicPages)) { assert.ok(page.title); assert.ok(page.description.length > 40); }
 });
+
+test('sitemap uses the supplied origin and includes accessible public image URLs', () => {
+ const entries = fixture.exports.buildSitemap('https://campus.example');
+ assert.equal(entries.length, 4);
+ for (const entry of entries) {
+  assert.equal(new URL(entry.url).origin, 'https://campus.example');
+  assert.equal(entry.images.length, 1);
+  assert.match(entry.images[0], /^https:\/\/campus\.example\/seo\/[^/]+\.png$/);
+ }
+ assert.deepEqual(fixture.exports.buildSitemap(''), []);
+});
+
+test('every public page has a real 1200 by 630 PNG preview and descriptive alternative text', () => {
+ for (const page of Object.values(publicPages)) {
+  const bytes = readFileSync(new URL(`../public${page.image}`, import.meta.url));
+  assert.equal(bytes.subarray(1, 4).toString(), 'PNG');
+  assert.equal(bytes.readUInt32BE(16), 1200);
+  assert.equal(bytes.readUInt32BE(20), 630);
+  assert.ok(page.imageAlt.length > 40);
+ }
+});

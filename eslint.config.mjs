@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Unmodified third-party WebAssembly decoder distributed with Three.js.
+    "public/landing/draco/**",
   ]),
 ]);
 
