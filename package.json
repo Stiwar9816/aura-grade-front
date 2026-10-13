@@ -11,7 +11,9 @@
 		"build": "next build --webpack",
 		"start": "next start",
 		"lint": "eslint",
-		"test:security": "node --test scripts/security.test.cjs"
+		"test:security": "node --test scripts/security.test.cjs",
+		"test": "node --test scripts/*.test.mjs",
+		"typecheck": "tsc --noEmit --incremental false"
 	},
 	"dependencies": {
 		"@apollo/client": "^4.2.12",

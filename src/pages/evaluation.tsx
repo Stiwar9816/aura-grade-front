@@ -1,3 +1,4 @@
+import {createCriterionDrafts, buildReviewedEvaluation, type CriterionDraft} from "@/utils/gradingReview";
 import React, {useEffect, useState} from "react";
 import {useRouter} from "next/router";
 import {useMutation} from "@apollo/client/react";
@@ -104,40 +105,6 @@ const formatDateTime = (date?: string) => {
 const getReEvaluationRequestTime = (request: ReEvaluationRequest) =>
 	request.reviewedAt || request.updatedAt || request.createdAt;
 
-type ManualCriterionDraft = {score: string; feedback: string};
-
-const parseManualCriterionDrafts = (
-	value: unknown,
-): Record<string, ManualCriterionDraft> => {
-	let parsed = value;
-	if (typeof parsed === "string") {
-		try {
-			parsed = JSON.parse(parsed);
-		} catch {
-			return {};
-		}
-	}
-	if (!Array.isArray(parsed)) return {};
-
-	return Object.fromEntries(
-		parsed.flatMap((item) => {
-			if (typeof item !== "object" || item === null) return [];
-			const record = item as Record<string, unknown>;
-			if (typeof record.criteriaId !== "string") return [];
-			return [
-				[
-					record.criteriaId,
-					{
-						score: typeof record.score === "number" ? String(record.score) : "",
-						feedback:
-							typeof record.feedback === "string" ? record.feedback : "",
-					},
-				],
-			];
-		}),
-	);
-};
-
 const getReEvaluationStatusContent = (request?: ReEvaluationRequest | null) => {
 	const status = normalizeReEvaluationStatus(request?.status);
 
@@ -204,7 +171,7 @@ const EvaluationPage: React.FC = () => {
 		refetch: refetchReEvaluationRequests,
 	} = useReEvaluationRequests();
 	const [showComparison, setShowComparison] = useState<boolean>(false);
-	const [finalScore, setFinalScore] = useState<string>("");
+
 	const [finalFeedback, setFinalFeedback] = useState<string>("");
 	const [publishError, setPublishError] = useState<string | null>(null);
 	const [publishSuccess, setPublishSuccess] = useState<string | null>(null);
@@ -214,8 +181,8 @@ const EvaluationPage: React.FC = () => {
 		null,
 	);
 	const [teacherResponse, setTeacherResponse] = useState<string>("");
-	const [manualCriteria, setManualCriteria] = useState<
-		Record<string, ManualCriterionDraft>
+	const [criteriaDrafts, setCriteriaDrafts] = useState<
+		Record<string, CriterionDraft>
 	>({});
 	const [showReevaluationForm, setShowReevaluationForm] =
 		useState<boolean>(false);
@@ -234,7 +201,8 @@ const EvaluationPage: React.FC = () => {
 			setReevaluationReason("");
 			setReevaluationError(null);
 			setTeacherResponse("");
-			setManualCriteria({});
+			setCriteriaDrafts({});
+			setFinalFeedback("");
 			setShowReevaluationForm(false);
 		});
 	}, [submissionId]);
@@ -505,58 +473,25 @@ const EvaluationPage: React.FC = () => {
 		submissionDetail?.evaluation?.status === "PUBLISHED";
 	const isPublishedEvaluation =
 		!hasPendingReevaluationRequest && hasPublishedResult;
+
 	const isManualEvaluation = submissionDetail?.evaluation?.origin === "MANUAL";
 	const canCreateManualDraft = Boolean(
 		user?.role === UserRole.TEACHER &&
 		submissionDetail?.status === "FAILED" &&
 		!submissionDetail?.evaluation,
 	);
-	const showManualEditor = canCreateManualDraft || isManualEvaluation;
+	const showCriteriaEditor = canCreateManualDraft || Boolean(submissionDetail?.evaluation);
 	const teacherActionLoading =
 		publishing || resolvingReevaluationRequest || creatingManualDraft;
 	const scoreDraft = evaluationData.overallScore;
 	const feedbackDraft = evaluationData.generalFeedback;
 	const maxScore = evaluationData.maxScore || STANDARD_GRADE_MAX;
-	const existingManualCriteria = parseManualCriterionDrafts(
-		submissionDetail?.evaluation?.detailedFeedback,
-	);
-	const buildManualDetailedFeedback = () => {
-		const criteria = submissionDetail?.assignment?.rubric?.criteria || [];
-		return criteria.flatMap((criterion) => {
-			const draft = {
-				...(existingManualCriteria[criterion.id] || {
-					score: "",
-					feedback: "",
-				}),
-				...(manualCriteria[criterion.id] || {}),
-			};
-			const feedback = draft.feedback.trim();
-			const score = draft.score === "" ? undefined : Number(draft.score);
-			if (
-				score !== undefined &&
-				(!Number.isFinite(score) || score < 0 || score > criterion.maxPoints)
-			)
-				throw new Error(
-					`La puntuación de “${criterion.title}” debe estar entre 0 y ${criterion.maxPoints}.`,
-				);
-			if (score === undefined)
-				throw new Error(`Debes calificar el criterio “${criterion.title}”.`);
-			const weightedContribution = Number(
-				((score * criterion.weight) / 100).toFixed(2),
-			);
-			return [
-				{
-					criteriaId: criterion.id,
-					name: criterion.title,
-					score: score ?? 0,
-					weight: criterion.weight,
-					weightedContribution,
-					feedback,
-					suggestion: "",
-				},
-			];
-		});
-	};
+	const rubricCriteria = submissionDetail?.assignment?.rubric?.criteria || [];
+	const existingCriteria = createCriterionDrafts(submissionDetail?.evaluation?.detailedFeedback, rubricCriteria);
+	const reviewDrafts = {...existingCriteria, ...criteriaDrafts};
+	const buildDetailedFeedback = () => buildReviewedEvaluation(rubricCriteria, reviewDrafts).detailedFeedback;
+	let reviewScore: number | undefined;
+	try { reviewScore = buildReviewedEvaluation(rubricCriteria, reviewDrafts).totalScore; } catch { /* Incomplete drafts are validated on publication. */ }
 	const relatedAssignment = submissionDetail?.assignment?.id
 		? assignments.find(
 				(assignment) => assignment.id === submissionDetail.assignment.id,
@@ -655,9 +590,9 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
-		let detailedFeedback: ReturnType<typeof buildManualDetailedFeedback>;
+		let detailedFeedback: ReturnType<typeof buildDetailedFeedback>;
 		try {
-			detailedFeedback = buildManualDetailedFeedback();
+			detailedFeedback = buildDetailedFeedback();
 		} catch (criterionError) {
 			const message =
 				criterionError instanceof Error
@@ -669,7 +604,7 @@ const EvaluationPage: React.FC = () => {
 		}
 		const parsedScore = Number(
 			detailedFeedback
-				.reduce((sum, criterion) => sum + criterion.weightedContribution, 0)
+				.reduce((sum, criterion) => sum + (criterion.score * criterion.weight) / 100, 0)
 				.toFixed(2),
 		);
 
@@ -716,7 +651,7 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
-		let parsedScore = Number(finalScore || scoreDraft);
+		let parsedScore = hasPublishedResult ? scoreDraft : reviewScore ?? scoreDraft;
 		const feedbackToPublish = (finalFeedback || feedbackDraft || "").trim();
 
 		if (
@@ -749,20 +684,16 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
-		const notificationId = notifyLoading(
-			pendingReEvaluationRequest
-				? "Publicando nota y resolviendo solicitud..."
-				: "Publicando evaluación...",
-		);
+
 		let detailedFeedback:
-			| ReturnType<typeof buildManualDetailedFeedback>
+			| ReturnType<typeof buildDetailedFeedback>
 			| undefined;
 		try {
-			if (isManualEvaluation) {
-				detailedFeedback = buildManualDetailedFeedback();
+			if (!hasPublishedResult) {
+				detailedFeedback = buildDetailedFeedback();
 				parsedScore = Number(
 					detailedFeedback
-						.reduce((sum, criterion) => sum + criterion.weightedContribution, 0)
+						.reduce((sum, criterion) => sum + (criterion.score * criterion.weight) / 100, 0)
 						.toFixed(2),
 				);
 			}
@@ -776,6 +707,11 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
+		const notificationId = notifyLoading(
+			pendingReEvaluationRequest
+				? "Publicando nota y resolviendo solicitud..."
+				: "Publicando evaluación...",
+		);
 		try {
 			setPublishError(null);
 			setPublishSuccess(null);
@@ -1348,15 +1284,16 @@ const EvaluationPage: React.FC = () => {
 								<div className="w-full lg:w-[420px] space-y-4">
 									<div>
 										<label className="block text-sm font-bold text-gray-700 mb-2">
-											Nota final
+											Nota final ponderada
 										</label>
 										<input
 											type="number"
 											min={0}
 											max={maxScore}
-											step="0.1"
-											value={finalScore}
-											onChange={(event) => setFinalScore(event.target.value)}
+											step="0.01"
+											value={hasPublishedResult ? scoreDraft : reviewScore ?? ""}
+											readOnly
+												aria-label="Nota final calculada"
 											placeholder={`${scoreDraft.toFixed(1)} / ${maxScore}`}
 											disabled={isPublishedEvaluation || teacherActionLoading}
 											className="input-primary"
@@ -1380,7 +1317,7 @@ const EvaluationPage: React.FC = () => {
 										/>
 									</div>
 
-									{showManualEditor &&
+									{showCriteriaEditor &&
 										(submissionDetail?.assignment?.rubric?.criteria?.length ||
 											0) > 0 && (
 											<div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50 p-4">
@@ -1389,13 +1326,13 @@ const EvaluationPage: React.FC = () => {
 														Retroalimentación por criterio
 													</div>
 													<p className="text-xs text-gray-500">
-														Opcional. Puedes registrar puntuación y comentario
+														Califica todos los criterios. La nota final se calcula según sus pesos. Puedes agregar un comentario
 														para cada criterio.
 													</p>
 												</div>
 												{submissionDetail?.assignment.rubric.criteria?.map(
 													(criterion) => {
-														const existing = existingManualCriteria[
+														const existing = existingCriteria[
 															criterion.id
 														] || {
 															score: "",
@@ -1403,7 +1340,7 @@ const EvaluationPage: React.FC = () => {
 														};
 														const draft = {
 															...existing,
-															...(manualCriteria[criterion.id] || {}),
+															...(criteriaDrafts[criterion.id] || {}),
 														};
 														return (
 															<div
@@ -1422,11 +1359,11 @@ const EvaluationPage: React.FC = () => {
 																	<input
 																		type="number"
 																		min={0}
-																		max={criterion.maxPoints}
-																		step="0.1"
+																		max={STANDARD_GRADE_MAX}
+																		step="0.01"
 																		value={draft.score}
 																		onChange={(event) =>
-																			setManualCriteria((current) => ({
+																			setCriteriaDrafts((current) => ({
 																				...current,
 																				[criterion.id]: {
 																					...draft,
@@ -1435,16 +1372,19 @@ const EvaluationPage: React.FC = () => {
 																			}))
 																		}
 																		disabled={
-																			isPublishedEvaluation ||
+																			hasPublishedResult ||
 																			teacherActionLoading
 																		}
-																		placeholder="Puntos"
+																		aria-label={`Nota de ${criterion.title}`}
+															placeholder="Puntos"
 																		className="input-primary"
 																	/>
-																	<input
-																		value={draft.feedback}
+																	<textarea
+																		rows={3}
+ maxLength={3000}
+ value={draft.feedback}
 																		onChange={(event) =>
-																			setManualCriteria((current) => ({
+																			setCriteriaDrafts((current) => ({
 																				...current,
 																				[criterion.id]: {
 																					...draft,
@@ -1453,10 +1393,11 @@ const EvaluationPage: React.FC = () => {
 																			}))
 																		}
 																		disabled={
-																			isPublishedEvaluation ||
+																			hasPublishedResult ||
 																			teacherActionLoading
 																		}
-																		placeholder="Comentario opcional"
+																		aria-label={`Comentario de ${criterion.title}`}
+															placeholder="Comentario opcional"
 																		className="input-primary"
 																	/>
 																</div>

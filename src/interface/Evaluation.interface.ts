@@ -4,6 +4,9 @@ import type {SubmissionDetail} from "./Submission.interface";
 export interface EvaluationCriterionFeedback {
 	id?: string;
 	criteriaId?: string;
+	criterionId?: string;
+	criterion?: string;
+	observations?: string;
 	name?: string;
 	title?: string;
 	score?: number;

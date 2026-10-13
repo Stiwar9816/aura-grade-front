@@ -50,7 +50,7 @@ jobs:
           test -n "$SENTRY_PROJECT" || { echo "::error::Falta la variable o secreto SENTRY_PROJECT"; exit 1; }
           test -n "$NEXT_PUBLIC_SENTRY_DSN" || { echo "::error::Falta la variable o secreto NEXT_PUBLIC_SENTRY_DSN"; exit 1; }
 
-      - run: pnpm test:security
+      - run: pnpm test
       - run: pnpm lint
-      - run: pnpm exec tsc --noEmit
+      - run: pnpm typecheck
       - run: pnpm build
