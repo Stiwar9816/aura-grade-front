@@ -1,6 +1,6 @@
 # Biblioteca oficial: integración web
 
-Implementación autorizada sobre dev en aura-grade-front; backend en aura-grade. Objetivo: completar la biblioteca del curso para docentes y estudiantes antes de migrar y validar Cloudinary real.
+Implementación autorizada sobre dev en aura-grade-front; backend en aura-grade. Objetivo: completar la biblioteca del curso para docentes y estudiantes. La integración y la verificación posterior con Cloudinary real están completas en el entorno local de desarrollo.
 
 ## Diseño
 
@@ -16,11 +16,12 @@ Al cambiar curso/documento/versión se desmonta el estado anterior; cancelar lec
 - [x] BFF REST y cliente tipado, sin dependencias nuevas.
 - [x] Panel compartido de biblioteca, integración en Cursos docente/estudiante, pruebas de presentación y flujo.
 - [x] Suite completa, seguridad, tipos, lint, build y comprobación visual con datos sintéticos; revisión independiente.
-- [x] Verificar backend y preparar cambios para commits locales en dev de ambos proyectos. No aplicar migración, usar Cloudinary real ni hacer push.
+- [x] Verificar backend y crear commits locales en dev de ambos proyectos.
+- [x] Aplicar las migraciones pendientes en desarrollo y verificar Cloudinary real, tras autorización posterior del usuario. Sin push ni despliegue.
 
-## Validación pendiente del entorno
+## Validación del entorno
 
-Las pruebas de interfaz usarán datos sintéticos claramente separados de producción. La migración y la carga/descarga con Cloudinary real se realizarán después de estos commits, como solicitó el usuario.
+La inspección visual usó datos sintéticos. Después de los commits, el 2026-10-24 se aplicaron las migraciones en la base local `auraGradeDB` y se comprobaron las rutas HTTP del BFF contra el backend, PostgreSQL, Redis y Cloudinary reales. Esta comprobación posterior no repitió la inspección visual.
 
 ## Resultado (2026-10-24)
 
@@ -31,9 +32,19 @@ Las pruebas de interfaz usarán datos sintéticos claramente separados de produc
 - Revisión independiente detectó bloqueo de publicación separado del bloqueo de retiro. Reproducido en navegador retrasando `/publish`: antes el retiro seguía habilitado. Corregido compartiendo el bloqueo de `DocumentWorkspace`; repetida la prueba, retiro, actualización, selección de versiones y subida permanecen deshabilitados hasta completar la publicación. Esta regresión se verificó manualmente con respuesta controlada; las pruebas Node no simulan interacción DOM.
 - El servidor de desarrollo preexistente del usuario se conserva. Los servidores temporales de verificación y sus datos sintéticos se retiran al terminar.
 
-## Siguiente etapa operativa
+## Verificación real posterior (2026-10-24)
 
-1. Revisar/aplicar la migración `1792843200000-AddCourseDocumentLibrary` en el entorno destino con su procedimiento habitual.
-2. Conectar este frontend al backend migrado y confirmar carga privada PDF/DOCX, revisión, publicación y descarga con Cloudinary real.
-3. Verificar con cuentas de prueba reales el bloqueo por baja, institución inactiva o matrícula retirada, además del vencimiento de enlaces de descarga.
-4. Continuar con la preparación de actividades y calendario; el RAG y Telegram aún no forman parte de esta entrega.
+- Backend `e87d5369` y frontend `cd975f6` en dev. Migraciones `PreserveEvaluationReviewSnapshots1791806400000` y `AddCourseDocumentLibrary1792843200000` aplicadas en la base local; 30 migraciones aplicadas y ninguna pendiente.
+- Actualizadas las dependencias del contenedor backend con `pnpm install --frozen-lockfile` y reiniciado solo ese servicio: faltaba `pdf-parse` y el proceso anterior todavía no exponía las rutas nuevas. Backend `/api/health`: 200. Frontend existente conservado en puerto 3001.
+- Cuentas, institución y curso temporales; sesiones obtenidas por contraseña y OTP reales. La biblioteca se ejercitó por el BFF con cookie de sesión y origen válido, sin desactivar guards.
+- PDF y DOCX: subida privada, extracción, revisión por hash, publicación y descarga exacta de bytes comprobadas. Repetir la subida PDF con la misma clave no duplicó la versión. Publicar DOCX archivó la primera versión; retirar la publicación conservó el historial.
+- Acceso: sin sesión 401; borrador estudiantil 404; publicar sin revisión 400; estudiante desmatriculado 403; estudiante desactivado con sesión existente 401. Volver a matricular restauró el acceso antes de probar la baja.
+- Descarga: BFF 302 a Cloudinary y `no-store`; original sin firma 401; enlace vencido 401. También se esperó el vencimiento real del enlace de 60 segundos y se comprobó su rechazo sin regenerarlo.
+- Eliminados registros y sesiones temporales. La cuenta Cloudinary conservaba respaldos tras borrar originales; se retiraron exclusivamente los respaldos de los dos archivos de prueba y se verificó que ambos recursos devolvían 404. No se alteró la política general de respaldo.
+- Evidencia detallada en el backend: `docs/verification/2026-10-24-course-library-live.md`. No se llamaron modelos de IA ni se enviaron correos. Institución inactiva y estados de aprobación mantienen cobertura automatizada; no se repitieron en esta prueba real.
+
+## Siguiente etapa
+
+1. Vincular actividades y calendario con las versiones oficiales de guía y cronograma.
+2. Continuar con recuperación RAG autorizada y después Telegram; aún no están implementados.
+3. Aplicar el procedimiento de migración y validación correspondiente cuando se despliegue en otro entorno. Esta verificación fue local, no de producción.
