@@ -1,4 +1,6 @@
 import React, {useState} from "react";
+import CourseLibrary from "@/components/CourseLibrary/CourseLibrary";
+import {useAuth} from "@/hooks";
 import {useRouter} from "next/router";
 import Layout from "@/components/Layout";
 import {ProtectedRoute} from "@/components/Auth";
@@ -66,6 +68,7 @@ const CourseProgressBar: React.FC<{value: number}> = ({value}) => (
 );
 
 const StudentCoursesPage: React.FC = () => {
+	const {user} = useAuth();
 	const router = useRouter();
 	const {courses, loading, error} = useStudentAcademicData();
 	const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
@@ -174,6 +177,7 @@ const StudentCoursesPage: React.FC = () => {
 							<div className="lg:col-span-2">
 								{selectedCourse && (
 									<div className="space-y-6">
+                                        <CourseLibrary key={`${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage={false} />
 										<Card className="bg-white/70 border border-gray-100">
 											<div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
 												<div>

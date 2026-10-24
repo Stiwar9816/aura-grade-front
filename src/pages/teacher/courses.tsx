@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import CourseLibrary from "@/components/CourseLibrary/CourseLibrary";
 import { useQuery } from "@apollo/client/react";
 import Layout from "@/components/Layout";
 import Card from "@/components/Common/Card";
@@ -292,6 +293,7 @@ const CourseManagement: React.FC = () => {
               <div className="lg:col-span-2">
                 {selectedCourse ? (
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    {canManageCourseCatalog && <CourseLibrary key={`${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage />}
                     <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                       <div className="flex justify-between items-center mb-6">
                         <div>
