@@ -302,7 +302,7 @@ test("library client preserves API errors and sends uploads without exposing cre
   }
 });
 
-test("student reader escapes document content and offers no review or publication controls", () => {
+test("student reader stays compact and offers accessible icon actions without review controls", () => {
   const { VersionReader } = load(
     "src/components/CourseLibrary/VersionReader.tsx",
   );
@@ -329,7 +329,10 @@ test("student reader escapes document content and offers no review or publicatio
       downloadUrl: "/private-download",
     }),
   );
-  assert.ok(html.includes("&lt;script&gt;"));
+  assert.ok(!html.includes("&lt;script&gt;"));
+  assert.ok(!html.includes('aria-label="Texto del documento"'));
+  assert.ok(html.includes('aria-label="Previsualizar documento"'));
+  assert.ok(html.includes('aria-label="Descargar original"'));
   assert.ok(html.includes("Descargar original"));
   assert.ok(!html.includes("Publicar versión"));
   assert.ok(!html.includes("Confirmar revisión"));
@@ -367,6 +370,40 @@ test("teacher reader prevents publishing unreadable or unreviewed drafts", () =>
       }),
     );
   assert.ok(render(base).includes("Confirmar revisión"));
+  assert.ok(render(base).includes('aria-label="Texto del documento"'));
+  assert.ok(
+    !render({ ...base, reviewedAt: "2026-10-24" }).includes(
+      'aria-label="Texto del documento"',
+    ),
+  );
+  assert.ok(
+    !render({ ...base, status: "PUBLISHED" }).includes(
+      'aria-label="Texto del documento"',
+    ),
+  );
+  assert.ok(
+    render({
+      ...base,
+      status: "ARCHIVED",
+      reviewedAt: "2026-10-24",
+      canReopen: true,
+    }).includes("Reabrir publicación"),
+  );
+  assert.ok(
+    !render({
+      ...base,
+      status: "ARCHIVED",
+      reviewedAt: "2026-10-24",
+      canReopen: false,
+    }).includes("Reabrir publicación"),
+  );
+  assert.ok(
+    render({
+      ...base,
+      extractedText: "<script>alert(1)</script>",
+      pages: [],
+    }).includes("&lt;script&gt;"),
+  );
   assert.ok(!render(base).includes("Publicar versión"));
   assert.ok(
     render({ ...base, reviewedAt: "2026-10-24" }).includes("Publicar versión"),

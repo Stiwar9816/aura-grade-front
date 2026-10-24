@@ -22,6 +22,7 @@ export type DocumentVersion = {
   createdAt: string;
 };
 export type DocumentDetail = DocumentVersion & {
+  canReopen: boolean;
   extractedText: string;
   pages: { page: number; text: string }[];
 };

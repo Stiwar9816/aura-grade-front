@@ -1,4 +1,10 @@
 import { type FormEvent, useId, useRef, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import {
+  faXmark,
+  faRotateRight,
+  faPlus,
+} from "@fortawesome/free-solid-svg-icons";
 import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import { useConfirm } from "@/context/ConfirmContext";
@@ -231,7 +237,9 @@ export default function CourseLibrary({
                       <button
                         type="button"
                         onClick={() => {
-                          setSelectedId(document.id);
+                          setSelectedId((current) =>
+                            current === document.id ? null : document.id,
+                          );
                           setNotice("");
                         }}
                         aria-pressed={selected?.id === document.id}
@@ -247,7 +255,7 @@ export default function CourseLibrary({
                         </span>
                         <span className="shrink-0 text-sm font-medium text-electric-700 dark:text-blue-200">
                           {selected?.id === document.id
-                            ? "Abierto"
+                            ? "Cerrar"
                             : "Consultar"}
                         </span>
                       </button>
@@ -271,6 +279,7 @@ export default function CourseLibrary({
                   base={`${base}/${selected.id}`}
                   canManage={canManage}
                   onChanged={refresh}
+                  onClose={() => setSelectedId(null)}
                 />
               )}
             </>
@@ -286,11 +295,13 @@ function DocumentWorkspace({
   base,
   canManage,
   onChanged,
+  onClose,
 }: {
   document: CourseDocument;
   base: string;
   canManage: boolean;
   onChanged: () => void;
+  onClose: () => void;
 }) {
   const confirm = useConfirm();
   const [page, setPage] = useState(1);
@@ -300,6 +311,8 @@ function DocumentWorkspace({
     null,
   );
   const fileInput = useRef<HTMLInputElement>(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const uploadId = useId();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<Error | null>(null);
   const [notice, setNotice] = useState("");
@@ -329,6 +342,7 @@ function DocumentWorkspace({
         upload.key,
       );
       setUpload(null);
+      setShowUpload(false);
       if (fileInput.current) fileInput.current.value = "";
       setSelectedId(version.id);
       setPage(1);
@@ -369,9 +383,21 @@ function DocumentWorkspace({
       aria-label={`Documento: ${document.title}`}
       aria-busy={busy || resource.loading}
     >
-      <h3 className="break-words text-lg font-semibold text-gray-900">
-        {document.title}
-      </h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="min-w-0 break-words text-base font-semibold text-gray-900">
+          {document.title}
+        </h3>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onClose}
+          aria-label="Cerrar documento"
+          title="Cerrar documento"
+          className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-electric-500 disabled:opacity-50"
+        >
+          <FontAwesomeIcon icon={faXmark} aria-hidden="true" />
+        </button>
+      </div>
       {error && <ErrorNotice error={error} retry={refresh} />}
       {notice && (
         <p
@@ -391,7 +417,37 @@ function DocumentWorkspace({
         !denied && (
           <fieldset disabled={busy} className="min-w-0 space-y-4">
             {canManage && (
+              <div className="flex items-center justify-between gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setUpload(null);
+                    setShowUpload((value) => !value);
+                  }}
+                  aria-expanded={showUpload}
+                  aria-controls={uploadId}
+                  className="inline-flex min-h-11 items-center gap-2 rounded-lg px-2 text-sm font-medium text-electric-700 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-electric-500"
+                >
+                  <FontAwesomeIcon
+                    icon={showUpload ? faXmark : faPlus}
+                    aria-hidden="true"
+                  />
+                  {showUpload ? "Cancelar carga" : "Nueva versión"}
+                </button>
+                <button
+                  type="button"
+                  onClick={refresh}
+                  aria-label="Actualizar versiones"
+                  title="Actualizar versiones"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-lg text-gray-600 hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-electric-500"
+                >
+                  <FontAwesomeIcon icon={faRotateRight} aria-hidden="true" />
+                </button>
+              </div>
+            )}
+            {canManage && showUpload && (
               <form
+                id={uploadId}
                 onSubmit={submitUpload}
                 className="rounded-lg border border-gray-200 bg-gray-50 p-4"
               >
@@ -460,35 +516,22 @@ function DocumentWorkspace({
               </p>
             ) : (
               <>
-                {canManage && (
-                  <div className="space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <h4 className="text-sm font-semibold text-gray-700">
-                        Historial de versiones
-                      </h4>
-                      <button
-                        type="button"
-                        className="btn-secondary text-sm"
-                        disabled={busy}
-                        onClick={refresh}
+                {canManage && resource.data.total > 1 && (
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="flex min-w-0 items-center gap-2 text-sm text-gray-600">
+                      Versión
+                      <select
+                        value={selected?.id || ""}
+                        onChange={(event) => setSelectedId(event.target.value)}
+                        className="input-primary w-auto min-w-0 text-sm"
                       >
-                        Actualizar versiones
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {resource.data.items.map((version) => (
-                        <button
-                          key={version.id}
-                          type="button"
-                          disabled={busy}
-                          onClick={() => setSelectedId(version.id)}
-                          aria-pressed={selected?.id === version.id}
-                          className={`min-h-11 rounded-lg border px-3 py-2 text-sm ${selected?.id === version.id ? "border-electric-500 bg-electric-50 text-electric-800 dark:bg-slate-800 dark:text-blue-200" : "border-gray-200 text-gray-700 hover:bg-gray-50"}`}
-                        >
-                          V{version.version} · {versionStates[version.status]}
-                        </button>
-                      ))}
-                    </div>
+                        {resource.data.items.map((version) => (
+                          <option key={version.id} value={version.id}>
+                            V{version.version} · {versionStates[version.status]}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                     <Pagination
                       page={page}
                       total={resource.data.total}
@@ -506,23 +549,9 @@ function DocumentWorkspace({
                     busy={busy}
                     onBusyChange={setBusy}
                     onChanged={refresh}
+                    onArchive={() => void archive()}
                   />
                 )}
-                {canManage &&
-                  resource.data.items.some(
-                    (version) => version.status === "PUBLISHED",
-                  ) && (
-                    <div className="border-t border-gray-200 pt-4">
-                      <button
-                        type="button"
-                        className="btn-secondary text-sm"
-                        disabled={busy}
-                        onClick={archive}
-                      >
-                        Retirar publicación
-                      </button>
-                    </div>
-                  )}
               </>
             )}
           </fieldset>
@@ -538,12 +567,14 @@ function VersionWorkspace({
   busy,
   onBusyChange,
   onChanged,
+  onArchive,
 }: {
   base: string;
   canManage: boolean;
   busy: boolean;
   onBusyChange: (busy: boolean) => void;
   onChanged: () => void;
+  onArchive: () => void;
 }) {
   const confirm = useConfirm();
   const [revision, setRevision] = useState(0);
@@ -558,10 +589,18 @@ function VersionWorkspace({
     if (
       action === "publish" &&
       !(await confirm({
-        title: "Publicar versión",
+        title:
+          resource.data.status === "ARCHIVED"
+            ? "Reabrir publicación"
+            : "Publicar versión",
         message:
-          "Esta versión estará disponible para los estudiantes activos del curso y reemplazará la publicación anterior.",
-        confirmLabel: "Publicar versión",
+          resource.data.status === "ARCHIVED"
+            ? "Esta versión volverá a estar disponible para los estudiantes activos del curso."
+            : "Esta versión estará disponible para los estudiantes activos del curso y reemplazará la publicación anterior.",
+        confirmLabel:
+          resource.data.status === "ARCHIVED"
+            ? "Reabrir publicación"
+            : "Publicar versión",
         tone: "info",
       }))
     )
@@ -604,6 +643,7 @@ function VersionWorkspace({
             downloadUrl={`${base}/download`}
             onReview={() => void mutate("review")}
             onPublish={() => void mutate("publish")}
+            onArchive={onArchive}
           />
         )
       )}
