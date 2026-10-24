@@ -95,7 +95,10 @@ export function DocumentPreview({
         event.preventDefault();
         close();
       }}
-      onClose={onClose}
+      onClose={(event) => {
+        // Strict Mode reopens the dialog before the cleanup's queued close event arrives.
+        if (!event.currentTarget.open) onClose();
+      }}
       className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-5xl overflow-y-auto rounded-xl border border-gray-200 bg-white p-0 text-gray-900 shadow-xl backdrop:bg-black/50"
     >
       <div className="flex items-start justify-between gap-3 border-b border-gray-200 p-4">
