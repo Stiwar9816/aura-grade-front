@@ -386,3 +386,103 @@ test("teacher reader prevents publishing unreadable or unreviewed drafts", () =>
     ),
   );
 });
+
+test("PDF preview reauthorizes with backend and serves private bytes inline without forwarding credentials to Cloudinary", async () => {
+  const { handleCourseDocuments } = load(
+    "src/lib/server/courseDocumentsProxy.ts",
+  );
+  const original = global.fetch;
+  const calls = [];
+  const bytes = Buffer.from("%PDF-1.4\npreview");
+  global.fetch = async (url, options) => {
+    calls.push({ url: String(url), options });
+    return calls.length === 1
+      ? Response.json({
+          url: "https://api.cloudinary.com/v1_1/demo/raw/download?signature=example",
+        })
+      : new Response(bytes, {
+          headers: { "content-type": "application/octet-stream" },
+        });
+  };
+  try {
+    const response = await handleCourseDocuments(
+      request(),
+      {
+        courseId,
+        segments: [documentId, "versions", versionId, "preview"],
+      },
+      "GET",
+    );
+    assert.equal(response.status, 200);
+    assert.match(calls[0].url, /\/download$/);
+    assert.equal(
+      calls[0].options.headers.get("authorization"),
+      "Bearer valid-session",
+    );
+    assert.equal(
+      new Headers(calls[1].options.headers).get("authorization"),
+      null,
+    );
+    assert.equal(new Headers(calls[1].options.headers).get("cookie"), null);
+    assert.equal(calls[1].options.redirect, "error");
+    assert.equal(response.headers.get("content-type"), "application/pdf");
+    assert.match(response.headers.get("content-disposition"), /^inline/);
+    assert.equal(response.headers.get("cache-control"), "no-store");
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), bytes);
+  } finally {
+    global.fetch = original;
+  }
+});
+
+test("PDF preview denies revoked access, external destinations, non-PDF content and oversized files", async () => {
+  const { handleCourseDocuments } = load(
+    "src/lib/server/courseDocumentsProxy.ts",
+  );
+  const original = global.fetch;
+  const params = {
+    courseId,
+    segments: [documentId, "versions", versionId, "preview"],
+  };
+  try {
+    for (const status of [401, 403, 404]) {
+      let calls = 0;
+      global.fetch = async () => {
+        calls++;
+        return Response.json({ message: "No disponible" }, { status });
+      };
+      const response = await handleCourseDocuments(request(), params, "GET");
+      assert.equal(response.status, status);
+      assert.equal(calls, 1);
+      if (status === 401)
+        assert.match(response.headers.get("set-cookie"), /Max-Age=0/);
+    }
+    let calls = 0;
+    global.fetch = async () => {
+      calls++;
+      return Response.json({ url: "https://evil.example/document.pdf" });
+    };
+    assert.equal(
+      (await handleCourseDocuments(request(), params, "GET")).status,
+      503,
+    );
+    assert.equal(calls, 1);
+    for (const [body, headers, expected] of [
+      ["<html>untrusted</html>", {}, 415],
+      ["%PDF-1.4", { "content-length": String(16 * 1024 * 1024) }, 413],
+    ]) {
+      calls = 0;
+      global.fetch = async () =>
+        ++calls === 1
+          ? Response.json({
+              url: "https://api.cloudinary.com/v1_1/demo/raw/download",
+            })
+          : new Response(body, { headers });
+      assert.equal(
+        (await handleCourseDocuments(request(), params, "GET")).status,
+        expected,
+      );
+    }
+  } finally {
+    global.fetch = original;
+  }
+});

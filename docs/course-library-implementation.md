@@ -48,3 +48,11 @@ La inspección visual usó datos sintéticos. Después de los commits, el 2026-1
 1. Vincular actividades y calendario con las versiones oficiales de guía y cronograma.
 2. Continuar con recuperación RAG autorizada y después Telegram; aún no están implementados.
 3. Aplicar el procedimiento de migración y validación correspondiente cuando se despliegue en otro entorno. Esta verificación fue local, no de producción.
+
+## Vista previa desde el icono de ojo
+
+El botón «Vista previa», junto a «Descargar original», abre un diálogo accesible para docentes y estudiantes. PDF muestra el original en el lector integrado del navegador; DOCX muestra el texto extraído e indica que formato, tablas e imágenes se consultan descargando el original. Los navegadores sin lector PDF integrado conservan esa alternativa.
+
+Al abrir se vuelve a autorizar: DOCX consulta el detalle; PDF usa `GET .../versions/:versionId/preview` en el BFF, que solicita al backend una descarga autorizada. El BFF obtiene el archivo exclusivamente desde HTTPS `api.cloudinary.com`, sin redirecciones ni credenciales de sesión hacia el proveedor, limita a 15 MiB y comprueba la cabecera PDF. Devuelve bytes inline y `no-store`. El navegador crea una URL de objeto temporal que revoca al cerrar; cancela las solicitudes pendientes. La vista se desmonta al cambiar documento o versión.
+
+Validación: 35 pruebas funcionales y 8 de seguridad aprobadas; tipos y lint de archivos afectados correctos. Dos pruebas nuevas comprueban bytes PDF, autorización, destinos externos, tamaño y rechazo de contenido que no sea PDF. Verificación visual con documentos sintéticos en servidor aislado: PDF renderizado por Edge, DOCX, tema claro/oscuro, error de acceso y recuperación del foco al cerrar con botón o Escape. El navegador integrado de Codex no renderizó el PDF; Edge sí. No se certifica aquí una nueva carga a Cloudinary ni la vista móvil.

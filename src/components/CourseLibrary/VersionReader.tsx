@@ -1,4 +1,7 @@
 import { useId, useState } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEye } from "@fortawesome/free-solid-svg-icons";
+import { DocumentPreview } from "./DocumentPreview";
 import { type DocumentDetail, versionStates } from "@/lib/courseLibrary";
 
 type Props = {
@@ -17,6 +20,7 @@ export function VersionReader({
   onReview,
   onPublish,
 }: Props) {
+  const [previewOpen, setPreviewOpen] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const checkboxId = useId();
   const readable =
@@ -41,15 +45,37 @@ export function VersionReader({
             {draft && detail.reviewedAt ? " · Revisión confirmada" : ""}
           </p>
         </div>
-        <a
-          className="btn-secondary text-sm"
-          href={downloadUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Descargar original
-        </a>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            className="btn-secondary inline-flex min-h-11 items-center gap-2 text-sm"
+            onClick={() => setPreviewOpen(true)}
+            disabled={busy}
+            aria-haspopup="dialog"
+            title="Previsualizar documento"
+          >
+            <FontAwesomeIcon icon={faEye} aria-hidden="true" />
+            Vista previa
+          </button>
+          <a
+            className="btn-secondary text-sm"
+            href={downloadUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Descargar original
+          </a>
+        </div>
       </div>
+      {previewOpen && (
+        <DocumentPreview
+          name={detail.originalName}
+          format={detail.format}
+          detailUrl={downloadUrl.replace(/\/download$/, "")}
+          downloadUrl={downloadUrl}
+          onClose={() => setPreviewOpen(false)}
+        />
+      )}
       {readable ? (
         <>
           <p className="text-sm text-gray-600">

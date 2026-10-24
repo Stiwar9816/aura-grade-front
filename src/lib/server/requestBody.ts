@@ -8,7 +8,7 @@ export class RequestBodyError extends Error {
 	}
 }
 export async function readLimitedBody(
-	request: Request,
+	request: Pick<Request, "headers" | "body">,
 	maxBytes = 1024 * 1024,
 ): Promise<ArrayBuffer> {
 	const declared = request.headers.get("content-length");

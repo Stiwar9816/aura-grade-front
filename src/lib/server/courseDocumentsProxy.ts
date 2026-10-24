@@ -43,12 +43,14 @@ export async function handleCourseDocuments(
     section === "versions" &&
     UUID.test(versionId);
   const download = versionAction && action === "download" && method === "GET";
+  const preview = versionAction && action === "preview" && method === "GET";
   const valid =
     UUID.test(params.courseId) &&
     (collection ||
       versions ||
       (method === "GET" && detail) ||
       download ||
+      preview ||
       (method === "POST" &&
         versionAction &&
         ["review", "publish"].includes(action)) ||
@@ -72,7 +74,8 @@ export async function handleCourseDocuments(
     pagination.set(key, value);
   }
   const suffix = pagination.size ? `?${pagination}` : "";
-  const path = `courses/${params.courseId}/documents${parts.length ? `/${parts.join("/")}` : ""}${suffix}`;
+  const backendParts = preview ? [...parts.slice(0, -1), "download"] : parts;
+  const path = `courses/${params.courseId}/documents${backendParts.length ? `/${backendParts.join("/")}` : ""}${suffix}`;
   try {
     const headers = new Headers();
     let body: ArrayBuffer | undefined;
@@ -108,7 +111,7 @@ export async function handleCourseDocuments(
     });
     const responseHeaders = forwardedBackendHeaders(backend);
     responseHeaders.set("referrer-policy", "no-referrer");
-    if (download && backend.ok) {
+    if ((download || preview) && backend.ok) {
       const data = await backend.json();
       const url = new URL(data.url);
       if (
@@ -119,6 +122,33 @@ export async function handleCourseDocuments(
         url.port
       )
         throw new Error("Invalid document destination");
+      if (preview) {
+        const original = await fetch(url.href, {
+          cache: "no-store",
+          redirect: "error",
+          signal: AbortSignal.any([request.signal, AbortSignal.timeout(30000)]),
+        });
+        if (!original.ok) {
+          await original.body?.cancel();
+          return failure(
+            "No se pudo abrir el original. Intenta nuevamente.",
+            502,
+          );
+        }
+        const bytes = await readLimitedBody(original, 15 * 1024 * 1024);
+        if (new TextDecoder().decode(bytes.slice(0, 5)) !== "%PDF-")
+          return failure(
+            "La vista del original está disponible para archivos PDF.",
+            415,
+          );
+        responseHeaders.set("content-type", "application/pdf");
+        responseHeaders.set(
+          "content-disposition",
+          'inline; filename="documento.pdf"',
+        );
+        responseHeaders.set("x-content-type-options", "nosniff");
+        return new NextResponse(bytes, { headers: responseHeaders });
+      }
       responseHeaders.set("location", url.href);
       return new NextResponse(null, { status: 302, headers: responseHeaders });
     }
