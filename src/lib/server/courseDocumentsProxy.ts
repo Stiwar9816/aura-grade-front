@@ -29,6 +29,14 @@ export async function handleCourseDocuments(
     return failure("Inicia sesión para consultar la biblioteca.", 401);
   const parts = params.segments || [];
   const [documentId, section, versionId, action] = parts;
+  const preparation =
+    method === "GET" && parts.length === 1 && parts[0] === "preparation";
+  const confirmPreparation =
+    method === "POST" &&
+    parts.length === 3 &&
+    parts[0] === "preparation" &&
+    UUID.test(parts[1]) &&
+    parts[2] === "confirm";
   const collection = parts.length === 0;
   const versions =
     parts.length === 2 && UUID.test(documentId) && section === "versions";
@@ -47,6 +55,8 @@ export async function handleCourseDocuments(
   const valid =
     UUID.test(params.courseId) &&
     (collection ||
+      preparation ||
+      confirmPreparation ||
       versions ||
       (method === "GET" && detail) ||
       download ||
@@ -64,7 +74,7 @@ export async function handleCourseDocuments(
   for (const [key, value] of search) {
     if (
       method !== "GET" ||
-      (!collection && !versions) ||
+      (!collection && !versions && !preparation) ||
       !["page", "limit"].includes(key) ||
       search.getAll(key).length !== 1 ||
       !/^[1-9]\d*$/.test(value) ||

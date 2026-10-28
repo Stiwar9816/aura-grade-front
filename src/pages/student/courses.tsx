@@ -1,3 +1,4 @@
+import CoursePreparation from "@/components/CoursePreparation/CoursePreparation";
 import React, {useState} from "react";
 import CourseLibrary from "@/components/CourseLibrary/CourseLibrary";
 import {useAuth} from "@/hooks";
@@ -178,6 +179,7 @@ const StudentCoursesPage: React.FC = () => {
 								{selectedCourse && (
 									<div className="space-y-6">
                                         <CourseLibrary key={`${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage={false} />
+                                        <CoursePreparation key={`${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage={false} />
 										<Card className="bg-white/70 border border-gray-100">
 											<div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
 												<div>

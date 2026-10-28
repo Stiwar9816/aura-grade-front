@@ -523,3 +523,68 @@ test("PDF preview denies revoked access, external destinations, non-PDF content 
     global.fetch = original;
   }
 });
+
+test("preparation BFF permits only listing and explicit confirmation with session credentials", async () => {
+  const { handleCourseDocuments } = load(
+    "src/lib/server/courseDocumentsProxy.ts",
+  );
+  const original = global.fetch;
+  const previousSecret = process.env.AURA_GRADE_BFF_SECRET;
+  process.env.AURA_GRADE_BFF_SECRET = "test-secret";
+  const calls = [];
+  global.fetch = async (url, options) => {
+    calls.push({ url, options });
+    return Response.json({ items: [] });
+  };
+  try {
+    const list = await handleCourseDocuments(
+      request("/preparation?page=2"),
+      { courseId, segments: ["preparation"] },
+      "GET",
+    );
+    assert.equal(list.status, 200);
+    assert.match(calls[0].url, /documents\/preparation\?page=2$/);
+    const confirm = await handleCourseDocuments(
+      request("/preparation/" + documentId + "/confirm", {
+        method: "POST",
+        headers: {
+          origin: "https://aura.example",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ confirmed: true }),
+      }),
+      { courseId, segments: ["preparation", documentId, "confirm"] },
+      "POST",
+    );
+    assert.equal(confirm.status, 200);
+    assert.equal(
+      calls[1].options.headers.get("authorization"),
+      "Bearer valid-session",
+    );
+    for (const [segments, method] of [
+      [["preparation"], "POST"],
+      [["preparation", documentId, "confirm"], "GET"],
+      [["preparation", "wrong", "confirm"], "POST"],
+    ]) {
+      const rejected = await handleCourseDocuments(
+        request("", { method, headers: { origin: "https://aura.example" } }),
+        { courseId, segments },
+        method,
+      );
+      assert.equal(rejected.status, 400);
+    }
+    assert.equal(calls.length, 2);
+  } finally {
+    global.fetch = original;
+    if (previousSecret === undefined) delete process.env.AURA_GRADE_BFF_SECRET;
+    else process.env.AURA_GRADE_BFF_SECRET = previousSecret;
+  }
+});
+
+test("preparation dates use Colombia time across day boundaries", () => {
+  const { preparationDate } = load("src/lib/coursePreparation.ts");
+  const text = preparationDate("2026-12-02T01:00:00Z");
+  assert.match(text, /^1\D/);
+  assert.match(text, /8:00/);
+  assert.match(text, /p\.?\s*m/);
+});

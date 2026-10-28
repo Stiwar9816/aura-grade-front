@@ -88,10 +88,15 @@ export function uploadLibraryFile(url: string, file: File, key: string) {
     body,
   });
 }
-export function libraryMutation<T>(url: string, body?: unknown) {
-  return libraryRequest<T>(url, {
+export async function libraryMutation<T>(url: string, body?: unknown) {
+  const result = await libraryRequest<T>(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+  if (typeof window !== "undefined")
+    window.dispatchEvent(
+      new CustomEvent("course-library-changed", { detail: url }),
+    );
+  return result;
 }
