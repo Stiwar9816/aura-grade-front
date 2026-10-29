@@ -1,3 +1,4 @@
+import CourseAssistant from "@/components/CourseAssistant/CourseAssistant";
 import CoursePreparation from "@/components/CoursePreparation/CoursePreparation";
 import React, { useState } from "react";
 import CourseLibrary from "@/components/CourseLibrary/CourseLibrary";
@@ -296,6 +297,7 @@ const CourseManagement: React.FC = () => {
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {canManageCourseCatalog && <CourseLibrary key={`${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage />}
                     {canManageCourseCatalog && <CoursePreparation key={`${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage />}
+                    {canManageCourseCatalog && <CourseAssistant key={`assistant:${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage={true} />}
                     <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                       <div className="flex justify-between items-center mb-6">
                         <div>
