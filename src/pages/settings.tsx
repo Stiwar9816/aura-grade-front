@@ -6,12 +6,14 @@ import Card from "@/components/Common/Card";
 import SectionHeader from "@/components/Common/SectionHeader";
 import RecoveryCodes from "@/components/Auth/RecoveryCodes";
 import ActiveSessions from "@/components/Auth/ActiveSessions";
+import TelegramLink from "@/components/Telegram/TelegramLink";
 import { useAuth, useNotificationPreferences } from "@/hooks";
 import { UPDATE_USER } from "@/gql/User";
 import {
 	DEFAULT_NOTIFICATION_PREFERENCES,
 	UpdateUserInput,
 	User,
+	UserRole,
 } from "@/interface";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -457,6 +459,8 @@ const SettingsPage: React.FC = () => {
 							Guardar configuración
 						</button>
 					</div>
+
+					{user?.role === UserRole.STUDENT && <TelegramLink />}
 
 					<Card className="border-red-200">
 						<SectionHeader
