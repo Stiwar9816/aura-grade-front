@@ -18,7 +18,7 @@ const DATASETS: { id: Dataset; title: string; detail: string; action: string }[]
 	{
 		id: "jsonl",
 		title: "Para entrenamiento (JSONL)",
-		detail: "Un ejemplo por línea: tarea y rúbrica como entrada, calificación del docente como salida.",
+		detail: "Un ejemplo completo por línea: tarea, rúbrica, borrador de la IA, calificación del docente e historial. Con el texto de las entregas incluye la conversación lista para ajuste fino.",
 		action: "Descargar JSONL",
 	},
 ];
