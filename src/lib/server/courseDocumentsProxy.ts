@@ -7,6 +7,7 @@ import {
   isTrustedMutationRequest,
 } from "./backend";
 import { readLimitedBody, RequestBodyError } from "./requestBody";
+import { isTrustedStorageUrl } from "./storageUrl";
 
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 export type LibraryRouteParams = { courseId: string; segments?: string[] };
@@ -124,13 +125,7 @@ export async function handleCourseDocuments(
     if ((download || preview) && backend.ok) {
       const data = await backend.json();
       const url = new URL(data.url);
-      if (
-        url.protocol !== "https:" ||
-        url.hostname !== "api.cloudinary.com" ||
-        url.username ||
-        url.password ||
-        url.port
-      )
+      if (!isTrustedStorageUrl(url))
         throw new Error("Invalid document destination");
       if (preview) {
         const original = await fetch(url.href, {

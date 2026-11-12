@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readSessionToken } from "@/lib/server/authSession";
 import { fetchBackendRest } from "@/lib/server/backend";
+import { isTrustedStorageUrl } from "@/lib/server/storageUrl";
 export async function GET(
 	request: NextRequest,
 	{ params }: { params: Promise<{ id: string }> },
@@ -34,7 +35,7 @@ export async function GET(
 				{ status: backend.status, headers },
 			);
 		const url = new URL(data.url);
-		if (url.protocol !== "https:" || url.hostname !== "api.cloudinary.com")
+		if (!isTrustedStorageUrl(url))
 			throw new Error("Invalid document host");
 		return new NextResponse(null, {
 			status: 302,
