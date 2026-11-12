@@ -166,6 +166,23 @@ export const PUBLISH_EVALUATION: DocumentNode = gql`
 	}
 `;
 
+export const REVISE_EVALUATION: DocumentNode = gql`
+	mutation ReviseEvaluation(
+		$id: ID!
+		$input: UpdateEvaluationInput!
+		$teacherResponse: String
+	) {
+		reviseEvaluation(id: $id, input: $input, teacherResponse: $teacherResponse) {
+			id
+			status
+			totalScore
+			generalFeedback
+			detailedFeedback
+			createdAt
+		}
+	}
+`;
+
 export const CREATE_MANUAL_EVALUATION_DRAFT: DocumentNode = gql`
 	mutation CreateManualEvaluationDraft($input: CreateManualEvaluationInput!) {
 		createManualEvaluationDraft(input: $input) {
