@@ -10,6 +10,12 @@ import { readLimitedBody, RequestBodyError } from "@/lib/server/requestBody";
 
 export const runtime = "nodejs";
 
+const DATASETS = ["evaluations", "criteria", "jsonl"];
+const OPTIONS = ["dataset", "includeSubmissionText", "redactPersonalData", "courseId"];
+const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+const FILENAME =
+	/^attachment; filename="aura-grade-(evaluations|criteria|training)-\d{4}-\d{2}-\d{2}\.(csv|jsonl)"$/;
+
 const fail = (message: string, status: number) =>
 	NextResponse.json(
 		{ message },
@@ -17,8 +23,8 @@ const fail = (message: string, status: number) =>
 	);
 
 /**
- * Administrator-only CSV download. The backend decides the institution from the session;
- * this route forwards only the two export options and never an institution or user id.
+ * Administrator-only CSV/JSONL download. The backend decides the institution from the session;
+ * this route forwards only the export options and never an institution or user id.
  */
 export async function POST(request: NextRequest) {
 	if (!isTrustedMutationRequest(request)) return fail("Origen no permitido.", 403);
@@ -39,12 +45,14 @@ export async function POST(request: NextRequest) {
 		!input ||
 		typeof input !== "object" ||
 		Array.isArray(input) ||
-		(input.dataset !== "evaluations" && input.dataset !== "criteria") ||
-		Object.keys(input).some(
-			(key) => key !== "dataset" && key !== "includeSubmissionText",
-		) ||
+		!DATASETS.includes(input.dataset as string) ||
+		Object.keys(input).some((key) => !OPTIONS.includes(key)) ||
 		(input.includeSubmissionText !== undefined &&
-			typeof input.includeSubmissionText !== "boolean")
+			typeof input.includeSubmissionText !== "boolean") ||
+		(input.redactPersonalData !== undefined &&
+			typeof input.redactPersonalData !== "boolean") ||
+		(input.courseId !== undefined &&
+			(typeof input.courseId !== "string" || !UUID.test(input.courseId)))
 	)
 		return fail("Solicitud de exportación inválida.", 400);
 
@@ -59,6 +67,9 @@ export async function POST(request: NextRequest) {
 				body: JSON.stringify({
 					dataset: input.dataset,
 					includeSubmissionText: input.includeSubmissionText === true,
+					// Redaction stays on unless the administrator turned it off explicitly.
+					redactPersonalData: input.redactPersonalData !== false,
+					...(input.courseId ? { courseId: input.courseId } : {}),
 				}),
 			},
 		);
@@ -74,17 +85,18 @@ export async function POST(request: NextRequest) {
 			if (backend.status === 401) clearSessionCookie(response);
 			return response;
 		}
-		headers.set("content-type", "text/csv; charset=utf-8");
+		const jsonl = input.dataset === "jsonl";
+		headers.set(
+			"content-type",
+			jsonl ? "application/x-ndjson; charset=utf-8" : "text/csv; charset=utf-8",
+		);
 		const disposition = backend.headers.get("content-disposition");
 		// Accept only the exact filename shape the backend produces.
 		headers.set(
 			"content-disposition",
-			disposition &&
-				/^attachment; filename="aura-grade-(evaluations|criteria)-\d{4}-\d{2}-\d{2}\.csv"$/.test(
-					disposition,
-				)
+			disposition && FILENAME.test(disposition)
 				? disposition
-				: `attachment; filename="aura-grade-${input.dataset}.csv"`,
+				: `attachment; filename="aura-grade-${jsonl ? "training.jsonl" : `${input.dataset}.csv`}"`,
 		);
 		return new NextResponse(await backend.arrayBuffer(), { status: 200, headers });
 	} catch {

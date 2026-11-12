@@ -1,24 +1,32 @@
 import { useState } from "react";
-import Card from "@/components/Common/Card";
 
-type Dataset = "evaluations" | "criteria";
+type Dataset = "evaluations" | "criteria" | "jsonl";
 
-const DATASETS: { id: Dataset; title: string; detail: string }[] = [
+const DATASETS: { id: Dataset; title: string; detail: string; action: string }[] = [
 	{
 		id: "evaluations",
-		title: "Por evaluación",
+		title: "Por evaluación (CSV)",
 		detail: "Una fila por calificación: borrador, nota final, diferencia y motivo del ajuste.",
+		action: "Descargar CSV",
 	},
 	{
 		id: "criteria",
-		title: "Por criterio",
+		title: "Por criterio (CSV)",
 		detail: "Una fila por criterio de rúbrica: puntaje y comentario del borrador y del docente.",
+		action: "Descargar CSV",
+	},
+	{
+		id: "jsonl",
+		title: "Para entrenamiento (JSONL)",
+		detail: "Un ejemplo por línea: tarea y rúbrica como entrada, calificación del docente como salida.",
+		action: "Descargar JSONL",
 	},
 ];
 
 /** Downloads the consolidated grading history. The file never touches browser storage. */
-export default function TrainingExport() {
+export default function TrainingExport({ courseId }: { courseId?: string }) {
 	const [includeText, setIncludeText] = useState(false);
+	const [redact, setRedact] = useState(true);
 	const [working, setWorking] = useState<Dataset | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const [done, setDone] = useState<string | null>(null);
@@ -34,7 +42,9 @@ export default function TrainingExport() {
 				headers: { "content-type": "application/json" },
 				body: JSON.stringify({
 					dataset,
-					includeSubmissionText: dataset === "evaluations" && includeText,
+					includeSubmissionText: dataset !== "criteria" && includeText,
+					redactPersonalData: redact,
+					...(courseId ? { courseId } : {}),
 				}),
 			});
 			if (!response.ok) {
@@ -45,7 +55,7 @@ export default function TrainingExport() {
 			}
 			const name =
 				/filename="([^"]+)"/.exec(response.headers.get("content-disposition") || "")?.[1] ||
-				`aura-grade-${dataset}.csv`;
+				`aura-grade-${dataset}`;
 			const url = URL.createObjectURL(await response.blob());
 			const link = document.createElement("a");
 			link.href = url;
@@ -67,14 +77,27 @@ export default function TrainingExport() {
 	};
 
 	return (
-		<Card>
-			<h2 className="text-xl font-bold text-gray-900">Historial de calificación (CSV)</h2>
+		<div>
+			<h3 className="text-lg font-bold text-gray-900">Descargar el consolidado</h3>
 			<p className="mt-1 text-sm text-gray-600">
-				Consolidado de las evaluaciones publicadas de tu institución. Los estudiantes y docentes
-				aparecen con un identificador seudónimo, sin nombre, correo ni documento. Cada descarga
-				queda registrada en la auditoría.
+				Evaluaciones publicadas {courseId ? "del curso elegido" : "de todos los cursos"}. Los
+				estudiantes y docentes aparecen con un identificador seudónimo. Cada descarga queda
+				registrada en la auditoría.
 			</p>
 			<label className="mt-4 flex items-start gap-3 text-sm text-gray-700">
+				<input
+					type="checkbox"
+					checked={redact}
+					onChange={(event) => setRedact(event.target.checked)}
+					disabled={working !== null}
+					className="mt-1"
+				/>
+				<span>
+					Ocultar datos personales en comentarios y entregas (correos, números y nombres del
+					estudiante y del docente). Es una limpieza automática: no detecta nombres de terceros.
+				</span>
+			</label>
+			<label className="mt-3 flex items-start gap-3 text-sm text-gray-700">
 				<input
 					type="checkbox"
 					checked={includeText}
@@ -83,11 +106,11 @@ export default function TrainingExport() {
 					className="mt-1"
 				/>
 				<span>
-					Incluir el texto de las entregas en el archivo por evaluación. Es contenido escrito por
-					estudiantes: trátalo como información sensible.
+					Incluir el texto de las entregas (archivo por evaluación y JSONL). Es contenido escrito
+					por estudiantes: trátalo como información sensible.
 				</span>
 			</label>
-			<div className="mt-4 grid gap-3 md:grid-cols-2">
+			<div className="mt-4 grid gap-3 md:grid-cols-3">
 				{DATASETS.map((dataset) => (
 					<div key={dataset.id} className="rounded-xl border border-gray-200 p-4">
 						<p className="font-semibold text-gray-900">{dataset.title}</p>
@@ -98,7 +121,7 @@ export default function TrainingExport() {
 							disabled={working !== null}
 							className="btn-primary mt-3 min-h-11 disabled:opacity-50"
 						>
-							{working === dataset.id ? "Generando…" : "Descargar CSV"}
+							{working === dataset.id ? "Generando…" : dataset.action}
 						</button>
 					</div>
 				))}
@@ -113,6 +136,6 @@ export default function TrainingExport() {
 					{done}
 				</p>
 			)}
-		</Card>
+		</div>
 	);
 }
