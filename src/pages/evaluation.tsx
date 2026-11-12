@@ -14,6 +14,7 @@ import {
 	CREATE_MANUAL_EVALUATION_DRAFT,
 	GET_SUBMISSION_BY_ID,
 	PUBLISH_EVALUATION,
+	REVISE_EVALUATION,
 } from "@/gql/Submission";
 import {
 	CREATE_RE_EVALUATION_REQUEST,
@@ -102,6 +103,16 @@ const formatDateTime = (date?: string) => {
 	});
 };
 
+const ADJUSTMENT_REASONS: [string, string][] = [
+	["AI_TOO_STRICT", "La IA fue demasiado estricta"],
+	["AI_TOO_LENIENT", "La IA fue demasiado generosa"],
+	["AI_MISSED_ERROR", "La IA no detectó un error"],
+	["AI_MISREAD_SUBMISSION", "La IA interpretó mal la entrega"],
+	["RUBRIC_MISAPPLIED", "La rúbrica se aplicó mal"],
+	["FEEDBACK_UNCLEAR", "El comentario era poco claro"],
+	["OTHER", "Otro motivo"],
+];
+
 const getReEvaluationRequestTime = (request: ReEvaluationRequest) =>
 	request.reviewedAt || request.updatedAt || request.createdAt;
 
@@ -187,6 +198,9 @@ const EvaluationPage: React.FC = () => {
 		useState<boolean>(false);
 	const [publishEvaluation, {loading: publishing}] =
 		useMutation(PUBLISH_EVALUATION);
+	const [reviseEvaluation, {loading: revising}] = useMutation(REVISE_EVALUATION);
+	const [adjustmentReason, setAdjustmentReason] = useState<string>("");
+	const [adjustmentNote, setAdjustmentNote] = useState<string>("");
 	const [createManualEvaluationDraft, {loading: creatingManualDraft}] =
 		useMutation(CREATE_MANUAL_EVALUATION_DRAFT);
 	const [createReEvaluationRequest, {loading: creatingReevaluationRequest}] =
@@ -200,6 +214,8 @@ const EvaluationPage: React.FC = () => {
 			setReevaluationReason("");
 			setReevaluationError(null);
 			setTeacherResponse("");
+			setAdjustmentReason("");
+			setAdjustmentNote("");
 			setCriteriaDrafts({});
 			setFinalFeedback("");
 			setShowReevaluationForm(false);
@@ -481,7 +497,7 @@ const EvaluationPage: React.FC = () => {
 	);
 	const showCriteriaEditor = canCreateManualDraft || Boolean(submissionDetail?.evaluation);
 	const teacherActionLoading =
-		publishing || resolvingReevaluationRequest || creatingManualDraft;
+		publishing || revising || resolvingReevaluationRequest || creatingManualDraft;
 	const scoreDraft = evaluationData.overallScore;
 	const feedbackDraft = evaluationData.generalFeedback;
 	const maxScore = evaluationData.maxScore || STANDARD_GRADE_MAX;
@@ -650,7 +666,7 @@ const EvaluationPage: React.FC = () => {
 			return;
 		}
 
-		let parsedScore = hasPublishedResult ? scoreDraft : reviewScore ?? scoreDraft;
+		let parsedScore = isPublishedEvaluation ? scoreDraft : reviewScore ?? scoreDraft;
 		const feedbackToPublish = (finalFeedback || feedbackDraft || "").trim();
 
 		if (
@@ -688,7 +704,7 @@ const EvaluationPage: React.FC = () => {
 			| ReturnType<typeof buildDetailedFeedback>
 			| undefined;
 		try {
-			if (!hasPublishedResult) {
+			if (!isPublishedEvaluation) {
 				detailedFeedback = buildDetailedFeedback();
 				parsedScore = Number(
 					detailedFeedback
@@ -714,33 +730,30 @@ const EvaluationPage: React.FC = () => {
 		try {
 			setPublishError(null);
 			setPublishSuccess(null);
-			await publishEvaluation({
-				variables: {
-					id: submissionDetail.evaluation.id,
-					updateEvaluationInput: {
-						id: submissionDetail.evaluation.id,
-						totalScore: parsedScore,
-						generalFeedback: feedbackToPublish,
-						...(detailedFeedback ? {detailedFeedback} : {}),
-					},
-				},
-				refetchQueries: [
-					{query: GET_SUBMISSION_BY_ID, variables: {submissionId}},
-				],
-				awaitRefetchQueries: true,
-			});
-			await refetchEvaluationDetail();
+			const adjustment = {
+				...(adjustmentReason ? {adjustmentReason} : {}),
+				...(adjustmentNote.trim() ? {adjustmentNote: adjustmentNote.trim()} : {}),
+			};
+			const evaluationInput = {
+				id: submissionDetail.evaluation.id,
+				totalScore: parsedScore,
+				generalFeedback: feedbackToPublish,
+				...(detailedFeedback ? {detailedFeedback} : {}),
+				...adjustment,
+			};
+			const refetchQueries = [
+				{query: GET_SUBMISSION_BY_ID, variables: {submissionId}},
+			];
 
 			if (pendingReEvaluationRequest) {
-				await resolveReEvaluationRequest({
+				// One atomic call: the grade is corrected and the request approved together.
+				await reviseEvaluation({
 					variables: {
-						input: {
-							id: pendingReEvaluationRequest.id,
-							status: ReEvaluationRequestStatus.APPROVED,
-							teacherResponse: responseToStudent,
-						},
+						id: submissionDetail.evaluation.id,
+						input: evaluationInput,
+						teacherResponse: responseToStudent,
 					},
-					refetchQueries: [{query: GET_RE_EVALUATION_REQUESTS}],
+					refetchQueries: [...refetchQueries, {query: GET_RE_EVALUATION_REQUESTS}],
 					awaitRefetchQueries: true,
 				});
 				await refetchReEvaluationRequests();
@@ -752,6 +765,16 @@ const EvaluationPage: React.FC = () => {
 				});
 				return;
 			}
+
+			await publishEvaluation({
+				variables: {
+					id: submissionDetail.evaluation.id,
+					updateEvaluationInput: evaluationInput,
+				},
+				refetchQueries,
+				awaitRefetchQueries: true,
+			});
+			await refetchEvaluationDetail();
 
 			setPublishSuccess("Nota final publicada para el estudiante.");
 			notifySuccess("Nota final publicada para el estudiante.", {
@@ -1290,7 +1313,7 @@ const EvaluationPage: React.FC = () => {
 											min={0}
 											max={maxScore}
 											step="0.01"
-											value={hasPublishedResult ? scoreDraft : reviewScore ?? ""}
+											value={isPublishedEvaluation ? scoreDraft : reviewScore ?? ""}
 											readOnly
 												aria-label="Nota final calculada"
 											placeholder={`${scoreDraft.toFixed(1)} / ${maxScore}`}
@@ -1371,7 +1394,7 @@ const EvaluationPage: React.FC = () => {
 																			}))
 																		}
 																		disabled={
-																			hasPublishedResult ||
+																			isPublishedEvaluation ||
 																			teacherActionLoading
 																		}
 																		aria-label={`Nota de ${criterion.title}`}
@@ -1392,7 +1415,7 @@ const EvaluationPage: React.FC = () => {
 																			}))
 																		}
 																		disabled={
-																			hasPublishedResult ||
+																			isPublishedEvaluation ||
 																			teacherActionLoading
 																		}
 																		aria-label={`Comentario de ${criterion.title}`}
@@ -1406,6 +1429,44 @@ const EvaluationPage: React.FC = () => {
 												)}
 											</div>
 										)}
+
+									{!canCreateManualDraft && !isPublishedEvaluation && (
+										<div className="space-y-2">
+											<label
+												htmlFor="adjustment-reason"
+												className="block text-sm font-bold text-gray-700"
+											>
+												¿Por qué ajustaste el borrador? (opcional)
+											</label>
+											<select
+												id="adjustment-reason"
+												value={adjustmentReason}
+												onChange={(event) => setAdjustmentReason(event.target.value)}
+												disabled={teacherActionLoading}
+												className="input-primary"
+											>
+												<option value="">Sin ajustes o prefiero no indicarlo</option>
+												{ADJUSTMENT_REASONS.map(([value, label]) => (
+													<option key={value} value={value}>
+														{label}
+													</option>
+												))}
+											</select>
+											<input
+												type="text"
+												value={adjustmentNote}
+												onChange={(event) => setAdjustmentNote(event.target.value)}
+												maxLength={500}
+												placeholder="Comentario breve sobre el ajuste (opcional)"
+												aria-label="Comentario sobre el ajuste"
+												disabled={teacherActionLoading}
+												className="input-primary"
+											/>
+											<p className="text-xs text-gray-500">
+												No lo ve el estudiante. Ayuda a mejorar la calificación asistida.
+											</p>
+										</div>
+									)}
 
 									{pendingReEvaluationRequest && (
 										<div>
