@@ -229,7 +229,7 @@ test("library downloads validate the signed destination and preserve backend den
   try {
     global.fetch = async () =>
       Response.json({
-        url: "https://api.cloudinary.com/v1_1/demo/raw/download?signature=example",
+        url: "https://abcdefghijklmnopqrst.storage.supabase.co/storage/v1/s3/auragrade/course-documents/file.pdf?X-Amz-Signature=example",
       });
     const good = await handleCourseDocuments(request(), params, "GET");
     assert.equal(good.status, 302);
@@ -237,8 +237,10 @@ test("library downloads validate the signed destination and preserve backend den
     for (const url of [
       "javascript:alert(1)",
       "https://evil.example/file",
-      "https://api.cloudinary.com@evil.example/file",
-      "http://api.cloudinary.com/file",
+      "https://abcdefghijklmnopqrst.storage.supabase.co@evil.example/storage/v1/s3/x",
+      "https://abcdefghijklmnopqrst.storage.supabase.co.evil.example/storage/v1/s3/x",
+      "https://abcdefghijklmnopqrst.storage.supabase.co/rest/v1/users",
+      "http://abcdefghijklmnopqrst.storage.supabase.co/storage/v1/s3/x",
     ]) {
       global.fetch = async () => Response.json({ url });
       assert.equal(
@@ -435,7 +437,7 @@ test("PDF preview reauthorizes with backend and serves private bytes inline with
     calls.push({ url: String(url), options });
     return calls.length === 1
       ? Response.json({
-          url: "https://api.cloudinary.com/v1_1/demo/raw/download?signature=example",
+          url: "https://abcdefghijklmnopqrst.storage.supabase.co/storage/v1/s3/auragrade/course-documents/file.pdf?X-Amz-Signature=example",
         })
       : new Response(bytes, {
           headers: { "content-type": "application/octet-stream" },
@@ -511,7 +513,7 @@ test("PDF preview denies revoked access, external destinations, non-PDF content 
       global.fetch = async () =>
         ++calls === 1
           ? Response.json({
-              url: "https://api.cloudinary.com/v1_1/demo/raw/download",
+              url: "https://abcdefghijklmnopqrst.storage.supabase.co/storage/v1/s3/auragrade/course-documents/file.pdf",
             })
           : new Response(body, { headers });
       assert.equal(

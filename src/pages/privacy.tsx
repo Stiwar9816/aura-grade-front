@@ -9,7 +9,7 @@ const sections = [
   },
   {
     "title": "Servicios que intervienen",
-    "text": "Los documentos se almacenan mediante Cloudinary. El texto extraído y la rúbrica se envían al proveedor de inteligencia artificial configurado por el servicio (OpenAI o Google Gemini) para generar el borrador de evaluación. Los correos se entregan mediante Resend. La configuración puede incluir Sentry para diagnóstico técnico de errores."
+    "text": "Los documentos se almacenan de forma privada en Supabase Storage y solo se descargan mediante enlaces firmados de corta duración. El texto extraído y la rúbrica se envían al proveedor de inteligencia artificial configurado por el servicio (OpenAI o Google Gemini) para generar el borrador de evaluación. Los correos se entregan mediante Resend. La configuración puede incluir Sentry para diagnóstico técnico de errores."
   },
   {
     "title": "Documentos que compartes",
