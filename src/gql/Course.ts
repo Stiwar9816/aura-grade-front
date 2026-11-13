@@ -5,6 +5,7 @@ const COURSE_FIELDS = gql`
 		id
 		course_name
 		code_course
+		sga_subject_code
 	}
 `;
 

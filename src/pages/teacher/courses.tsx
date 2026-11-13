@@ -11,6 +11,8 @@ import { USER_ROLE_STUDENTS } from "@/gql/User";
 import { useCourse } from "@/hooks";
 import { UserRole, UsersStats } from "@/interface";
 import {
+  faChevronDown,
+  faChevronRight,
   faEdit,
   faGraduationCap,
   faMagnifyingGlass,
@@ -27,7 +29,18 @@ import {
   notifyWarning,
 } from "@/utils/toastNotify";
 import { useConfirm } from "@/context/ConfirmContext";
+import { groupCoursesByCode } from "@/utils/courseGroups";
 import { useAuth } from "@/hooks";
+import {
+  COURSE_CODE_ERROR,
+  COURSE_CODE_MAX_LENGTH,
+  SUBJECT_CODE_ERROR,
+  SUBJECT_CODE_LENGTH,
+  isValidCourseCode,
+  isValidSubjectCode,
+  normalizeCourseCode,
+  normalizeSubjectCode,
+} from "@/utils/courseCode";
 
 type CourseStudent = {
   id: string;
@@ -42,6 +55,7 @@ type CourseSummary = {
   id: string;
   course_name: string;
   code_course: string;
+  sga_subject_code?: string | null;
   users?: CourseStudent[];
 };
 
@@ -71,11 +85,49 @@ const CourseManagement: React.FC = () => {
   const [showStudentModal, setShowStudentModal] = useState(false); // New state for student modal
   const [isEditing, setIsEditing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [codeError, setCodeError] = useState<string | null>(null);
+  const [subjectError, setSubjectError] = useState<string | null>(null);
+  // Explicit open/closed choice per SGA group; groups never touched open only while they hold the
+  // selected course.
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   const courseList = courses as CourseSummary[];
   const selectedCourse = courseList.find((c) => c.id === selectedCourseId);
   const allStudents = studentsData?.users || [];
   const canManageCourseCatalog = user?.role === UserRole.TEACHER;
+  const courseGroups = groupCoursesByCode(courseList);
+
+  const renderCourseCard = (course: CourseSummary, showGroup: boolean) => {
+    const subject = course.sga_subject_code;
+    return (
+      <Card
+        key={course.id}
+        hoverable
+        onClick={() => setSelectedCourseId(course.id)}
+        className={`cursor-pointer transition-all duration-300 border-2 ${
+          selectedCourseId === course.id
+            ? "border-electric-500 bg-electric-50/30 ring-4 ring-electric-500/10"
+            : "border-transparent"
+        }`}
+      >
+        <div className="flex justify-between items-start">
+          <div>
+            <p className="text-xs font-semibold text-electric-600 uppercase tracking-widest mb-1">
+              {showGroup
+                ? `${course.code_course}${subject ? ` · ${subject}` : ""}`
+                : subject
+                  ? `Materia ${subject}`
+                  : "Materia sin código"}
+            </p>
+            <h4 className="font-bold text-gray-900 text-lg">
+              {course.course_name}
+            </h4>
+          </div>
+          <Badge variant="info">{course.users?.length || 0} Est.</Badge>
+        </div>
+      </Card>
+    );
+  };
 
   const getManagedCourseIds = (student: StudentOption) => {
     const assignedCourseIds = student.courses?.map((course) => course.id) || [];
@@ -96,12 +148,16 @@ const CourseManagement: React.FC = () => {
   );
 
   const handleOpenCreateModal = () => {
+    setCodeError(null);
+    setSubjectError(null);
     setIsEditing(false);
     setShowModal(true);
   };
 
   const handleOpenEditModal = () => {
     if (!selectedCourse) return;
+    setCodeError(null);
+    setSubjectError(null);
     setIsEditing(true);
     setShowModal(true);
   };
@@ -110,12 +166,25 @@ const CourseManagement: React.FC = () => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const name = String(formData.get("name") || "").trim();
-    const code = String(formData.get("code") || "").trim();
+    // Same codes the SGA uses for the group and the subject; the group is stored upper-cased.
+    const code = normalizeCourseCode(String(formData.get("code") || ""));
+    const subject = normalizeSubjectCode(String(formData.get("subject") || ""));
 
     if (!name || !code) {
-      notifyWarning("Nombre y código del curso son obligatorios.");
+      notifyWarning("Nombre y código de grupo del curso son obligatorios.");
       return;
     }
+    // New courses must use the SGA format. When editing, a legacy group code is kept as is unless
+    // changed, and a course created before subject codes existed may still be saved without one.
+    const codeChanged = !isEditing || code !== selectedCourse?.code_course;
+    const groupInvalid = codeChanged && !isValidCourseCode(code);
+    const subjectRequired = !isEditing || Boolean(selectedCourse?.sga_subject_code);
+    const subjectInvalid = subject
+      ? !isValidSubjectCode(subject)
+      : subjectRequired;
+    setCodeError(groupInvalid ? COURSE_CODE_ERROR : null);
+    setSubjectError(subjectInvalid ? SUBJECT_CODE_ERROR : null);
+    if (groupInvalid || subjectInvalid) return;
 
     const notificationId = notifyLoading(
       isEditing ? "Actualizando curso..." : "Creando curso...",
@@ -124,6 +193,7 @@ const CourseManagement: React.FC = () => {
       await saveCourse(
         name,
         code,
+        subject,
         isEditing && selectedCourse ? selectedCourse.id : undefined,
       );
       setShowModal(false);
@@ -263,40 +333,73 @@ const CourseManagement: React.FC = () => {
                 <h3 className="text-lg font-bold text-gray-900 border-b pb-2">
                   Lista de Cursos
                 </h3>
-                {courseList.map((course) => (
-                  <Card
-                    key={course.id}
-                    hoverable
-                    onClick={() => setSelectedCourseId(course.id)}
-                    className={`cursor-pointer transition-all duration-300 border-2 ${
-                      selectedCourseId === course.id
-                        ? "border-electric-500 bg-electric-50/30 ring-4 ring-electric-500/10"
-                        : "border-transparent"
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="text-xs font-semibold text-electric-600 uppercase tracking-widest mb-1">
-                          {course.code_course}
-                        </p>
-                        <h4 className="font-bold text-gray-900 text-lg">
-                          {course.course_name}
-                        </h4>
-                      </div>
-                      <Badge variant="info">
-                        {course.users?.length || 0} Est.
-                      </Badge>
+                {courseGroups.map((group) => {
+                  // A group with a single course is shown as a plain card; subjects that share
+                  // an SGA group fold under one header.
+                  if (group.courses.length === 1)
+                    return renderCourseCard(group.courses[0], true);
+                  const panelId = `course-group-${group.code}`;
+                  const holdsSelection = group.courses.some(
+                    (course) => course.id === selectedCourseId,
+                  );
+                  const open = openGroups[group.code] ?? holdsSelection;
+                  return (
+                    <div key={group.code} className="space-y-3">
+                      <button
+                        type="button"
+                        aria-expanded={open}
+                        aria-controls={panelId}
+                        onClick={() =>
+                          setOpenGroups((current) => ({
+                            ...current,
+                            [group.code]: !open,
+                          }))
+                        }
+                        className={`w-full flex items-center justify-between gap-3 rounded-2xl border-2 bg-white px-4 py-3 text-left transition-all hover:border-electric-300 ${
+                          holdsSelection
+                            ? "border-electric-500/50"
+                            : "border-gray-100"
+                        }`}
+                      >
+                        <span className="flex items-center gap-3">
+                          <FontAwesomeIcon
+                            icon={open ? faChevronDown : faChevronRight}
+                            className="text-gray-400 w-3"
+                          />
+                          <span>
+                            <span className="block text-xs font-semibold text-electric-600 uppercase tracking-widest">
+                              Grupo
+                            </span>
+                            <span className="block font-bold text-gray-900">
+                              {group.code}
+                            </span>
+                          </span>
+                        </span>
+                        <Badge variant="info">
+                          {group.courses.length} materias
+                        </Badge>
+                      </button>
+                      {open && (
+                        <div
+                          id={panelId}
+                          className="space-y-3 border-l-2 border-gray-100 pl-3 ml-4"
+                        >
+                          {group.courses.map((course) =>
+                            renderCourseCard(course, false),
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </Card>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Course Details & Student Management */}
               <div className="lg:col-span-2">
                 {selectedCourse ? (
                   <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                    {canManageCourseCatalog && <CourseLibrary key={`${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage />}
-                    {canManageCourseCatalog && <CoursePreparation key={`${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage />}
+                    {canManageCourseCatalog && <CourseLibrary key={`library:${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage />}
+                    {canManageCourseCatalog && <CoursePreparation key={`preparation:${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage />}
                     {canManageCourseCatalog && <CourseAssistant key={`assistant:${user?.id}:${selectedCourse.id}`} courseId={selectedCourse.id} canManage={true} />}
                     <Card className="border border-slate-200 bg-white/95 shadow-sm dark:border-slate-700 dark:bg-slate-900">
                       <div className="flex justify-between items-center mb-6">
@@ -305,7 +408,8 @@ const CourseManagement: React.FC = () => {
                             {selectedCourse.course_name}
                           </h2>
                           <p className="text-slate-600 font-normal dark:text-slate-300">
-                            Código: {selectedCourse.code_course}
+                            Grupo: {selectedCourse.code_course} · Materia:{" "}
+                            {selectedCourse.sga_subject_code || "sin código (edita el curso)"}
                           </p>
                         </div>
 
@@ -450,17 +554,90 @@ const CourseManagement: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-bold text-gray-700 mb-1">
-                    Código del Curso
+                  <label
+                    htmlFor="course-code"
+                    className="block text-sm font-bold text-gray-700 mb-1"
+                  >
+                    Código de grupo (SGA)
                   </label>
                   <input
+                    id="course-code"
                     name="code"
                     required
                     defaultValue={isEditing ? selectedCourse?.code_course : ""}
                     type="text"
-                    placeholder="Ej: MATH202"
+                    placeholder="Ej: PGINS2301QDOA"
                     className="input-primary uppercase"
+                    autoComplete="off"
+                    spellCheck={false}
+                    maxLength={COURSE_CODE_MAX_LENGTH}
+                    aria-invalid={codeError ? true : undefined}
+                    aria-describedby="course-code-help"
+                    onChange={() => codeError && setCodeError(null)}
+                    onBlur={(event) => {
+                      const value = event.currentTarget.value;
+                      const unchanged =
+                        isEditing &&
+                        normalizeCourseCode(value) === selectedCourse?.code_course;
+                      setCodeError(
+                        value.trim() && !unchanged && !isValidCourseCode(value)
+                          ? COURSE_CODE_ERROR
+                          : null,
+                      );
+                    }}
                   />
+                  <p
+                    id="course-code-help"
+                    className={`mt-1 text-xs ${codeError ? "text-red-600" : "text-gray-500"}`}
+                  >
+                    {codeError || "El código del grupo en el SGA."}
+                  </p>
+                </div>
+                <div>
+                  <label
+                    htmlFor="course-subject"
+                    className="block text-sm font-bold text-gray-700 mb-1"
+                  >
+                    Código de materia (SGA)
+                  </label>
+                  <input
+                    id="course-subject"
+                    name="subject"
+                    required={!isEditing || Boolean(selectedCourse?.sga_subject_code)}
+                    defaultValue={
+                      isEditing ? (selectedCourse?.sga_subject_code ?? "") : ""
+                    }
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Ej: 000067"
+                    className="input-primary"
+                    autoComplete="off"
+                    spellCheck={false}
+                    maxLength={SUBJECT_CODE_LENGTH}
+                    aria-invalid={subjectError ? true : undefined}
+                    aria-describedby="course-subject-help"
+                    onChange={(event) => {
+                      event.currentTarget.value = normalizeSubjectCode(
+                        event.currentTarget.value,
+                      );
+                      if (subjectError) setSubjectError(null);
+                    }}
+                    onBlur={(event) => {
+                      const value = event.currentTarget.value;
+                      setSubjectError(
+                        value && !isValidSubjectCode(value)
+                          ? SUBJECT_CODE_ERROR
+                          : null,
+                      );
+                    }}
+                  />
+                  <p
+                    id="course-subject-help"
+                    className={`mt-1 text-xs ${subjectError ? "text-red-600" : "text-gray-500"}`}
+                  >
+                    {subjectError ||
+                      "El de la materia dentro del grupo en el SGA."}
+                  </p>
                 </div>
                 <div className="pt-4 flex gap-3">
                   <button

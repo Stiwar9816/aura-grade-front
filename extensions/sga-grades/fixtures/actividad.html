@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Fixture SGA</title>
+</head>
+<body>
+<div class="alert alert-info"><strong>Actividad 2: QUIZ FUNDAMENTOS TEÓRICOS DE SISTEMAS INTELIGENTES (Examen Específico) - El valor debe ser llenado entre 0 y 5.00</strong></div>
+<table>
+  <thead><tr><th>RA</th><th>Alumno</th><th></th><th>Notas</th></tr></thead>
+  <tbody>
+  <tr>
+    <td class="text-left">1077997926</td>
+    <td class="text-left">
+      Adrian Fernando Quinto Valois
+      <strong class="text-danger"> </strong>
+      <br><small>PGINS2301QDOA</small>
+    </td>
+    <td class="text-left"></td>
+    <td class="">
+      <strong class="text-danger"> </strong>
+      <input type="text" class="form-control nota decimal2 " id="nota291106" name="notaA" size="5" maxlength="3" min="0" max="5.00" value="">
+    </td>
+    <td class="centro displaynone"><div class="icheckbox_square-grey"><input class="icheck ausente" type="checkbox" id="ausente291106" name="ausenteA" value="1"></div></td>
+  </tr>
+  <tr>
+    <td class="text-left">1078457571</td>
+    <td class="text-left">
+      Alex Anderson Palacios Torres
+      <strong class="text-danger"> </strong>
+      <br><small>PGINS2301QDOA</small>
+    </td>
+    <td class="text-left"></td>
+    <td class="">
+      <input type="text" class="form-control nota decimal2 " id="nota291107" name="notaB" size="5" maxlength="3" min="0" max="5.00" value="">
+    </td>
+    <td class="centro displaynone"><input class="icheck ausente" type="checkbox" name="ausenteB" value="1"></td>
+  </tr>
+  <tr>
+    <td class="text-left">1077996843</td>
+    <td class="text-left">
+      Alex David Garcia Chala
+      <br><small>PGINS2301QDOA</small>
+    </td>
+    <td class="text-left"></td>
+    <td class="">
+      <input type="text" class="form-control nota decimal2 " id="nota291108" name="notaC" size="5" maxlength="3" min="0" max="5.00" value="2,50">
+    </td>
+    <td class="centro displaynone"><input class="icheck ausente" type="checkbox" name="ausenteC" value="1"></td>
+  </tr>
+  <tr>
+    <td class="text-left">1193568341</td>
+    <td class="text-left">
+      Alex David Moya Bejarano
+      <br><small>PGINS2301QDOA</small>
+    </td>
+    <td class="text-left"></td>
+    <td class="">
+      <input type="text" class="form-control nota decimal2 " id="nota291109" name="notaD" size="5" maxlength="3" min="0" max="5.00" value="">
+    </td>
+    <td class="centro displaynone"><input class="icheck ausente" type="checkbox" name="ausenteD" value="1"></td>
+  </tr>
+  </tbody>
+</table>
+<button type="button" class="btn btn-info pull-right" id="btnPublicarNota">Enviar</button>
+<script>
+  // ?group=CODE renders the group dropdown (every group listed, only CODE selected) and
+  // ?subject=000067 renders the opened course tree with that subject in bold, like the real SGA.
+  const query = new URLSearchParams(location.search);
+  const header = document.createElement('div');
+  if (query.get('group')) {
+    const select = document.createElement('select');
+    ['PGINS2201QDOA', 'PGINS2301QDOA', 'PGINS2302QDOA', 'PGINS2501QDOB'].forEach((code) => {
+      const option = new Option(code, code, false, code === query.get('group'));
+      select.add(option);
+    });
+    header.append(select);
+  }
+  if (query.get('subject')) {
+    const subjects = { '000067': 'Sistemas Inteligentes', '000068': 'Proyecto de Grado' };
+    const tree = document.createElement('div');
+    for (const [code, name] of Object.entries(subjects)) {
+      const item = document.createElement('div');
+      const label = code + ' - ' + name;
+      if (code === query.get('subject')) { const strong = document.createElement('strong'); strong.textContent = label; item.append(strong); }
+      else item.textContent = label;
+      tree.append(item);
+    }
+    const current = document.createElement('div');
+    current.textContent = 'Curso actual: ' + subjects[query.get('subject')];
+    header.append(current, tree);
+  }
+  document.body.prepend(header);
+  window.__submitted = 0;
+  document.getElementById('btnPublicarNota').addEventListener('click', () => { window.__submitted += 1; });
+  // ?mask=dotonly: the field only understands a decimal point and drops the comma ("3,4" -> "34").
+  if (location.search.includes('mask=dotonly'))
+    document.querySelectorAll('input.decimal2').forEach((input) =>
+      input.addEventListener('input', () => { input.value = input.value.replace(',', ''); }));
+  // ?mask=truncate: worst case, the field cuts the text to maxlength on every input event.
+  if (location.search.includes('mask=truncate'))
+    document.querySelectorAll('input.decimal2').forEach((input) =>
+      input.addEventListener('input', () => { input.value = input.value.slice(0, Number(input.maxLength)); }));
+</script>
+</body>
+</html>

@@ -10,7 +10,10 @@ import {ASSIGN_COURSES_TO_USER} from "@/gql/User";
 import {useAuth} from "./useAuth";
 
 type CourseUpdateData = Partial<
-	Pick<CoursesData["courses"][number], "course_name" | "code_course">
+	Pick<
+		CoursesData["courses"][number],
+		"course_name" | "code_course" | "sga_subject_code"
+	>
 >;
 
 export const useCourse = () => {
@@ -22,7 +25,11 @@ export const useCourse = () => {
 	const [deleteCourseMutation] = useMutation(DELETE_COURSE);
 	const [assignCoursesMutation] = useMutation(ASSIGN_COURSES_TO_USER);
 
-	const createCourse = async (course_name: string, code_course: string) => {
+	const createCourse = async (
+		course_name: string,
+		code_course: string,
+		sga_subject_code: string,
+	) => {
 		if (!user?.id) {
 			throw new Error("Se requiere el ID del usuario para crear un curso");
 		}
@@ -32,6 +39,7 @@ export const useCourse = () => {
 					createCourseInput: {
 						course_name,
 						code_course,
+						sga_subject_code,
 						userId: user.id,
 					},
 				},
@@ -94,15 +102,22 @@ export const useCourse = () => {
 		}
 	};
 
-	const saveCourse = async (name: string, code: string, courseId?: string) => {
+	const saveCourse = async (
+		name: string,
+		code: string,
+		subjectCode: string,
+		courseId?: string,
+	) => {
 		try {
 			if (courseId) {
 				await updateCourse(courseId, {
 					course_name: name,
 					code_course: code,
+					// A course from before subject codes may still be saved without one.
+					...(subjectCode && { sga_subject_code: subjectCode }),
 				});
 			} else {
-				await createCourse(name, code);
+				await createCourse(name, code, subjectCode);
 			}
 		} catch (error) {
 			console.error("Error al guardar el curso:", error);
