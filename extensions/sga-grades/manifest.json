@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "author": "Stiwar Asprilla",
+  "homepage_url": "https://github.com/Stiwar9816",
+  "name": "AuraGrade - Cargar notas al SGA",
+  "short_name": "AuraGrade SGA",
+  "version": "0.2.0",
+  "description": "Rellena en el SGA las notas publicadas en AuraGrade, verificando grupo, materia y estudiantes. No envía nada: el docente revisa y pulsa Enviar.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": ["activeTab", "scripting"],
+  "background": {
+    "service_worker": "background.js",
+    "scripts": ["background.js"]
+  },
+  "action": {
+    "default_title": "AuraGrade: cargar notas al SGA",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png"
+    }
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "sga-grades@auragrade.local",
+      "strict_min_version": "128.0"
+    }
+  }
+}

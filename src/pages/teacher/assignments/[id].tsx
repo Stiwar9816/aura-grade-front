@@ -39,6 +39,7 @@ import {
 	faCircleExclamation,
 	faClipboardList,
 	faClock,
+	faDownload,
 	faFileLines,
 	faGraduationCap,
 	faRotateRight,
@@ -363,6 +364,45 @@ const AssignmentDetailPage: React.FC = () => {
 		}
 	};
 
+	const downloadSgaGrades = async () => {
+		if (!assignmentId) return;
+		const notificationId = notifyLoading("Preparando notas para el SGA...");
+		try {
+			const response = await fetch(
+				`/api/assignments/${encodeURIComponent(assignmentId)}/sga-grades`,
+				{ method: "POST", credentials: "same-origin" },
+			);
+			if (!response.ok) {
+				const payload = await response.json().catch(() => null);
+				throw new Error(
+					payload?.message ||
+						payload?.error ||
+						"No fue posible preparar las notas.",
+				);
+			}
+			const name =
+				/filename="([^"]+)"/.exec(
+					response.headers.get("content-disposition") || "",
+				)?.[1] || "aura-grade-sga.json";
+			const url = URL.createObjectURL(await response.blob());
+			const link = document.createElement("a");
+			link.href = url;
+			link.download = name;
+			document.body.appendChild(link);
+			link.click();
+			link.remove();
+			URL.revokeObjectURL(url);
+			notifySuccess(`Archivo listo: ${name}`, { id: notificationId });
+		} catch (downloadError) {
+			notifyError(
+				downloadError instanceof Error
+					? downloadError.message
+					: "No fue posible preparar las notas.",
+				{ id: notificationId },
+			);
+		}
+	};
+
 	const selectExtensionStudent = (studentId: string) => {
 		setExtensionStudentId(studentId);
 		const currentExtension = assignment?.extensions.find(
@@ -569,6 +609,15 @@ const AssignmentDetailPage: React.FC = () => {
 									<Badge variant={assignment.isActive ? "electric" : "default"}>
 										{assignment.isActive ? "Activa" : "Inactiva"}
 									</Badge>
+									<button
+										type="button"
+										onClick={() => void downloadSgaGrades()}
+										className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-1 text-sm font-semibold text-gray-700 hover:border-electric-600 hover:text-electric-600 transition-colors"
+										title="Descarga las notas publicadas para cargarlas en el SGA con la extensión"
+									>
+										<FontAwesomeIcon icon={faDownload} />
+										Notas para el SGA
+									</button>
 								</div>
 							}
 						/>

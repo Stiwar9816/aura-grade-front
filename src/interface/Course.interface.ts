@@ -3,6 +3,7 @@ export interface CoursesData {
 		id: string;
 		course_name: string;
 		code_course: string;
+		sga_subject_code?: string | null;
 		users?: {
 			id: string;
 			name: string;
